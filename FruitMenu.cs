@@ -178,9 +178,7 @@ namespace FruitLib
             else if (align == TextAlign.MiddleCenter) s.alignment = TextAnchor.MiddleCenter;
         }
 
-        // ── Style cache
-        //
-        // invalidated when Scale changes ──────────────────────
+        // ── Style cache, invalidated when Scale changes ──────────────────────
         private static float _cachedScale = -1f;
 
         private static void CheckScale()
@@ -902,6 +900,8 @@ namespace FruitLib
 
             FruitHud.Init();
             FruitPerfMon.RegisterPanel();
+            FruitUpdateCheck.RegisterPanel();
+            FruitUpdateCheck.Register("FruitLib", FruitVersion.Current, "Luca-Nero", "FruitLib");
 
             LoggerInstance.Msg($"FruitLib v{FruitVersion.Current} ready.");
         }

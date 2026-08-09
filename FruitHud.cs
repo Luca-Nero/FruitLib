@@ -343,6 +343,8 @@ namespace FruitLib
         [MenuCategory("HUD")] public static int     FontSize  = 14;
         [MenuCategory("HUD")] public static float   BgAlpha   = 0.55f;
 
+        [MenuCategory("Updates")] public static bool CheckForUpdates = true;
+
         public static string IniPath => Path.Combine(
             Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
             "FruitLibConfig.ini");
@@ -357,6 +359,7 @@ namespace FruitLib
             ["Gap"]       = "vertical space between stacked panels, in pixels",
             ["FontSize"]  = "HUD text size in points; row height follows it",
             ["BgAlpha"]   = "panel background opacity, 0 = fully transparent",
+            ["CheckForUpdates"] = "checks each mod's GitHub repo at launch and warns if a newer release is out",
         };
 
         internal static void Load()
