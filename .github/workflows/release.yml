@@ -13,8 +13,17 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout
+      - name: Checkout main repo
         uses: actions/checkout@v4
+        with:
+          path: main
+
+      - name: Checkout ModRefs
+        uses: actions/checkout@v4
+        with:
+          repository: Luca-Nero/ModRefs
+          token: ${{ secrets.MODREFS_PAT }}
+          path: ModRefs
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -22,19 +31,21 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore
+        working-directory: main
         run: dotnet restore
 
       - name: Build
+        working-directory: main
         run: dotnet build --configuration Release --no-restore
 
       - name: Package
+        working-directory: main
         run: |
           mkdir release
-          cp bin/Release/net2.1/*.dll release/
+          cp bin/Release/*/*.dll release/
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: release/*.dll
+          files: main/release/*.dll
           generate_release_notes: true
-          previous_tag_name: v0.1.0-baseline
