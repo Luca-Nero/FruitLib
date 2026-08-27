@@ -9,4 +9,4 @@ monitor, mesh loader, and native toolbar slots.
 - [HUD](docs/hud.md)
 - [Performance monitor](docs/perfmon.md)
 - [Meshes](docs/meshes.md) file schema in [`MESH_FORMAT.md`](MESH_FORMAT.md)
-- [Toolbar](docs/toolbar.md) (CURRENTLY NON_FUNCTIONAL)
+- [Toolbar](docs/toolbar.md)

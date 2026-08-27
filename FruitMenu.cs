@@ -43,6 +43,11 @@ namespace FruitLib
         public static bool JustClosed         { get; internal set; }
         public static bool IsInputSuppressed  => IsOpen || JustClosed;
 
+        public static bool IsGamePaused { get; private set; }
+
+        /// <summary>Convenience: paused, or in/just out of the FruitLib menu.</summary>
+        public static bool BlocksGameplayInput => IsGamePaused || IsInputSuppressed;
+
         private static readonly List<GameObject> _hidden = new List<GameObject>();
         internal static PauseViewController PauseVC;
 
@@ -59,6 +64,7 @@ namespace FruitLib
         // ── State transitions ─────────────────────────────────────────────────
         internal static void OnPauseAlphaChanged(bool isPaused)
         {
+            IsGamePaused = isPaused;
             if (isPaused  && _state == MenuState.Closed) _state = MenuState.Button;
             if (!isPaused && _state == MenuState.Button)  _state = MenuState.Closed;
         }
@@ -403,7 +409,8 @@ namespace FruitLib
                     _defaults[f] = f.GetValue(null);
                     var attr = (MenuCategoryAttribute)Attribute.GetCustomAttribute(
                                    f, typeof(MenuCategoryAttribute));
-                    string cat = attr?.Name ?? "General";
+                    if (attr == null) continue;   // no category = ini-only, never drawn
+                    string cat = attr.Name;
                     if (!_cats.ContainsKey(cat))
                     {
                         _cats[cat] = new List<FieldInfo>();
