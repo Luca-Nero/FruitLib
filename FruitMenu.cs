@@ -1151,6 +1151,8 @@ namespace FruitLib
             Safely("FruitHud",     FruitHud.Tick);
             Safely("FruitToolbar", FruitToolbar.Tick);
             Safely("FruitMenu",    PauseTick);
+            Safely("FruitBallistics",      FruitBallistics.Tick);
+            Safely("FruitBallisticsProbe", FruitBallisticsProbe.Tick);
         }
 
         private void PauseTick()
@@ -1183,6 +1185,8 @@ namespace FruitLib
             FruitMenu.PauseVC = null;
             _reportedTickFailures.Clear();
             FruitMenuProbe.ResetForScene();
+            FruitBallistics.ResetForScene();
+            FruitBallisticsProbe.ResetForScene();
             FruitMenuScreen.ResetForScene();
             FruitMenuNative.ResetForScene();
             FruitToolbar.ResetForScene();

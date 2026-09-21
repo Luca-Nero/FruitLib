@@ -367,6 +367,57 @@ namespace FruitLib
         [MenuCategory("Diagnostics"), MenuLabel("Dump menu structure key")]
         public static KeyCode MenuProbeKey = KeyCode.F7;
 
+        [MenuCategory("Ballistics"), MenuLabel("Exit wound ejecta")]
+        public static bool Ejecta = true;
+
+        [MenuCategory("Ballistics"), MenuLabel("Ejecta min. depth (voxels)"), MenuRange(1, 20)]
+        public static int EjectaMinDepth = 3;
+
+        [MenuCategory("Ballistics"), MenuLabel("Chunks per wound"), MenuRange(0, 40)]
+        public static int EjectaMaxCount = 12;
+
+        [MenuCategory("Ballistics"), MenuLabel("Power for full chunk count"), MenuRange(1000, 100000)]
+        public static int EjectaFullPower = 15000;
+
+        [MenuCategory("Ballistics"), MenuLabel("Chunk speed"), MenuRange(0, 20)]
+        public static float EjectaSpeed = 5f;
+
+        [MenuCategory("Ballistics"), MenuLabel("Chunk spread"), MenuRange(0, 1)]
+        public static float EjectaSpread = 0.35f;
+
+        [MenuCategory("Ballistics"), MenuLabel("Chunk lifetime"), MenuRange(0, 30)]
+        public static float EjectaLifetime = 3f;
+
+        [MenuCategory("Ballistics"), MenuLabel("Blood decals")]
+        public static bool BloodDecals = true;
+
+        [MenuCategory("Ballistics"), MenuLabel("Decals per chunk"), MenuRange(0, 12)]
+        public static int BloodDecalCount = 4;
+
+        [MenuCategory("Ballistics"), MenuLabel("Decal size"), MenuRange(0.02f, 1)]
+        public static float BloodDecalSize = 0.15f;
+
+        [MenuCategory("Ballistics"), MenuLabel("Decal lifetime"), MenuRange(0, 60)]
+        public static float BloodDecalLifetime = 5f;
+
+        [MenuCategory("Ballistics"), MenuLabel("Blood atlas columns"), MenuRange(1, 8)]
+        public static int BloodAtlasCols = 3;
+
+        [MenuCategory("Ballistics"), MenuLabel("Blood atlas rows"), MenuRange(1, 8)]
+        public static int BloodAtlasRows = 3;
+
+        [MenuCategory("Ballistics"), MenuLabel("Effects target FPS"), MenuRange(20, 240)]
+        public static float EjectaTargetFps = 75f;
+
+        [MenuCategory("Ballistics"), MenuLabel("Effects cull speed"), MenuRange(0, 2)]
+        public static float EjectaCullSpeed = 0.4f;
+
+        [MenuCategory("Diagnostics"), MenuLabel("Log ballistics")]
+        public static bool BallisticsProbe = false;
+
+        [MenuCategory("Diagnostics"), MenuLabel("Ballistics aim test key")]
+        public static KeyCode BallisticsProbeKey = KeyCode.F6;
+
         public static string IniPath => Path.Combine(
             Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
             "FruitLibConfig.ini");
@@ -384,6 +435,23 @@ namespace FruitLib
             ["CheckForUpdates"] = "checks each mod's GitHub repo at launch and warns if a newer release is out",
             ["MenuProbe"]    = "logs how the pause menu moves between its screens - structure once, then a line a frame while anything is animating. For working on the menu; noisy otherwise",
             ["MenuProbeKey"] = "dumps the pause menu structure again on demand while MenuProbe is on (None to disable the key)",
+            ["Ejecta"]             = "tissue-coloured chunks thrown out of exit wounds by every FruitLib projectile and fragment. Master switch; a mod can also turn it off per weapon",
+            ["EjectaMinDepth"]     = "a wound only throws ejecta if the round came out the far side after at least this many voxels (~23 mm each). Stops grazes and corner nicks from spraying chunks",
+            ["EjectaFullPower"]    = "power a round must still carry out of an exit wound to throw the full chunk count; less throws proportionally fewer (at least one). A rifle round is ~15000, a buckshot pellet ~2100",
+            ["EjectaMaxCount"]     = "most chunks one exit wound throws; fewer under frame pressure",
+            ["EjectaSpeed"]        = "chunk launch speed, m/s",
+            ["EjectaSpread"]       = "how far chunks scatter off the bullet's line, 0 = straight on",
+            ["EjectaLifetime"]     = "seconds a landed chunk stays before shrinking away",
+            ["BloodDecals"]        = "blood splats where chunks land, wrapped onto the surface",
+            ["BloodDecalCount"]    = "splats per landed chunk",
+            ["BloodDecalSize"]     = "splat spread radius, metres",
+            ["BloodDecalLifetime"] = "seconds a splat stays",
+            ["BloodAtlasCols"]     = "columns in the game's Pixelblood texture atlas",
+            ["BloodAtlasRows"]     = "rows in the game's Pixelblood texture atlas",
+            ["EjectaTargetFps"]    = "below this frame rate the oldest chunks and splats are removed early",
+            ["EjectaCullSpeed"]    = "how aggressively, per frame of shortfall",
+            ["BallisticsProbe"]    ="logs the game's native bullet model: calibre constants once per scene, then power spent, channel and exit tear for every native shot that hits a body. For building the shared projectile API; noisy otherwise",
+            ["BallisticsProbeKey"] = "while BallisticsProbe is on: walks the voxels under the crosshair and logs what each would absorb, without damaging anything. With Shift held it also sends the game's own cavitation and exit tear down that path - destructive (None to disable the key)",
         };
 
         internal static void Load()

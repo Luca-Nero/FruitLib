@@ -8,7 +8,10 @@ namespace FruitLib
         // 3.0.0 = the 0.14 port. Major bump because it is a breaking change twice over:
         // it will not load on 0.1 at all, and FruitToolbar.Sfx is gone (the game field it
         // read no longer exists). Mods gate on this with Require().
-        internal const string VersionConst = "3.0.0";
+        //
+        // 3.1.0 = FruitBallistics: shared projectiles, explosions and the native wound model.
+        // Minor bump, purely additive. Mods that fire through it gate on 3.1.0.
+        internal const string VersionConst = "3.1.0";
 
         public static string Current => VersionConst;
 

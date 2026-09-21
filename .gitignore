@@ -18,6 +18,8 @@ mono_crash.*
 
 # Build results
 [Dd]ebug/
+# ...except FruitLib's own Debug source folder (the probes) at the repo root.
+!/Debug/
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
