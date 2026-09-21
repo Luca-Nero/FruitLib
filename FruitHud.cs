@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -334,16 +334,38 @@ namespace FruitLib
 
     public static class FruitHudConfig
     {
-        [MenuCategory("HUD")] public static bool    Enabled   = true;
-        [MenuCategory("HUD")] public static KeyCode ToggleKey = KeyCode.F8;
-        [MenuCategory("HUD")] public static int     Corner    = 0;
-        [MenuCategory("HUD")] public static float   MarginX   = 12f;
-        [MenuCategory("HUD")] public static float   MarginY   = 12f;
-        [MenuCategory("HUD")] public static float   Gap       = 6f;
-        [MenuCategory("HUD")] public static int     FontSize  = 14;
-        [MenuCategory("HUD")] public static float   BgAlpha   = 0.55f;
+        [MenuCategory("HUD"), MenuLabel("Show mod panels")]
+        public static bool Enabled = true;
 
-        [MenuCategory("Updates")] public static bool CheckForUpdates = true;
+        [MenuCategory("HUD"), MenuLabel("Show / hide key")]
+        public static KeyCode ToggleKey = KeyCode.F8;
+
+        [MenuCategory("HUD"), MenuLabel("Corner"), MenuRange(0, 3)]
+        public static int Corner = 0;
+
+        [MenuCategory("HUD"), MenuLabel("Margin, across"), MenuRange(0, 200)]
+        public static float MarginX = 12f;
+
+        [MenuCategory("HUD"), MenuLabel("Margin, down"), MenuRange(0, 200)]
+        public static float MarginY = 12f;
+
+        [MenuCategory("HUD"), MenuLabel("Space between panels"), MenuRange(0, 40)]
+        public static float Gap = 6f;
+
+        [MenuCategory("HUD"), MenuLabel("Text size"), MenuRange(8, 32)]
+        public static int FontSize = 14;
+
+        [MenuCategory("HUD"), MenuLabel("Background opacity"), MenuRange(0, 1)]
+        public static float BgAlpha = 0.55f;
+
+        [MenuCategory("Updates"), MenuLabel("Check for mod updates")]
+        public static bool CheckForUpdates = true;
+
+        [MenuCategory("Diagnostics"), MenuLabel("Log pause menu transitions")]
+        public static bool MenuProbe = false;
+
+        [MenuCategory("Diagnostics"), MenuLabel("Dump menu structure key")]
+        public static KeyCode MenuProbeKey = KeyCode.F7;
 
         public static string IniPath => Path.Combine(
             Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
@@ -360,6 +382,8 @@ namespace FruitLib
             ["FontSize"]  = "HUD text size in points; row height follows it",
             ["BgAlpha"]   = "panel background opacity, 0 = fully transparent",
             ["CheckForUpdates"] = "checks each mod's GitHub repo at launch and warns if a newer release is out",
+            ["MenuProbe"]    = "logs how the pause menu moves between its screens - structure once, then a line a frame while anything is animating. For working on the menu; noisy otherwise",
+            ["MenuProbeKey"] = "dumps the pause menu structure again on demand while MenuProbe is on (None to disable the key)",
         };
 
         internal static void Load()

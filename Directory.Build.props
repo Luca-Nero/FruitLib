@@ -1,12 +1,22 @@
-<Project>
+﻿<Project>
+  <!-- 0.14 reference set. Points at ModRefs, built from
+       EarlyAccessGameBuilds\Frukt0_14\MelonLoader (Il2CppAssemblies + net6 +
+       SupportModules\Il2Cpp.dll). Regenerate it with Tools\sync_modrefs.ps1 after
+       any game update - the interop DLLs are version-specific.
 
-  <!-- ModRefs sits beside the repo in CI (workspace/main + workspace/ModRefs)
-       and two levels up in the monorepo (Frukt/Mods/<mod> + Frukt/ModRefs).
-       Probe CI's layout first, then the local one. -->
+       Probe CI's layout (ModRefs beside the repo) before the local one
+       (Frukt\Mods\<mod> -> Frukt\ModRefs).
+
+       This mod was ported from 0.1 on 2026-09-11 and no longer builds against the 0.1
+       reference set: 0.14 removed ToolbarItemSlotView.ptc/dtc, ToolbarView.pth and the
+       whole PauseViewController type, so the sources changed shape, not just names. -->
   <PropertyGroup>
     <ModRefsDir Condition="'$(ModRefsDir)' == '' And Exists('$(MSBuildThisFileDirectory)..\ModRefs')">$(MSBuildThisFileDirectory)..\ModRefs\</ModRefsDir>
     <ModRefsDir Condition="'$(ModRefsDir)' == '' And Exists('$(MSBuildThisFileDirectory)..\..\ModRefs')">$(MSBuildThisFileDirectory)..\..\ModRefs\</ModRefsDir>
   </PropertyGroup>
+  <Target Name="FruitLibCheckRefs" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="'$(ModRefsDir)' == ''" Text="ModRefs not found. Expected it beside the repo or at Frukt\ModRefs.." />
+  </Target>
   <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>$(ModRefsDir)0Harmony.dll</HintPath>
@@ -52,6 +62,14 @@
       <HintPath>$(ModRefsDir)Iced.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="Il2Cpp">
+      <HintPath>$(ModRefsDir)Il2Cpp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2Cpp__Generated">
+      <HintPath>$(ModRefsDir)Il2Cpp__Generated.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Il2CppAmazingAssets.AdvancedDissolve">
       <HintPath>$(ModRefsDir)Il2CppAmazingAssets.AdvancedDissolve.dll</HintPath>
       <Private>false</Private>
@@ -60,12 +78,20 @@
       <HintPath>$(ModRefsDir)Il2CppAmazingAssets.AdvancedDissolve.Examples.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="Il2CppCORE">
+      <HintPath>$(ModRefsDir)Il2CppCORE.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Il2CppDOTween">
       <HintPath>$(ModRefsDir)Il2CppDOTween.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppGUPS.Obfuscator">
-      <HintPath>$(ModRefsDir)Il2CppGUPS.Obfuscator.dll</HintPath>
+    <Reference Include="Il2CppDOTween.Modules">
+      <HintPath>$(ModRefsDir)Il2CppDOTween.Modules.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppFRUKT">
+      <HintPath>$(ModRefsDir)Il2CppFRUKT.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2CppInterop.Common">
@@ -84,12 +110,36 @@
       <HintPath>$(ModRefsDir)Il2CppInterop.Runtime.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="Il2CppKinemation.Recoilly.Runtime">
+      <HintPath>$(ModRefsDir)Il2CppKinemation.Recoilly.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Il2CppLinework">
       <HintPath>$(ModRefsDir)Il2CppLinework.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2CppMono.Security">
       <HintPath>$(ModRefsDir)Il2CppMono.Security.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>$(ModRefsDir)Il2Cppmscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppNewtonsoft.Json">
+      <HintPath>$(ModRefsDir)Il2CppNewtonsoft.Json.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppRootMotion">
+      <HintPath>$(ModRefsDir)Il2CppRootMotion.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppScreenFx">
+      <HintPath>$(ModRefsDir)Il2CppScreenFx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppScreenFx.Samples">
+      <HintPath>$(ModRefsDir)Il2CppScreenFx.Samples.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2CppSirenix.OdinInspector.Attributes">
@@ -120,12 +170,52 @@
       <HintPath>$(ModRefsDir)Il2CppSystem.Core.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="Il2CppSystem.Data">
+      <HintPath>$(ModRefsDir)Il2CppSystem.Data.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Drawing">
+      <HintPath>$(ModRefsDir)Il2CppSystem.Drawing.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Numerics">
+      <HintPath>$(ModRefsDir)Il2CppSystem.Numerics.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Runtime.Serialization">
+      <HintPath>$(ModRefsDir)Il2CppSystem.Runtime.Serialization.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Il2CppSystem.Xml">
       <HintPath>$(ModRefsDir)Il2CppSystem.Xml.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="Il2CppSystem.Xml.Linq">
+      <HintPath>$(ModRefsDir)Il2CppSystem.Xml.Linq.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppTools.Runtime">
+      <HintPath>$(ModRefsDir)Il2CppTools.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppTripledoseLibs">
+      <HintPath>$(ModRefsDir)Il2CppTripledoseLibs.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Il2CppUnified.Universal.Blur">
       <HintPath>$(ModRefsDir)Il2CppUnified.Universal.Blur.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppVolFx">
+      <HintPath>$(ModRefsDir)Il2CppVolFx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppVolFx.Samples">
+      <HintPath>$(ModRefsDir)Il2CppVolFx.Samples.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppVolFx.Transitions">
+      <HintPath>$(ModRefsDir)Il2CppVolFx.Transitions.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2CppZenject">
@@ -134,14 +224,6 @@
     </Reference>
     <Reference Include="Il2CppZenject-usage">
       <HintPath>$(ModRefsDir)Il2CppZenject-usage.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Il2Cpp__Generated">
-      <HintPath>$(ModRefsDir)Il2Cpp__Generated.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Il2Cppmscorlib">
-      <HintPath>$(ModRefsDir)Il2Cppmscorlib.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="IndexRange">
@@ -158,6 +240,10 @@
     </Reference>
     <Reference Include="Microsoft.Bcl.AsyncInterfaces">
       <HintPath>$(ModRefsDir)Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.HashCode">
+      <HintPath>$(ModRefsDir)Microsoft.Bcl.HashCode.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Microsoft.Bcl.Memory">
@@ -204,6 +290,10 @@
       <HintPath>$(ModRefsDir)Microsoft.Extensions.Primitives.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="Mono">
+      <HintPath>$(ModRefsDir)Mono.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Mono.Cecil">
       <HintPath>$(ModRefsDir)Mono.Cecil.dll</HintPath>
       <Private>false</Private>
@@ -244,12 +334,24 @@
       <HintPath>$(ModRefsDir)Newtonsoft.Json.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="System.Buffers">
+      <HintPath>$(ModRefsDir)System.Buffers.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="System.Configuration.ConfigurationManager">
       <HintPath>$(ModRefsDir)System.Configuration.ConfigurationManager.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="System.Diagnostics.DiagnosticSource">
       <HintPath>$(ModRefsDir)System.Diagnostics.DiagnosticSource.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="System.Memory">
+      <HintPath>$(ModRefsDir)System.Memory.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="System.Numerics.Vectors">
+      <HintPath>$(ModRefsDir)System.Numerics.Vectors.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="System.Runtime.CompilerServices.Unsafe">
@@ -262,6 +364,10 @@
     </Reference>
     <Reference Include="System.Security.Permissions">
       <HintPath>$(ModRefsDir)System.Security.Permissions.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="System.ValueTuple">
+      <HintPath>$(ModRefsDir)System.ValueTuple.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Tomlet">
@@ -294,6 +400,10 @@
     </Reference>
     <Reference Include="Unity.InputSystem.ForUI">
       <HintPath>$(ModRefsDir)Unity.InputSystem.ForUI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.InternalAPIEngineBridge.004">
+      <HintPath>$(ModRefsDir)Unity.InternalAPIEngineBridge.004.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.Mathematics">
@@ -340,24 +450,24 @@
       <HintPath>$(ModRefsDir)Unity.Timeline.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Unity.VisualScripting.Core">
-      <HintPath>$(ModRefsDir)Unity.VisualScripting.Core.dll</HintPath>
+    <Reference Include="Unity.UnifiedRayTracing.Runtime">
+      <HintPath>$(ModRefsDir)Unity.UnifiedRayTracing.Runtime.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine">
       <HintPath>$(ModRefsDir)UnityEngine.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="UnityEngine.AIModule">
-      <HintPath>$(ModRefsDir)UnityEngine.AIModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.ARModule">
-      <HintPath>$(ModRefsDir)UnityEngine.ARModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
     <Reference Include="UnityEngine.AccessibilityModule">
       <HintPath>$(ModRefsDir)UnityEngine.AccessibilityModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AdaptivePerformanceModule">
+      <HintPath>$(ModRefsDir)UnityEngine.AdaptivePerformanceModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AIModule">
+      <HintPath>$(ModRefsDir)UnityEngine.AIModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.AndroidJNIModule">
@@ -366,6 +476,10 @@
     </Reference>
     <Reference Include="UnityEngine.AnimationModule">
       <HintPath>$(ModRefsDir)UnityEngine.AnimationModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ARModule">
+      <HintPath>$(ModRefsDir)UnityEngine.ARModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.AssetBundleModule">
@@ -392,20 +506,20 @@
       <HintPath>$(ModRefsDir)UnityEngine.CrashReportingModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="UnityEngine.DSPGraphModule">
-      <HintPath>$(ModRefsDir)UnityEngine.DSPGraphModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
     <Reference Include="UnityEngine.DirectorModule">
       <HintPath>$(ModRefsDir)UnityEngine.DirectorModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="UnityEngine.GIModule">
-      <HintPath>$(ModRefsDir)UnityEngine.GIModule.dll</HintPath>
+    <Reference Include="UnityEngine.DSPGraphModule">
+      <HintPath>$(ModRefsDir)UnityEngine.DSPGraphModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.GameCenterModule">
       <HintPath>$(ModRefsDir)UnityEngine.GameCenterModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.GIModule">
+      <HintPath>$(ModRefsDir)UnityEngine.GIModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.GraphicsStateCollectionSerializerModule">
@@ -420,12 +534,16 @@
       <HintPath>$(ModRefsDir)UnityEngine.HierarchyCoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.HierarchyModule">
+      <HintPath>$(ModRefsDir)UnityEngine.HierarchyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.HotReloadModule">
       <HintPath>$(ModRefsDir)UnityEngine.HotReloadModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>$(ModRefsDir)UnityEngine.IMGUIModule.dll</HintPath>
+    <Reference Include="UnityEngine.IdentifiersModule">
+      <HintPath>$(ModRefsDir)UnityEngine.IdentifiersModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.Il2CppAssetBundleManager">
@@ -440,6 +558,10 @@
       <HintPath>$(ModRefsDir)UnityEngine.ImageConversionModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(ModRefsDir)UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.InputForUIModule">
       <HintPath>$(ModRefsDir)UnityEngine.InputForUIModule.dll</HintPath>
       <Private>false</Private>
@@ -450,6 +572,10 @@
     </Reference>
     <Reference Include="UnityEngine.InputModule">
       <HintPath>$(ModRefsDir)UnityEngine.InputModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InsightsModule">
+      <HintPath>$(ModRefsDir)UnityEngine.InsightsModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.JSONSerializeModule">
@@ -480,6 +606,10 @@
       <HintPath>$(ModRefsDir)UnityEngine.Physics2DModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.PhysicsBackendPhysXModule">
+      <HintPath>$(ModRefsDir)UnityEngine.PhysicsBackendPhysXModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.PhysicsModule">
       <HintPath>$(ModRefsDir)UnityEngine.PhysicsModule.dll</HintPath>
       <Private>false</Private>
@@ -488,12 +618,20 @@
       <HintPath>$(ModRefsDir)UnityEngine.PropertiesModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.RenderAs2DModule">
+      <HintPath>$(ModRefsDir)UnityEngine.RenderAs2DModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule">
       <HintPath>$(ModRefsDir)UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.ScreenCaptureModule">
       <HintPath>$(ModRefsDir)UnityEngine.ScreenCaptureModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ShaderRuntimeModule">
+      <HintPath>$(ModRefsDir)UnityEngine.ShaderRuntimeModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.ShaderVariantAnalyticsModule">
@@ -524,10 +662,6 @@
       <HintPath>$(ModRefsDir)UnityEngine.SubsystemsModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="UnityEngine.TLSModule">
-      <HintPath>$(ModRefsDir)UnityEngine.TLSModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
     <Reference Include="UnityEngine.TerrainModule">
       <HintPath>$(ModRefsDir)UnityEngine.TerrainModule.dll</HintPath>
       <Private>false</Private>
@@ -550,6 +684,10 @@
     </Reference>
     <Reference Include="UnityEngine.TilemapModule">
       <HintPath>$(ModRefsDir)UnityEngine.TilemapModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TLSModule">
+      <HintPath>$(ModRefsDir)UnityEngine.TLSModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.UI">
@@ -580,12 +718,12 @@
       <HintPath>$(ModRefsDir)UnityEngine.UnityConnectModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="UnityEngine.UnityCurlModule">
-      <HintPath>$(ModRefsDir)UnityEngine.UnityCurlModule.dll</HintPath>
+    <Reference Include="UnityEngine.UnityConsentModule">
+      <HintPath>$(ModRefsDir)UnityEngine.UnityConsentModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="UnityEngine.UnityTestProtocolModule">
-      <HintPath>$(ModRefsDir)UnityEngine.UnityTestProtocolModule.dll</HintPath>
+    <Reference Include="UnityEngine.UnityCurlModule">
+      <HintPath>$(ModRefsDir)UnityEngine.UnityCurlModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestAssetBundleModule">
@@ -608,20 +746,24 @@
       <HintPath>$(ModRefsDir)UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="UnityEngine.VFXModule">
-      <HintPath>$(ModRefsDir)UnityEngine.VFXModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.VRModule">
-      <HintPath>$(ModRefsDir)UnityEngine.VRModule.dll</HintPath>
+    <Reference Include="UnityEngine.VectorGraphicsModule">
+      <HintPath>$(ModRefsDir)UnityEngine.VectorGraphicsModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.VehiclesModule">
       <HintPath>$(ModRefsDir)UnityEngine.VehiclesModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.VFXModule">
+      <HintPath>$(ModRefsDir)UnityEngine.VFXModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.VideoModule">
       <HintPath>$(ModRefsDir)UnityEngine.VideoModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.VRModule">
+      <HintPath>$(ModRefsDir)UnityEngine.VRModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.WindModule">
@@ -632,8 +774,8 @@
       <HintPath>$(ModRefsDir)UnityEngine.XRModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="FruitLib">
-      <HintPath>$(ModRefsDir)FruitLib.dll</HintPath>
+    <Reference Include="ValueTupleBridge">
+      <HintPath>$(ModRefsDir)ValueTupleBridge.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="WebSocketDotNet">

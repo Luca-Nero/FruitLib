@@ -1,13 +1,14 @@
 # FruitLib
 
 Shared library for FRUKT mods running under MelonLoader. It provides the things
-every mod ends up needing and nobody wants to write twice: a settings menu, a
-HUD, a performance overlay, a mesh loader, and extra toolbar slots.
+every mod ends up needing and nobody wants to write twice: a settings menu built
+from the game's own controls, a HUD, a performance overlay, a mesh loader, the
+game's sound effects, and extra toolbar slots.
 
 FruitLib is itself a MelonMod. Your mod references it at build time and expects
 it in the `Mods` folder at runtime.
 
-**Current version: 2.0.0**
+**Current version: 3.0.0**
 
 ## Guides
 
@@ -17,9 +18,10 @@ it in the `Mods` folder at runtime.
 | [HUD](hud.md) | On-screen readouts, stacked and positioned for you |
 | [Performance monitor](perfmon.md) | Live counters and timing sections |
 | [Meshes](meshes.md) | Loading embedded `*_mesh.json` models |
-| [Toolbar](toolbar.md) | Extra native toolbar slots **currently non-functional**, research notes only |
+| [Sound](sound.md) | The game's own sound effects, and its interface sounds |
+| [Toolbar](toolbar.md) | Extra native toolbar slots |
 
-The mesh file schema itself lives in [`../MESH_FORMAT.md`](../MESH_FORMAT.md).
+The mesh file schema itself lives in [`../MESH_FORMAT.md`](MESH_FORMAT.md).
 
 ## Setup
 
@@ -129,6 +131,30 @@ Registration order between mods doesn't matter, every `Register` call is just a
 list append, so it's safe whether FruitLib's own `OnInitializeMelon` has run yet
 or not. Don't call FruitLib from a static field initializer, though: that can run
 before MelonLoader has finished setting up.
+
+## What your settings look like
+
+Your mod's settings are drawn with the game's own controls, on pages in the game's
+own pause menu. A `bool` becomes the game's toggle, a number becomes its slider, a
+`KeyCode` becomes a row in its keybind table.
+
+```
+CONTINUE
+SETTINGS
+MODS        ← yours, and everyone else's
+QUIT
+```
+
+Declaring a range and a readable name is what makes the difference between a
+slider that works and one that annoys:
+
+```csharp
+[MenuCategory("Tuning"), MenuLabel("Muzzle velocity"), MenuRange(100, 1200)]
+public static float Velocity = 600f;
+```
+
+See [Config & menu](config-and-menu.md) for the whole surface, including what
+falls back to FruitLib's own panel and why.
 
 ## Where files land
 

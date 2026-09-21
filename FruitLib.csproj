@@ -1,13 +1,61 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <Nullable>disable</Nullable>
+    <AssemblyName>FruitLib</AssemblyName>
+    <RootNamespace>FruitLib</RootNamespace>
+    <LangVersion>latest</LangVersion>
+
+    <!-- MSB3277 = assembly version unification conflicts, ~47 of them, from
+         referencing MelonLoader's net6 assemblies out of a netstandard2.1 project.
+         Nothing to fix; the loader resolves everything itself at runtime. Demoted
+         so that a warning about THIS mod's code is visible instead of buried.
+         Same reasoning as 9_Rewind and 10_Link. -->
+    <MSBuildWarningsAsMessages>MSB3277</MSBuildWarningsAsMessages>
   </PropertyGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(CI)' != 'true'">
-    <Exec Command="copy &quot;$(TargetPath)&quot; &quot;D:\SteamLibrary\steamapps\common\FRUKT Demo\Mods&quot;" />
-    <Exec Command="copy &quot;$(TargetPath)&quot; &quot;F:\Dev\Frukt\ModRefs&quot;" />
+  <!-- Deploy to EVERY 0.14 instance, and to ModRefs.
+       ===================================================
+       Same instance sweep as 10_Link, for a sharper reason: every other mod in
+       this repo binds to FruitLib by name, so one instance left on a stale
+       FruitLib.dll does not fail quietly in FruitLib - it throws
+       TypeLoadException inside whichever mod happens to touch the changed type
+       first, and reads as a bug in that mod.
+
+       An instance is anything with a FRUKT.exe in it, found at any depth, with
+       Mods as its sibling. Pre-0.14 builds are excluded by name: FruitLib 3.x
+       binds 0.14-only types and cannot load on them at all.
+
+       The ModRefs copy is what the other mods COMPILE against. It is not
+       optional bookkeeping: without it a dependent mod builds against the
+       previous FruitLib surface and only fails at runtime. 
+       
+       Addendum by User: Switching to newest release build 0.16A. Has been released via Steam so back to that folder. 
+       Furthermore after a PC rebuild everything dev reladted now lives in E:.
+       Merging Modrefs back to the main folder and repo-->
+  <PropertyGroup>
+    <FruktBuildsRoot Condition="'$(FruktBuildsRoot)' == ''">D:\SteamLibrary\steamapps\common</FruktBuildsRoot>
+    <FruktModRefsDir Condition="'$(FruktModRefsDir)' == ''">E:\Dev\ModDev\Frukt\ModRefs</FruktModRefsDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FruktInstance Include="$(FruktBuildsRoot)\**\FRUKT.exe"/>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Error Condition="'@(FruktInstance)' == ''"
+           Text="No FRUKT instance found under '$(FruktBuildsRoot)'. Expected at least one FRUKT.exe. Set FruktBuildsRoot if the builds live elsewhere." />
+    <Error Condition="!Exists('$(FruktModRefsDir)')"
+           Text="ModRefs not found at '$(FruktModRefsDir)'. Run Tools\sync_modrefs.ps1, or set FruktModRefsDir." />
+
+    <Copy SourceFiles="$(TargetPath)"
+          DestinationFolder="%(FruktInstance.RootDir)%(FruktInstance.Directory)Mods" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(FruktModRefsDir)" />
+
+    <Message Importance="high"
+             Text="FruitLib -&gt; %(FruktInstance.RootDir)%(FruktInstance.Directory)Mods" />
+    <Message Importance="high" Text="FruitLib -&gt; $(FruktModRefsDir) (compile reference)" />
   </Target>
-  
+
 </Project>

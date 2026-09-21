@@ -5,7 +5,10 @@ namespace FruitLib
     public static class FruitVersion
     {
 
-        internal const string VersionConst = "2.1.0";
+        // 3.0.0 = the 0.14 port. Major bump because it is a breaking change twice over:
+        // it will not load on 0.1 at all, and FruitToolbar.Sfx is gone (the game field it
+        // read no longer exists). Mods gate on this with Require().
+        internal const string VersionConst = "3.0.0";
 
         public static string Current => VersionConst;
 

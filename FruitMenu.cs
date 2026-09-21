@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
+using Il2CppPresenters.Pause;
 using Il2CppViews.Pause;
 using MelonLoader;
 using UnityEngine;
@@ -23,6 +24,61 @@ namespace FruitLib
     }
 
     public enum ButtonKind { Toggle, Momentary }
+
+    /// <summary>
+    /// What to call a setting in the menu, when the field name is not what you would say
+    /// out loud.
+    ///
+    /// The field name still keys the ini file, so adding, changing or removing a label never
+    /// touches anyone's saved config.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field)]
+    public class MenuLabelAttribute : Attribute
+    {
+        public readonly string Text;
+        public MenuLabelAttribute(string text) => Text = text;
+    }
+
+    /// <summary>
+    /// The range a numeric field may take, so the mod menu can draw it as a slider.
+    ///
+    /// Without one FruitLib has to guess from the field's default, and a guess is usually
+    /// wrong in the direction that matters - a value you cannot reach. Declaring it costs a
+    /// line and is the difference between a slider that works and one that annoys.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field)]
+    public class MenuRangeAttribute : Attribute
+    {
+        public readonly float Min, Max;
+        public MenuRangeAttribute(float min, float max) { Min = min; Max = max; }
+    }
+
+    internal enum FruitFieldKind { Bool, Number, Key }
+
+    /// <summary>One config field, described in the terms a native control needs.</summary>
+    internal sealed class FruitField
+    {
+        internal FieldInfo       Field;
+        internal string          Label;
+        internal FruitFieldKind  Kind;
+        internal bool            IsInt;
+        internal float           Min, Max;
+        internal bool            RangeDeclared;
+
+        internal bool  GetBool()        => (bool)Field.GetValue(null);
+        internal void  SetBool(bool v)  => Field.SetValue(null, v);
+
+        internal float GetNumber() => IsInt ? (int)Field.GetValue(null) : (float)Field.GetValue(null);
+
+        internal KeyCode GetKey()        => (KeyCode)Field.GetValue(null);
+        internal void    SetKey(KeyCode k) => Field.SetValue(null, k);
+
+        internal void SetNumber(float v)
+        {
+            if (IsInt) Field.SetValue(null, Mathf.RoundToInt(v));
+            else       Field.SetValue(null, v);
+        }
+    }
 
     [AttributeUsage(AttributeTargets.Field)]
     public class MenuButtonAttribute : Attribute
@@ -49,11 +105,18 @@ namespace FruitLib
         public static bool BlocksGameplayInput => IsGamePaused || IsInputSuppressed;
 
         private static readonly List<GameObject> _hidden = new List<GameObject>();
-        internal static PauseViewController PauseVC;
+        internal static PauseView PauseVC;
 
         // ── Mod registry ──────────────────────────────────────────────────────
         private static readonly List<ModEntry> _mods = new List<ModEntry>();
         private static int _selectedMod;
+
+        /// <summary>What to call a field: its MenuLabel if it has one, otherwise its name.</summary>
+        internal static string LabelOf(FieldInfo f)
+        {
+            var label = (MenuLabelAttribute)Attribute.GetCustomAttribute(f, typeof(MenuLabelAttribute));
+            return string.IsNullOrEmpty(label?.Text) ? f.Name : label.Text;
+        }
 
         public static void Register(string displayName, string iniFilePath, Type configType)
         {
@@ -62,7 +125,7 @@ namespace FruitLib
         }
 
         // ── State transitions ─────────────────────────────────────────────────
-        internal static void OnPauseAlphaChanged(bool isPaused)
+        internal static void OnPauseStateChanged(bool isPaused)
         {
             IsGamePaused = isPaused;
             if (isPaused  && _state == MenuState.Closed) _state = MenuState.Button;
@@ -75,6 +138,75 @@ namespace FruitLib
             RestoreNativeUI();
             _state = MenuState.Closed;
         }
+
+        /// <summary>Opens the mod settings, for the native pause-menu button to call.</summary>
+        internal static void OpenFromNativeButton() => OpenSettings();
+
+        /// <summary>Whether the mod settings panel is the thing currently on screen.</summary>
+        internal static bool IsPanelOpen => _state == MenuState.Settings;
+
+        /// <summary>Registered mods, in the order the MODS screen lists them.</summary>
+        internal static IReadOnlyList<string> ModNames
+        {
+            get
+            {
+                var names = new List<string>(_mods.Count);
+                foreach (var m in _mods) names.Add(m.DisplayName);
+                return names;
+            }
+        }
+
+        /// <summary>
+        /// The fields of one mod that a native control can represent.
+        ///
+        /// Bools become toggles, numbers become sliders, key bindings become rows in a table.
+        /// What is left - free text, and the momentary bools that are really action buttons -
+        /// has no equivalent in this game's settings UI, so it stays reachable through the
+        /// IMGUI panel instead.
+        /// </summary>
+        internal static List<FruitField> NativeFields(int index, string category = null)
+        {
+            var result = new List<FruitField>();
+            if (index < 0 || index >= _mods.Count) return result;
+
+            _mods[index].DescribeFields(result, category);
+            return result;
+        }
+
+        /// <summary>
+        /// One mod's categories, in declaration order.
+        ///
+        /// A mod with one category gets no category page - there would be nothing to choose -
+        /// so its fields open directly, the way the game's own settings skip straight to the
+        /// resolution table rather than listing one entry.
+        /// </summary>
+        internal static List<string> Categories(int index) =>
+            index >= 0 && index < _mods.Count ? _mods[index].Categories() : new List<string>();
+
+        /// <summary>Writes one mod's config back to disk and tells its owner.</summary>
+        internal static void SaveMod(int index)
+        {
+            if (index >= 0 && index < _mods.Count) _mods[index].Save();
+        }
+
+        /// <summary>The display name of one mod.</summary>
+        internal static string ModName(int index) =>
+            index >= 0 && index < _mods.Count ? _mods[index].DisplayName : "MOD";
+
+        /// <summary>Opens the panel on one mod, for a MODS screen line to call.</summary>
+        internal static void OpenModPanel(int index)
+        {
+            if (index >= 0 && index < _mods.Count) _selectedMod = index;
+
+            // The panel deactivates the pause view, which is how a button that was under the
+            // pointer at the time ends up still lit when it comes back.
+            if (PauseVC != null) FruitMenuClone.ClearHover(PauseVC.gameObject);
+
+            OpenSettings();
+        }
+
+        /// <summary>Closes the panel back to the pause root, for ESC to call.</summary>
+        internal static void StepBackFromPanel() => CloseSettings();
 
         private static void OpenSettings()
         {
@@ -210,7 +342,11 @@ namespace FruitLib
             GUI.contentColor = Color.white;
             GUI.backgroundColor = Color.white;
 
-            if (_state == MenuState.Button) DrawToggleButton();
+            if (_state == MenuState.Button)
+            {
+                // Only when the pause menu would not take our button - see FruitMenuNative.
+                if (!FruitMenuNative.Present) DrawToggleButton();
+            }
             else DrawPanel();
 
             GUI.color        = savedColor;
@@ -218,6 +354,14 @@ namespace FruitLib
             GUI.backgroundColor = savedBg;
         }
 
+        /// <summary>
+        /// The corner button, drawn only when the native MODS entry could not be built.
+        ///
+        /// Kept rather than deleted because it is the one route to mod settings that depends
+        /// on nothing but IMGUI: if a future build moves the pause menu out from under
+        /// FruitMenuNative, this is what keeps every mod's config reachable until it is
+        /// ported.
+        /// </summary>
         private static void DrawToggleButton()
         {
             float s = Scale;
@@ -422,6 +566,71 @@ namespace FruitLib
                 _selectedCat = _catOrder.Count > 0 ? _catOrder[0] : "";
             }
 
+            /// <summary>
+            /// Fills <paramref name="into"/> with the fields a native control can draw.
+            ///
+            /// The range comes from a MenuRange attribute when the mod declares one. When it
+            /// does not, it is derived from the field's default rather than its current value
+            /// - deriving from the current value would make the range move as you drag, which
+            /// is unusable. The guess is deliberately generous, because a slider that cannot
+            /// reach a value is worse than one that is coarse.
+            /// </summary>
+            internal List<string> Categories() => new List<string>(_catOrder);
+
+            internal void DescribeFields(List<FruitField> into, string only = null)
+            {
+                foreach (var cat in _catOrder)
+                {
+                    if (only != null && cat != only) continue;
+                    if (!_cats.TryGetValue(cat, out var fields)) continue;
+
+                    foreach (var f in fields)
+                    {
+                        if (f.FieldType == typeof(bool))
+                        {
+                            // A momentary bool is a button press, not a setting; a toggle
+                            // would misrepresent it as state that sticks.
+                            var btn = (MenuButtonAttribute)Attribute.GetCustomAttribute(f, typeof(MenuButtonAttribute));
+                            if (btn?.Kind == ButtonKind.Momentary) continue;
+
+                            into.Add(new FruitField { Field = f, Label = LabelOf(f), Kind = FruitFieldKind.Bool });
+                            continue;
+                        }
+
+                        if (f.FieldType == typeof(KeyCode))
+                        {
+                            into.Add(new FruitField { Field = f, Label = LabelOf(f), Kind = FruitFieldKind.Key });
+                            continue;
+                        }
+
+                        bool isInt = f.FieldType == typeof(int);
+                        if (!isInt && f.FieldType != typeof(float)) continue;   // string, and the rest
+
+                        var range = (MenuRangeAttribute)Attribute.GetCustomAttribute(f, typeof(MenuRangeAttribute));
+                        float min, max;
+                        if (range != null) { min = range.Min; max = range.Max; }
+                        else DeriveRange(_defaults.TryGetValue(f, out var d) ? d : f.GetValue(null), isInt, out min, out max);
+
+                        into.Add(new FruitField
+                        {
+                            Field = f, Label = LabelOf(f), Kind = FruitFieldKind.Number,
+                            IsInt = isInt, Min = min, Max = max, RangeDeclared = range != null,
+                        });
+                    }
+                }
+            }
+
+            private static void DeriveRange(object def, bool isInt, out float min, out float max)
+            {
+                float d = def == null ? 0f : (isInt ? (int)def : (float)def);
+
+                if (d > 0f)      { min = 0f;       max = d * 4f; }
+                else if (d < 0f) { min = d * 2f;   max = -d * 2f; }
+                else             { min = 0f;       max = isInt ? 10f : 1f; }
+            }
+
+            internal void Save() => WriteIni();
+
             public void ResetToDefaults()
             {
                 foreach (var kvp in _defaults)
@@ -525,7 +734,7 @@ namespace FruitLib
 
                     // Field name — vertically centred
                     GUI.Label(new UnityEngine.Rect(labelX, fy, labelW, ROW),
-                              f.Name, FieldLabelStyle());
+                              LabelOf(f), FieldLabelStyle());
 
                     // ── bool ─────────────────────────────────────────────────
                     if (f.FieldType == typeof(bool))
@@ -897,7 +1106,7 @@ namespace FruitLib
     // ── MelonMod entry point ──────────────────────────────────────────────────
     public class FruitLibMod : MelonMod
     {
-        private PauseViewController _pauseVC;
+        private PauseView _pauseVC;
         private int _pollCountdown;
         private bool _wasMenuOpen;
 
@@ -913,23 +1122,52 @@ namespace FruitLib
             LoggerInstance.Msg($"FruitLib v{FruitVersion.Current} ready.");
         }
 
+        /// <summary>
+        /// Per-subsystem so that one of them throwing does not take the rest down with it.
+        ///
+        /// These all hang off a single OnUpdate, so an exception out of the first one used to
+        /// mean the pause menu was never polled, the MODS button was never built and the
+        /// settings were unreachable - a toolbar bug reading as a menu bug. The names are the
+        /// subsystems rather than a blanket try, so the log says which one is failing.
+        /// </summary>
+        private static readonly HashSet<string> _reportedTickFailures = new HashSet<string>();
+
+        private static void Safely(string subsystem, Action tick)
+        {
+            try { tick(); }
+            catch (Exception e)
+            {
+                // Once each. This is a per-frame path, so a repeated failure would otherwise
+                // fill the log faster than anything else could be read in it.
+                if (_reportedTickFailures.Add(subsystem))
+                    MelonLogger.Warning($"[FruitLib] {subsystem} threw during update; the other " +
+                                        $"subsystems carry on and this is reported once per scene: {e}");
+            }
+        }
+
         public override void OnUpdate()
         {
-            FruitPerfMon.Tick();
-            FruitHud.Tick();
-            FruitToolbar.Tick();
+            Safely("FruitPerfMon", FruitPerfMon.Tick);
+            Safely("FruitHud",     FruitHud.Tick);
+            Safely("FruitToolbar", FruitToolbar.Tick);
+            Safely("FruitMenu",    PauseTick);
+        }
 
+        private void PauseTick()
+        {
             if (_pauseVC == null)
             {
                 if (--_pollCountdown > 0) return;
                 _pollCountdown = 60;
-                _pauseVC = UnityEngine.Object.FindObjectOfType<PauseViewController>(true);
+                _pauseVC = FruitScene.First<PauseView>();
                 FruitMenu.PauseVC = _pauseVC;
                 return;
             }
 
-            var group = _pauseVC.m_group;
-            FruitMenu.OnPauseAlphaChanged(group != null && group.alpha > 0.5f);
+            FruitMenuNative.Tick(_pauseVC);
+            FruitMenuScreen.Tick(_pauseVC);
+            FruitMenuProbe.Tick(_pauseVC);
+            FruitMenu.OnPauseStateChanged(_pauseVC.IsOpen);
 
             bool isNowOpen = FruitMenu.IsOpen;
             FruitMenu.JustClosed = _wasMenuOpen && !isNowOpen;
@@ -943,10 +1181,19 @@ namespace FruitLib
             _pauseVC      = null;
             _pollCountdown = 0;
             FruitMenu.PauseVC = null;
+            _reportedTickFailures.Clear();
+            FruitMenuProbe.ResetForScene();
+            FruitMenuScreen.ResetForScene();
+            FruitMenuNative.ResetForScene();
             FruitToolbar.ResetForScene();
         }
 
-        [HarmonyPatch(typeof(PauseViewController), nameof(PauseViewController.dtz))]
+        // The pause menu was rebuilt for the Steam demo build. PauseView no longer
+        // raises anything itself - it is a dumb view that owns a ManagedEvent per
+        // button, and PausePresenter is what turns the Continue click into an
+        // unpause. RequestUnpause is that handler, so it is the 1:1 successor to
+        // 0.14's PauseView.RaiseContinueRequested: Continue only, not Esc.
+        [HarmonyPatch(typeof(PausePresenter), nameof(PausePresenter.RequestUnpause))]
         static class Patch_PauseResume
         {
             static void Prefix() => FruitMenu.OnGameResumed();

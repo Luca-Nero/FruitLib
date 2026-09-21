@@ -4,7 +4,7 @@
 `Mesh` objects. It exists so mods can ship custom models without asset bundles.
 
 The file schema, and how to embed one, are documented in
-[`../MESH_FORMAT.md`](../MESH_FORMAT.md). This page covers the API.
+[`../MESH_FORMAT.md`](MESH_FORMAT.md). This page covers the API.
 
 ## Loading
 
