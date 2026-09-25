@@ -9,7 +9,7 @@ models, shaders and decals through Unity AssetBundles.
 FruitLib is itself a MelonMod. Your mod references it at build time and expects
 it in the `Mods` folder at runtime.
 
-**Current version: 3.2.0**. It runs on FRUKT 0.14 and later (tested on 0.17L); 3.x will not load on 0.1.
+**Current version: 4.0.0**.
 
 ## Guides
 
@@ -23,7 +23,6 @@ it in the `Mods` folder at runtime.
 | [Sound](sound.md) | The game's own sound effects, and its interface sounds |
 | [Ballistics](ballistics.md) | Projectiles and explosions through the game's wound model, multiplayer-ready (3.1.0) |
 | [AssetBundles](BUNDLES.md) | Custom models, shaders, animation and decals built in the Unity editor (3.2.0) |
-| [Unity editor walkthrough](EDITOR_WALKTHROUGH.md) | Building bundles click by click, for people who have never opened Unity |
 | [Utilities](utilities.md) | `FruitPaths`, `FruitScene`, `FruitForces`, `FruitUpdateCheck` |
 | [Meshes](meshes.md) | The older `*_mesh.json` loader (schema in [`MESH_FORMAT.md`](MESH_FORMAT.md)). Prefer bundles for new work |
 
