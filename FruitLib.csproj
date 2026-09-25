@@ -45,7 +45,11 @@
     <FruktInstance Include="$(FruktBuildsRoot)\**\FRUKT.exe"/>
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <!-- Deploy is local only. GitHub Actions sets GITHUB_ACTIONS=true and the runner has no FRUKT
+       install; SkipDeploy=true skips it by hand (e.g. a scratch build that must not touch
+       the live game or ModRefs). -->
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent"
+          Condition="'$(GITHUB_ACTIONS)' != 'true' And '$(SkipDeploy)' != 'true'">
     <Error Condition="'@(FruktInstance)' == ''"
            Text="No FRUKT instance found under '$(FruktBuildsRoot)'. Expected at least one FRUKT.exe. Set FruktBuildsRoot if the builds live elsewhere." />
     <Error Condition="!Exists('$(FruktModRefsDir)')"
