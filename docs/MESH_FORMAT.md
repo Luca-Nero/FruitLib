@@ -1,5 +1,7 @@
 # FruitLib mesh format
 
+> Older path. New models should ship as [AssetBundles](BUNDLES.md); see [meshes.md](meshes.md).
+
 `FruitLib.FruitMeshLibrary` loads embedded `*_mesh.json` resources into Unity
 `Mesh` objects. This is the schema it expects, and how to embed and load one from
 your own mod.
@@ -18,11 +20,7 @@ your own mod.
 }
 ```
 
-- `verts` 
-- 
-- 
-- 
-- required. Flat list of `[x, y, z]` vertex positions.
+- `verts` -> required. Flat list of `[x, y, z]` vertex positions.
 - `normals` -> optional (`[]` is fine). If omitted, `Mesh.RecalculateNormals()` fills it in.
 - `uvs` -> optional (`[]` is fine).
 - `tris` -> required. Flat triangle index list (three indices per triangle).
@@ -87,10 +85,10 @@ library can't default to `FruitLib`'s own assembly so always pass
 
 ## Why not a real JSON/YAML library
 
-`Newtonsoft.Json` is referenced in `Directory.Build.props` but deliberately unused
-anywhere in this repo and bundling a JSON/YAML library into a MelonLoader mod risks
-version-conflicting with whatever copy the host game's IL2CPP runtime already has
-loaded. `FruitMeshLibrary` uses a small hand-rolled parser instead, scoped to
+`Il2CppNewtonsoft.Json` (the game's own copy) is referenced in `Directory.Build.props`
+but deliberately unused anywhere in FruitLib, and bundling a JSON/YAML library into a
+MelonLoader mod risks version-conflicting with whatever copy the host game's IL2CPP
+runtime already has loaded. `FruitMeshLibrary` uses a small hand-rolled parser instead, scoped to
 exactly this schema. If you need a JSON format `FruitMeshLibrary` doesn't cover,
 extend `FruitMeshJson` in `FruitMeshLoader.cs` rather than pulling in a general
 parser.

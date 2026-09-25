@@ -9,6 +9,7 @@ using Il2CppEffectors.Types;
 using Il2CppInterop.Runtime;
 using Il2CppLVA.Organs.EffectorsPerception.Collectors;
 using Il2CppSpawnables.Bullets;
+using Il2CppSpawnables.Wounds;
 using Il2CppVoxelMeshGeneration;
 using Il2CppVoxelMeshGeneration.Tools;
 using MelonLoader;
@@ -30,7 +31,8 @@ namespace FruitLib
     ///   and the cavitation envelope. The dnSpy export only has stubs, so this is the only
     ///   place the numbers come from short of Ghidra.
     ///
-    /// - <b>Native shot trace</b>, passive: patches on Bullet log power on entry and exit,
+    /// - <b>Native shot trace</b>, passive: patches on Bullet and its BodyWoundWalker log
+    ///   power on entry and exit,
     ///   the channel it walked, and the exit tear it chose. Fire the game's pistol at a body
     ///   and this is the reference every FruitLib projectile gets calibrated against.
     ///
@@ -235,9 +237,11 @@ namespace FruitLib
 
             sb.AppendLine("  Bullet (shared)");
             Row(sb, "MAX_LIFETIME",              () => Bullet.MAX_LIFETIME);
-            Row(sb, "MIN_ENTRY_COSINE",          () => Bullet.MIN_ENTRY_COSINE);
             Row(sb, "SELF_DESTRUCT_POWER_RATIO", () => Bullet.SELF_DESTRUCT_POWER_RATIO);
             Row(sb, "HEADING_EPSILON",           () => Bullet.HEADING_EPSILON);
+
+            sb.AppendLine("  BodyWoundWalker (shared)");
+            Row(sb, "MIN_ENTRY_COSINE",          () => BodyWoundWalker.MIN_ENTRY_COSINE);
 
             sb.AppendLine("  calibre                   9mm        7.62");
             Pair(sb, "INITIAL_POWER",         () => Bullet9mm.INITIAL_POWER,         () => Bullet762.INITIAL_POWER);
@@ -310,29 +314,38 @@ namespace FruitLib
             if (_patchTried) return;
             _patchTried = true;
 
+            // Since the release the wound layers are sent by the round's BodyWoundWalker, not
+            // by Bullet, and the body exit / stop handlers take the walk's BodyWalkResult.
             var harmony = new HarmonyLib.Harmony("FruitLib.Debug.BallisticsProbe");
-            Patch(harmony, nameof(Bullet.OnCollisionEnter),     nameof(HitPrefix), nameof(HitPostfix));
-            Patch(harmony, nameof(Bullet.SendCavitation),       null, nameof(CavitationPostfix));
-            Patch(harmony, nameof(Bullet.SendExitTear),         null, nameof(ExitTearPostfix));
-            Patch(harmony, nameof(Bullet.HandleBodyExit),       null, nameof(BodyExitPostfix));
-            Patch(harmony, nameof(Bullet.HandlePowerExhausted), null, nameof(PowerExhaustedPostfix));
+            Patch(harmony, typeof(Bullet),          nameof(Bullet.OnCollisionEnter),        nameof(HitPrefix), nameof(HitPostfix));
+            Patch(harmony, typeof(BodyWoundWalker), nameof(BodyWoundWalker.SendCavitation), null, nameof(CavitationPostfix));
+            Patch(harmony, typeof(BodyWoundWalker), nameof(BodyWoundWalker.SendExitTear),   null, nameof(ExitTearPostfix));
+            Patch(harmony, typeof(Bullet),          nameof(Bullet.HandleBodyExit),          null, nameof(BodyExitPostfix));
+            Patch(harmony, typeof(Bullet),          nameof(Bullet.HandlePowerExhausted),    null, nameof(PowerExhaustedPostfix));
         }
 
-        private static void Patch(HarmonyLib.Harmony harmony, string method, string prefix, string postfix)
+        private static void Patch(HarmonyLib.Harmony harmony, Type type, string method, string prefix, string postfix)
         {
             try
             {
-                var target = AccessTools.Method(typeof(Bullet), method);
-                if (target == null) { MelonLogger.Warning($"{Tag} Bullet.{method} not found; not traced"); return; }
+                var target = AccessTools.Method(type, method);
+                if (target == null) { MelonLogger.Warning($"{Tag} {type.Name}.{method} not found; not traced"); return; }
 
                 harmony.Patch(target,
                     prefix:  prefix  == null ? null : new HarmonyMethod(typeof(FruitBallisticsProbe), prefix),
                     postfix: postfix == null ? null : new HarmonyMethod(typeof(FruitBallisticsProbe), postfix));
             }
-            catch (Exception e) { MelonLogger.Warning($"{Tag} could not patch Bullet.{method}: {e.Message}"); }
+            catch (Exception e) { MelonLogger.Warning($"{Tag} could not patch {type.Name}.{method}: {e.Message}"); }
         }
 
         private static string Id(Bullet b) => $"{Calibre(b)}#{b.GetInstanceID()}";
+
+        /// <summary>Each round owns its walker (Bullet.OnAwake builds it), so the walker's
+        /// postfixes find their round through this, filled on every hit.</summary>
+        private static readonly Dictionary<IntPtr, string> _roundOfWalker = new Dictionary<IntPtr, string>();
+
+        private static string Id(BodyWoundWalker w) =>
+            w != null && _roundOfWalker.TryGetValue(w.Pointer, out var id) ? id : "walker";
 
         private static string Calibre(Bullet b) =>
             b.TryCast<Bullet762>() != null ? "7.62" :
@@ -341,7 +354,13 @@ namespace FruitLib
         private static void HitPrefix(Bullet __instance)
         {
             if (!Enabled || __instance == null) return;
-            try { _powerAtEntry[__instance.Pointer] = __instance.m_currentPower; } catch { }
+            try
+            {
+                _powerAtEntry[__instance.Pointer] = __instance.m_currentPower;
+                var walker = __instance.m_walker;
+                if (walker != null) _roundOfWalker[walker.Pointer] = Id(__instance);
+            }
+            catch { }
         }
 
         private static void HitPostfix(Bullet __instance, Collision collision)
@@ -364,30 +383,39 @@ namespace FruitLib
             catch (Exception e) { MelonLogger.Warning($"{Tag} hit trace failed: {e.Message}"); }
         }
 
-        private static void CavitationPostfix(Bullet __instance, BulletChannel channel)
+        private static void CavitationPostfix(BodyWoundWalker __instance, BulletChannel channel)
         {
             if (!Enabled || __instance == null) return;
             MelonLogger.Msg($"{Tag} {Id(__instance)} cavitation: {DescribeChannel(channel)}");
         }
 
-        private static void ExitTearPostfix(Bullet __instance, BulletChannel channel, float leftoverPowerRatio)
+        private static void ExitTearPostfix(BodyWoundWalker __instance, BulletChannel channel, float leftoverPowerRatio)
         {
             if (!Enabled || __instance == null) return;
             MelonLogger.Msg($"{Tag} {Id(__instance)} exit tear: leftover ratio {leftoverPowerRatio:0.###}, " +
                             DescribeChannel(channel));
         }
 
-        private static void BodyExitPostfix(Bullet __instance, BulletChannel channel, int leftoverPower)
+        private static void BodyExitPostfix(Bullet __instance, BodyWalkResult walk)
         {
-            if (!Enabled || __instance == null) return;
-            MelonLogger.Msg($"{Tag} {Id(__instance)} left the body with {leftoverPower} power, " +
-                            DescribeChannel(channel));
+            if (!Enabled || __instance == null || walk == null) return;
+            try
+            {
+                MelonLogger.Msg($"{Tag} {Id(__instance)} left the body with {walk.LeftoverPower} power " +
+                                $"(entered with {walk.PowerOnEntry}), " + DescribeChannel(walk.Channel));
+            }
+            catch (Exception e) { MelonLogger.Warning($"{Tag} body exit trace failed: {e.Message}"); }
         }
 
-        private static void PowerExhaustedPostfix(Bullet __instance, BulletChannel channel)
+        private static void PowerExhaustedPostfix(Bullet __instance, BodyWalkResult walk)
         {
-            if (!Enabled || __instance == null) return;
-            MelonLogger.Msg($"{Tag} {Id(__instance)} stopped inside the body, " + DescribeChannel(channel));
+            if (!Enabled || __instance == null || walk == null) return;
+            try
+            {
+                MelonLogger.Msg($"{Tag} {Id(__instance)} stopped inside the body " +
+                                $"(entered with {walk.PowerOnEntry}), " + DescribeChannel(walk.Channel));
+            }
+            catch (Exception e) { MelonLogger.Warning($"{Tag} power exhausted trace failed: {e.Message}"); }
         }
 
         private static string DescribeChannel(BulletChannel channel)
@@ -669,7 +697,7 @@ namespace FruitLib
 
                 // GetCleanEntrySteps: CleanEntryDepth, stretched for an oblique entry and for a
                 // diagonal path (which crosses voxels faster than an axis-aligned one).
-                float cos    = Mathf.Max(Mathf.Abs(Vector3.Dot(normal, dir)), Bullet.MIN_ENTRY_COSINE);
+                float cos    = Mathf.Max(Mathf.Abs(Vector3.Dot(normal, dir)), BodyWoundWalker.MIN_ENTRY_COSINE);
                 float maxAbs = Mathf.Max(Mathf.Abs(dir.x), Mathf.Max(Mathf.Abs(dir.y), Mathf.Abs(dir.z)));
                 int   clean  = Mathf.RoundToInt(Bullet762.CLEAN_ENTRY_DEPTH / (cos / maxAbs));
 
@@ -679,6 +707,7 @@ namespace FruitLib
                 int   power       = initial;
 
                 var channel = new BulletChannel(dir, clean, path.Count);
+                var hit     = NextProbeHit();   // one shot: every layer carries the same hit
                 var result  = new IndexEffectorSignalsList(64, false);
                 var visited = new HashSet<int3>();
                 var spend   = new StringBuilder();
@@ -728,7 +757,7 @@ namespace FruitLib
                                   (ratio < Bullet.SELF_DESTRUCT_POWER_RATIO ? ", and then self-destruct (below SELF_DESTRUCT_POWER_RATIO)" : ""));
 
                 // SendWoundLayers, in the game's order.
-                var crushHandler = new IndexEffectorSignalsHandler<Destruction>(result, new IndexEffectorDescription(dir));
+                var crushHandler = new IndexEffectorSignalsHandler<Destruction>(result, new IndexEffectorDescription(dir, hit));
                 limb.Receive(crushHandler);
                 sb.AppendLine($"    crush layer: {visited.Count} voxel(s) signalled");
 
@@ -736,7 +765,7 @@ namespace FruitLib
                 {
                     var tear = BulletWoundEffectorSignalsSamples.ExitTear(
                         channel.Exit, Bullet762.TEAR_MIN_RADIUS, Bullet762.TEAR_MAX_RADIUS,
-                        Bullet762.EXIT_TEAR_DAMAGE, ratio, dir);
+                        Bullet762.EXIT_TEAR_DAMAGE, ratio, dir, hit);
                     bool okTear = limb.TryReceive(tear, out IReadOnlyIndexEffectorFeedbacksHandler fbTear);
                     sb.AppendLine($"    exit tear -> {okTear}: {Describe(fbTear)}");
                 }
@@ -745,12 +774,26 @@ namespace FruitLib
                 {
                     var cav = BulletWoundEffectorSignalsSamples.Cavitation(
                         channel.Steps, channel.CleanEntrySteps,
-                        Bullet762.CAVITATION_PEAK_RADIUS, Bullet762.CAVITATION_DAMAGE, dir);
+                        Bullet762.CAVITATION_PEAK_RADIUS, Bullet762.CAVITATION_DAMAGE, dir, hit);
                     bool okCav = limb.TryReceive(cav, out IReadOnlyIndexEffectorFeedbacksHandler fbCav);
                     sb.AppendLine($"    cavitation -> {okCav}: {Describe(fbCav)}");
                 }
             }
             catch (Exception e) { sb.AppendLine($"    replica threw: {e}"); }
+        }
+
+        private static Il2CppSystem.Object _probeSource;
+        private static int _probeShots;
+
+        /// <summary>
+        /// The game stamps a shot's layers with EffectorHit(launcher, shot); pain reuses its
+        /// anchor for a repeated hit and never matches one with a null Source. The replica has
+        /// no launcher, so a sentinel of its own stands in (FruitWounds does the same).
+        /// </summary>
+        private static EffectorHit NextProbeHit()
+        {
+            if (_probeSource == null) _probeSource = new Il2CppSystem.Object();
+            return new EffectorHit(_probeSource, ++_probeShots);
         }
 
         private static readonly List<int3> FaceNeighbours = new List<int3>
@@ -761,10 +804,11 @@ namespace FruitLib
         };
 
         /// <summary>
-        /// The crush and spread shapes a live 7.62 was given by the voxel shapes provider. They
-        /// are built in OnAwake, so only a round that has been fired at least once has them -
-        /// the pooled prefab does not. Null when none is found; the caller falls back to a
-        /// single voxel and the six face neighbours, and says so.
+        /// The crush and spread shapes a live 7.62 was given by the voxel shapes provider. Since
+        /// the release they sit on the round's BodyWoundWalker, which fetches them when it takes
+        /// its wound dials, so only a round that has been fired at least once has them - the
+        /// pooled prefab does not. Null when none is found; the caller falls back to a single
+        /// voxel and the six face neighbours, and says so.
         /// </summary>
         private static (List<int3> crush, List<int3> spread) NativeOffsets(StringBuilder sb)
         {
@@ -772,9 +816,10 @@ namespace FruitLib
             {
                 foreach (var b in Resources.FindObjectsOfTypeAll<Bullet762>())
                 {
-                    if (b == null || b.m_crushOffsets == null || b.m_spreadOffsets == null) continue;
-                    var crush  = ReadOffsets(b.m_crushOffsets);
-                    var spread = ReadOffsets(b.m_spreadOffsets);
+                    var w = b != null ? b.m_walker : null;
+                    if (w == null || w.m_crushOffsets == null || w.m_spreadOffsets == null) continue;
+                    var crush  = ReadOffsets(w.m_crushOffsets);
+                    var spread = ReadOffsets(w.m_spreadOffsets);
                     sb.AppendLine($"    offsets from a live 7.62: crush {Format(crush)}, spread {Format(spread)}");
                     return (crush, spread);
                 }

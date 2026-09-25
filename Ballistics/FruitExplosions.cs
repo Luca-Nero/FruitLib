@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Il2CppEffectors;
+using Il2CppEffectors.ReceiveMethods.Index;
 using MelonLoader;
 using UnityEngine;
 
@@ -36,6 +37,8 @@ namespace FruitLib
             Vector3 origin  = cmd.Origin;
             Vector3 forward = cmd.Direction.sqrMagnitude > 0f ? cmd.Direction.normalized : Vector3.up;
             var rng = new System.Random(cmd.Seed);
+            // One shot, however many fragments: the game's shotgun pellets share theirs too.
+            var shot = FruitWounds.NextBlastHit();
 
             float quality = s.AdaptiveQuality
                 ? Mathf.Lerp(1f, Mathf.Clamp01(s.MinQuality), FruitPerfMon.PressureLevel)
@@ -46,7 +49,7 @@ namespace FruitLib
             if (!cosmetic) Shockwave(s, origin, forward);
 
             int budget = Mathf.Max(1, Mathf.RoundToInt(s.MaxWounds * quality));
-            if (!cosmetic) budget = Overpressure(s, origin, forward, quality, budget, rng);
+            if (!cosmetic) budget = Overpressure(s, origin, forward, quality, budget, shot, rng);
 
             bool hasGround = Physics.Raycast(origin, Vector3.down, out RaycastHit ground, 200f, s.LayerMask, QueryTriggerInteraction.Ignore);
             FruitBallistics.RaiseExploded(new ExplosionInfo
@@ -55,7 +58,7 @@ namespace FruitLib
                 HasGround = hasGround, Ground = ground, Cosmetic = cosmetic,
             });
 
-            Fragments(s, origin, forward, hasGround ? ground.point.y : origin.y - 50f, quality, budget, rng, cosmetic);
+            Fragments(s, origin, forward, hasGround ? ground.point.y : origin.y - 50f, quality, budget, shot, rng, cosmetic);
 
             // Last, so no wound is measured against a body that has already been thrown.
             if (!cosmetic)
@@ -85,7 +88,8 @@ namespace FruitLib
 
         // ── Overpressure ─────────────────────────────────────────────────────────
 
-        private static int Overpressure(ExplosionSpec s, Vector3 origin, Vector3 forward, float quality, int budget, System.Random rng)
+        private static int Overpressure(ExplosionSpec s, Vector3 origin, Vector3 forward, float quality, int budget,
+                                        EffectorHit shot, System.Random rng)
         {
             if (s.OverpressureRadius <= 0f || s.OverpressurePoints <= 0) return budget;
 
@@ -130,7 +134,7 @@ namespace FruitLib
                     // Into the limb from where the cast met it - the side facing away from the
                     // charge gets hurt less through scale, not skipped.
                     FruitWounds.Burst(limb, hit.point, dir, radius,
-                                      s.OverpressureDamage * scale * s.DamageScale, scale, rng);
+                                      s.OverpressureDamage * scale * s.DamageScale, scale, shot, rng);
                     budget--;
                 }
             }
@@ -140,7 +144,7 @@ namespace FruitLib
         // ── Fragments ────────────────────────────────────────────────────────────
 
         private static void Fragments(ExplosionSpec s, Vector3 origin, Vector3 forward, float groundY,
-                                      float quality, int budget, System.Random rng, bool cosmetic)
+                                      float quality, int budget, EffectorHit shot, System.Random rng, bool cosmetic)
         {
             int rays = Mathf.Max(1, Mathf.RoundToInt(s.FragCount * quality));
             float golden = Mathf.PI * (3f - Mathf.Sqrt(5f));
@@ -206,7 +210,7 @@ namespace FruitLib
                 if (power < 1) continue;
 
                 var res = FruitWounds.Channel(limb, rb, hit.point, hit.normal, dir, power, s.FragPower,
-                                              s.FragWound, rng, firstBody: true, cosmetic: false);
+                                              s.FragWound, shot, rng, firstBody: true, cosmetic: false);
                 budget--;
 
                 if (res.Touched)

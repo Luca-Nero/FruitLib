@@ -78,6 +78,20 @@ namespace FruitLib
             }
         }
 
+        /// <summary>
+        /// The service as the interface GodInventoryItem hands out. FruitInventory's held item
+        /// has to answer SfxPlayerService like every native item does; null until the cursor
+        /// tool exists, which is fine because nothing asks before an item is in hand.
+        /// </summary>
+        internal static Il2CppServices.Audio.ISFXPlayerService AsInterface
+        {
+            get
+            {
+                var impl = Impl;
+                return impl == null ? null : new Il2CppServices.Audio.ISFXPlayerService(impl.Pointer);
+            }
+        }
+
         // ── FAudioResource: what the handlers actually hold ───────────────────────
 
         /// <summary>

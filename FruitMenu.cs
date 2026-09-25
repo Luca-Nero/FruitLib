@@ -1112,7 +1112,12 @@ namespace FruitLib
 
         public override void OnInitializeMelon()
         {
-            HarmonyInstance.PatchAll();
+            // No HarmonyInstance.PatchAll() here. MelonLoader already patches every mod assembly
+            // unless it is marked [HarmonyDontPatchAll], so calling it again installed every hook
+            // twice: each prefix and postfix ran twice, and each native method was detoured a
+            // second time. That went unnoticed while the hooks were the toolbar's, which rarely
+            // fired. The release build's equip path runs through six of them on every equip, and
+            // intermittent memory-protection crashes started exactly there.
 
             FruitHud.Init();
             FruitPerfMon.RegisterPanel();
@@ -1149,10 +1154,11 @@ namespace FruitLib
         {
             Safely("FruitPerfMon", FruitPerfMon.Tick);
             Safely("FruitHud",     FruitHud.Tick);
-            Safely("FruitToolbar", FruitToolbar.Tick);
+            Safely("FruitInventory", FruitInventory.Tick);
             Safely("FruitMenu",    PauseTick);
             Safely("FruitBallistics",      FruitBallistics.Tick);
             Safely("FruitBallisticsProbe", FruitBallisticsProbe.Tick);
+            Safely("FruitBundleProbe",     FruitBundleProbe.Tick);
         }
 
         private void PauseTick()
@@ -1187,9 +1193,10 @@ namespace FruitLib
             FruitMenuProbe.ResetForScene();
             FruitBallistics.ResetForScene();
             FruitBallisticsProbe.ResetForScene();
+            FruitBundleTests.ResetForScene();
             FruitMenuScreen.ResetForScene();
             FruitMenuNative.ResetForScene();
-            FruitToolbar.ResetForScene();
+            FruitInventory.ResetForScene();
         }
 
         // The pause menu was rebuilt for the Steam demo build. PauseView no longer

@@ -144,7 +144,8 @@ namespace FruitLib
 
             int powerIn = r.Power;
             var res = FruitWounds.Channel(limb, body, hit.point, hit.normal, dir, powerIn, r.MuzzlePower,
-                                          s.Wound, r.Rng, firstBody: !r.WalkedBody, cosmetic: r.Cosmetic);
+                                          s.Wound, FruitWounds.RoundHit(r.Id), r.Rng,
+                                          firstBody: !r.WalkedBody, cosmetic: r.Cosmetic);
 
             if (!res.Touched)
             {

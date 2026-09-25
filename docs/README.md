@@ -2,13 +2,14 @@
 
 Shared library for FRUKT mods running under MelonLoader. It provides the things
 every mod ends up needing and nobody wants to write twice: a settings menu built
-from the game's own controls, a HUD, a performance overlay, a mesh loader, the
-game's sound effects, and extra toolbar slots.
+from the game's own controls, a HUD, a performance overlay, custom inventory items,
+the game's sound effects, shared ballistics on the game's wound model, and custom
+models, shaders and decals through Unity AssetBundles.
 
 FruitLib is itself a MelonMod. Your mod references it at build time and expects
 it in the `Mods` folder at runtime.
 
-**Current version: 3.0.0**
+**Current version: 3.2.0**. It runs on FRUKT 0.14 and later (tested on 0.17L); 3.x will not load on 0.1.
 
 ## Guides
 
@@ -17,11 +18,14 @@ it in the `Mods` folder at runtime.
 | [Config & menu](config-and-menu.md) | Config classes, the in-game settings tab, ini files, input gating |
 | [HUD](hud.md) | On-screen readouts, stacked and positioned for you |
 | [Performance monitor](perfmon.md) | Live counters and timing sections |
-| [Meshes](meshes.md) | Loading embedded `*_mesh.json` models |
+| [Inventory](inventory.md) | Custom items in the inventory window, by category |
+| [Toolbar](toolbar.md) | Superseded by the inventory; migration notes |
 | [Sound](sound.md) | The game's own sound effects, and its interface sounds |
-| [Toolbar](toolbar.md) | Extra native toolbar slots |
-
-The mesh file schema itself lives in [`../MESH_FORMAT.md`](MESH_FORMAT.md).
+| [Ballistics](ballistics.md) | Projectiles and explosions through the game's wound model, multiplayer-ready (3.1.0) |
+| [AssetBundles](BUNDLES.md) | Custom models, shaders, animation and decals built in the Unity editor (3.2.0) |
+| [Unity editor walkthrough](EDITOR_WALKTHROUGH.md) | Building bundles click by click, for people who have never opened Unity |
+| [Utilities](utilities.md) | `FruitPaths`, `FruitScene`, `FruitForces`, `FruitUpdateCheck` |
+| [Meshes](meshes.md) | The older `*_mesh.json` loader (schema in [`MESH_FORMAT.md`](MESH_FORMAT.md)). Prefer bundles for new work |
 
 ## Setup
 
@@ -158,9 +162,22 @@ falls back to FruitLib's own panel and why.
 
 ## Where files land
 
-FruitLib and mod ini files sit next to the DLLs, in the game's `Mods` folder.
-FruitLib's own settings are in `FruitLibConfig.ini`, editable in-game under the
-**FruitLib** tab.
+Ini files live in MelonLoader's `UserData` folder, not next to the DLLs: `Mods`
+stays a folder of mods, and settings survive a reinstall. Build your path with
+[`FruitPaths.Config`](utilities.md#fruitpaths), which also moves a file an older
+build of your mod left beside its DLL. FruitLib's own settings are in
+`UserData/FruitLibConfig.ini`, editable in-game on FruitLib's page under **MODS**.
+Bundles for testing go in `UserData/FruitBundles`.
+
+## Keys FruitLib binds
+
+Avoid these in your own defaults (all rebindable by the player):
+
+| Key | What | Default state |
+|---|---|---|
+| F8 | Hide / show all mod HUD panels | on |
+| F11 | Performance overlay (**R** resets peaks while it's up) | on |
+| F6 / F7 / F10 | Ballistics / menu / bundle diagnostics | only when their `*Probe` setting is on |
 
 ## Conventions worth matching
 

@@ -6,6 +6,7 @@ using Il2CppEffectors.Types;
 using Il2CppInterop.Runtime;
 using Il2CppLVA.Organs.EffectorsPerception.Collectors;
 using Il2CppSpawnables.Bullets;
+using Il2CppSpawnables.Wounds;
 using Il2CppVoxelMeshGeneration;
 using Il2CppVoxelMeshGeneration.Tools;
 using MelonLoader;
@@ -17,7 +18,8 @@ namespace FruitLib
     /// <summary>
     /// The game's bullet wound, driven from outside the game's bullet.
     ///
-    /// This is Bullet.WalkThroughBody and Bullet.SendWoundLayers (v0_17L) re-expressed:
+    /// This is BodyWoundWalker.WalkThroughBody and SendWoundLayers re-expressed (the release
+    /// moved them out of Bullet, where v0_17L had them):
     ///
     /// 1. Step through the limb's voxels along the path with the game's own VoxelRayStepper.
     ///    It yields only voxels that are still there, so an existing wound is crossed free.
@@ -82,6 +84,35 @@ namespace FruitLib
         internal static Rigidbody BodyOf(Collider c) =>
             c == null ? null : (c.attachedRigidbody != null ? c.attachedRigidbody : c.GetComponentInParent<Rigidbody>());
 
+        // ── Hits ─────────────────────────────────────────────────────────────────
+        //
+        // Since the release every wound signal carries an EffectorHit (Source, Number). The
+        // game's bullet stamps all of one shot's layers - crush, exit tear, cavitation - with
+        // EffectorHit(launcher, shot): the ShotBus that fired it and the number ShotBus.Open
+        // handed out, which every pellet of a shotgun shot shares. Pain reads it: an organ
+        // that sees the same hit again reuses the pain anchor it already chose instead of
+        // picking a new one per layer. EffectorHit.Equals is false whenever Source is null,
+        // so EffectorHit.None would make every layer look like a fresh hit.
+        //
+        // FruitLib has no launcher object, so one sentinel per kind stands in for it. A
+        // round is one shot; a detonation is one shot and its fragments are its rounds.
+
+        private static Il2CppSystem.Object _roundSource;
+        private static Il2CppSystem.Object _blastSource;
+        private static int _blasts;
+
+        internal static EffectorHit RoundHit(int roundId)
+        {
+            if (_roundSource == null) _roundSource = new Il2CppSystem.Object();
+            return new EffectorHit(_roundSource, roundId);
+        }
+
+        internal static EffectorHit NextBlastHit()
+        {
+            if (_blastSource == null) _blastSource = new Il2CppSystem.Object();
+            return new EffectorHit(_blastSource, ++_blasts);
+        }
+
         // ── Shapes ───────────────────────────────────────────────────────────────
 
         private static readonly Dictionary<int, List<int3>> _spheres = new Dictionary<int, List<int3>>();
@@ -114,9 +145,11 @@ namespace FruitLib
         private static float _nextSpreadLookup;
 
         /// <summary>
-        /// The spread shape the game gives its own rounds, once one has been fired this scene -
-        /// the voxel shapes provider hands it out in OnAwake, so the pooled prefab never has it.
-        /// Until then the six face neighbours, which matched the game within 5% in testing.
+        /// The spread shape the game gives its own rounds, once one has been fired this scene.
+        /// Since the release it lives on the round's BodyWoundWalker, which only fetches it
+        /// from the voxel shapes provider when it takes its wound dials, so the pooled prefab
+        /// never has it. Until then the six face neighbours, which matched the game within 5%
+        /// in testing.
         /// </summary>
         private static List<int3> SpreadOffsets()
         {
@@ -126,7 +159,8 @@ namespace FruitLib
             {
                 foreach (var b in Resources.FindObjectsOfTypeAll<Bullet762>())
                 {
-                    var list = b != null ? b.m_spreadOffsets : null;
+                    var walker = b != null ? b.m_walker : null;
+                    var list = walker != null ? walker.m_spreadOffsets : null;
                     if (list == null) continue;
 
                     int n = list.Cast<Il2CppSystem.Collections.Generic.IReadOnlyCollection<int3>>().Count;
@@ -159,9 +193,10 @@ namespace FruitLib
 
         /// <param name="initialPower">What the round started with. Exit tear size is the
         /// leftover as a fraction of it, and the impulse scales with arrival power over it.</param>
+        /// <param name="hit">Stamped on every layer; see <see cref="RoundHit"/>.</param>
         /// <param name="firstBody">Only the first body a round enters gets a clean entry.</param>
         internal static Result Channel(LimbEffectorReceiver limb, Rigidbody body, Vector3 entry, Vector3 normal,
-                                       Vector3 dir, int power, int initialPower, WoundProfile w,
+                                       Vector3 dir, int power, int initialPower, WoundProfile w, EffectorHit hit,
                                        System.Random rng, bool firstBody, bool cosmetic)
         {
             var result = new Result { PowerOut = power };
@@ -177,7 +212,7 @@ namespace FruitLib
                 int clean = 0;
                 if (firstBody)
                 {
-                    // Bullet.GetCleanEntrySteps: stretched for an oblique entry, and for a
+                    // BodyWoundWalker.GetCleanEntrySteps: stretched for an oblique entry, and for a
                     // diagonal path, which crosses voxels faster than an axis-aligned one.
                     float cos    = Mathf.Max(Mathf.Abs(Vector3.Dot(normal, dir)), 0.2f);
                     float maxAbs = Mathf.Max(Mathf.Abs(dir.x), Mathf.Max(Mathf.Abs(dir.y), Mathf.Abs(dir.z)));
@@ -235,7 +270,7 @@ namespace FruitLib
 
                 if (!cosmetic)
                 {
-                    SendLayers(limb, w, dir, clean, result, initialPower);
+                    SendLayers(limb, w, dir, clean, result, initialPower, hit);
 
                     if (body != null && w.ImpactImpulse > 0f)
                     {
@@ -293,7 +328,7 @@ namespace FruitLib
 
         /// <summary>SendWoundLayers, in the game's order: crush, exit tear, cavitation.</summary>
         private static void SendLayers(LimbEffectorReceiver limb, WoundProfile w, Vector3 dir, int clean,
-                                       Result r, int initialPower)
+                                       Result r, int initialPower, EffectorHit hit)
         {
             if (_crushIdx.Count > 0)
             {
@@ -301,9 +336,9 @@ namespace FruitLib
                 for (int i = 0; i < _crushIdx.Count; i++)
                     list.Add(new IndexEffectorSignal(_crushIdx[i], _crushForce[i], InfluenceProcessType.Sum));
 
-                // The description carries the direction; the blood system reads it for where
-                // the wound faces.
-                var handler = new IndexEffectorSignalsHandler<Destruction>(list, new IndexEffectorDescription(dir));
+                // The description carries the direction, which the blood system reads for
+                // where the wound faces, and the hit (BodyWoundWalker.SendSignals does the same).
+                var handler = new IndexEffectorSignalsHandler<Destruction>(list, new IndexEffectorDescription(dir, hit));
                 try { limb.Receive(handler); } finally { handler.Dispose(); }
             }
 
@@ -311,7 +346,7 @@ namespace FruitLib
             {
                 float ratio = r.PowerOut / (float)Mathf.Max(1, initialPower);
                 var tear = BulletWoundEffectorSignalsSamples.ExitTear(
-                    _path[_path.Count - 1], w.TearMinRadius, w.TearMaxRadius, w.ExitTearDamage, ratio, dir);
+                    _path[_path.Count - 1], w.TearMinRadius, w.TearMaxRadius, w.ExitTearDamage, ratio, dir, hit);
                 try { limb.Receive(tear); } finally { tear.Dispose(); }
             }
 
@@ -322,7 +357,7 @@ namespace FruitLib
                 var channel = new BulletChannel(dir, clean, _path.Count);
                 foreach (var s in _path) channel.AddStep(s);
                 var cav = BulletWoundEffectorSignalsSamples.Cavitation(
-                    channel.Steps, channel.CleanEntrySteps, w.CavitationPeakRadius, w.CavitationDamage, dir);
+                    channel.Steps, channel.CleanEntrySteps, w.CavitationPeakRadius, w.CavitationDamage, dir, hit);
                 try { limb.Receive(cav); } finally { cav.Dispose(); }
             }
         }
@@ -356,7 +391,7 @@ namespace FruitLib
         /// channel. Perlin-masked so it reads as torn rather than as a clean ball.
         /// </summary>
         internal static void Burst(LimbEffectorReceiver limb, Vector3 surfacePoint, Vector3 inward,
-                                   int radius, float damage, float coverage, System.Random rng)
+                                   int radius, float damage, float coverage, EffectorHit shot, System.Random rng)
         {
             var mesh = limb != null ? limb.VoxelMesh : null;
             if (mesh == null || radius < 0) return;
@@ -389,7 +424,7 @@ namespace FruitLib
                 }
                 if (list.Count == 0) { list.Dispose(); return; }
 
-                var handler = new IndexEffectorSignalsHandler<Destruction>(list, new IndexEffectorDescription(inward));
+                var handler = new IndexEffectorSignalsHandler<Destruction>(list, new IndexEffectorDescription(inward, shot));
                 try { limb.Receive(handler); } finally { handler.Dispose(); }
             }
             catch (Exception e) { MelonLogger.Warning($"{Tag} burst failed: {e.Message}"); }

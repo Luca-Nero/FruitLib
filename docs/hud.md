@@ -37,7 +37,7 @@ are required.
 Stacking is deliberately **not** registration order, so it doesn't shift with
 MelonLoader's load order. Pick an `order` in the tens to leave room between mods.
 
-Passing an explicit `corner` opts out of the user's layout choice soreserve it for
+Passing an explicit `corner` opts out of the user's layout choice, so reserve it for
 overlays that would be disruptive if they moved, like FruitPerfMon pinning itself
 top-right so a debug readout never shoves gameplay HUDs around when toggled.
 
@@ -106,8 +106,7 @@ mod shouldn't override a user setting.
 ## Lifecycle
 
 `Register` with a name that's already registered replaces the existing panel
-rather than stacking a duplicate. The previous handle is detached 
-setting
+rather than stacking a duplicate. The previous handle is detached: setting
 `Visible` on it does nothing. `Unregister(name)` or `handle.Unregister()` removes
 a panel entirely.
 
@@ -118,6 +117,7 @@ game restarts, so check the log if your HUD silently vanishes.
 
 ## What the user controls
 
-The **FruitLib** tab (and `FruitLibConfig.ini`) exposes corner, margins, gap
+FruitLib's own settings page (pause → **MODS** → **FruitLib**, and
+`UserData/FruitLibConfig.ini`) exposes corner, margins, gap
 between panels, font size, background alpha, a master enable, and a toggle key
 (default **F8**) that hides all mod HUDs for the session. Your panel inherits all of it.

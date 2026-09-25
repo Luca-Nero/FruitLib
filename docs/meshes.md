@@ -1,10 +1,16 @@
 # Meshes
 
 `FruitMeshLibrary` loads `*_mesh.json` files embedded in your assembly into Unity
-`Mesh` objects. It exists so mods can ship custom models without asset bundles.
+`Mesh` objects.
+
+> **For new work, use [AssetBundles](BUNDLES.md) instead.** This loader predates
+> them. It was built when bundles looked impossible in this game, and it only carries
+> geometry and flat colours: no textures, rigs, colliders or prefabs. It stays
+> because existing mods use it, and because, unlike a bundle, a JSON mesh never
+> needs rebuilding when the game upgrades Unity.
 
 The file schema, and how to embed one, are documented in
-[`../MESH_FORMAT.md`](MESH_FORMAT.md). This page covers the API.
+[`MESH_FORMAT.md`](MESH_FORMAT.md). This page covers the API.
 
 ## Loading
 

@@ -131,12 +131,19 @@ This is the part that catches people out.
 user edits a value in-game, and that's all. Loading at startup, and writing the
 commented default file on first run, is your mod's job.
 
-The practical shape, which both shipped mods use, is a `ConfigLoader` class with
+The practical shape, which every shipped mod uses, is a `ConfigLoader` class with
 `IniPath`, `Load()` and `Write()`, where `Load()` parses `key = value` lines by
 reflecting over the same config type. `Write()` re-emits the file with your
 explanatory comments, which is what restores them after FruitMenu's bare
-key/value rewrite. See `Mods/7_Singularity/ConfigLoader.cs` for a complete
+key/value rewrite. See `Mods/1_BombsAway/Config/ConfigLoader.cs` for a complete
 example to copy.
+
+Build `IniPath` with [`FruitPaths.Config`](utilities.md#fruitpaths), which puts the
+file in `UserData` and migrates one an older build left next to the DLL:
+
+```csharp
+public static string IniPath => FruitPaths.Config("MyModConfig.ini", typeof(ConfigLoader).Assembly);
+```
 
 Keep floats culture-invariant in both directions (`CultureInfo.InvariantCulture`)
 or a comma-decimal locale will corrupt the file.
@@ -158,8 +165,8 @@ ConfigLoader.Load();                                 // then user values applied
 
 Register first, as above, and "Reset to Defaults" means your code defaults. Load
 first and it means "whatever was in the user's ini at startup", which is rarely
-what anyone wants. Both shipped mods currently load first; register-first is the
-better order for new mods.
+what anyone wants. GunsGunsGuns registers first; BombsAway, Singularity and
+FruitLab still load first. Register-first is the better order for new mods.
 
 ## Reacting to changes
 

@@ -418,9 +418,13 @@ namespace FruitLib
         [MenuCategory("Diagnostics"), MenuLabel("Ballistics aim test key")]
         public static KeyCode BallisticsProbeKey = KeyCode.F6;
 
-        public static string IniPath => Path.Combine(
-            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-            "FruitLibConfig.ini");
+        [MenuCategory("Diagnostics"), MenuLabel("Test asset bundles")]
+        public static bool BundleProbe = false;
+
+        [MenuCategory("Diagnostics"), MenuLabel("Bundle test key")]
+        public static KeyCode BundleProbeKey = KeyCode.F10;
+
+        public static string IniPath => FruitPaths.Config("FruitLibConfig.ini", typeof(FruitHudConfig).Assembly);
 
         private static readonly Dictionary<string, string> Help = new Dictionary<string, string>
         {
@@ -452,6 +456,8 @@ namespace FruitLib
             ["EjectaCullSpeed"]    = "how aggressively, per frame of shortfall",
             ["BallisticsProbe"]    ="logs the game's native bullet model: calibre constants once per scene, then power spent, channel and exit tear for every native shot that hits a body. For building the shared projectile API; noisy otherwise",
             ["BallisticsProbeKey"] = "while BallisticsProbe is on: walks the voxels under the crosshair and logs what each would absorb, without damaging anything. With Shift held it also sends the game's own cavitation and exit tear down that path - destructive (None to disable the key)",
+            ["BundleProbe"]        = "loads every *.bundle in UserData/FruitBundles on the key, logs its contents and spawns its first prefab in front of you. For building custom models; off otherwise",
+            ["BundleProbeKey"]     = "while BundleProbe is on: runs the bundle test. With Shift held, spawned materials use the game's shaders instead of the bundle's (None to disable the key)",
         };
 
         internal static void Load()

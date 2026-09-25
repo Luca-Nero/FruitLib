@@ -6,6 +6,8 @@
     <AssemblyName>FruitLib</AssemblyName>
     <RootNamespace>FruitLib</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <!-- FruitInventoryGc reads the injected class struct through UnityVersionHandler.Wrap(Il2CppClass*). -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- MSB3277 = assembly version unification conflicts, ~47 of them, from
          referencing MelonLoader's net6 assemblies out of a netstandard2.1 project.
