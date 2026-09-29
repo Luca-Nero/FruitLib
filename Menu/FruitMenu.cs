@@ -51,28 +51,28 @@ namespace FruitLib
 
     internal enum FruitFieldKind { Bool, Number, Key }
 
-    /// <summary>One config field, described in the terms a native control needs.</summary>
+    /// <summary>One setting, described in the terms a native control needs.</summary>
     internal sealed class FruitField
     {
-        internal FieldInfo       Field;
+        internal FruitSetting    Setting;
         internal string          Label;
         internal FruitFieldKind  Kind;
         internal bool            IsInt;
         internal float           Min, Max;
         internal bool            RangeDeclared;
 
-        internal bool  GetBool()        => (bool)Field.GetValue(null);
-        internal void  SetBool(bool v)  => Field.SetValue(null, v);
+        internal bool  GetBool()        => (bool)Setting.Value;
+        internal void  SetBool(bool v)  => Setting.Value = v;
 
-        internal float GetNumber() => IsInt ? (int)Field.GetValue(null) : (float)Field.GetValue(null);
+        internal float GetNumber() => IsInt ? (int)Setting.Value : (float)Setting.Value;
 
-        internal KeyCode GetKey()        => (KeyCode)Field.GetValue(null);
-        internal void    SetKey(KeyCode k) => Field.SetValue(null, k);
+        internal KeyCode GetKey()          => (KeyCode)Setting.Value;
+        internal void    SetKey(KeyCode k) => Setting.Value = k;
 
         internal void SetNumber(float v)
         {
-            if (IsInt) Field.SetValue(null, Mathf.RoundToInt(v));
-            else       Field.SetValue(null, v);
+            if (IsInt) Setting.Value = Mathf.RoundToInt(v);
+            else       Setting.Value = v;
         }
     }
 
@@ -117,7 +117,7 @@ namespace FruitLib
         public static void Register(string displayName, string iniFilePath, Type configType)
         {
             _mods.Add(new ModEntry(displayName, iniFilePath, configType));
-            MelonLogger.Msg($"[FruitLib] Registered: {displayName}");
+            FruitLog.Info($"[FruitLib] Registered: {displayName}");
         }
 
         // ── State transitions ─────────────────────────────────────────────────
@@ -141,11 +141,20 @@ namespace FruitLib
         /// <summary>Whether the mod settings panel is the thing currently on screen.</summary>
         internal static bool IsPanelOpen => _state == MenuState.Settings;
 
+        /// <summary>
+        /// Picks up MelonPreferences categories created since the last look, so mods that
+        /// never call <see cref="Register"/> still get a page. They list after the FruitLib
+        /// mods, one entry per category.
+        /// </summary>
+        internal static void SyncPreferences() =>
+            FruitPreferencesBridge.Sync((name, settings, save) => _mods.Add(new ModEntry(name, settings, save)));
+
         /// <summary>Registered mods, in the order the MODS screen lists them.</summary>
         internal static IReadOnlyList<string> ModNames
         {
             get
             {
+                SyncPreferences();
                 var names = new List<string>(_mods.Count);
                 foreach (var m in _mods) names.Add(m.DisplayName);
                 return names;
@@ -206,6 +215,7 @@ namespace FruitLib
 
         private static void OpenSettings()
         {
+            SyncPreferences();
             _hidden.Clear();
             if (PauseVC != null)
             {
@@ -509,11 +519,12 @@ namespace FruitLib
         private class ModEntry
         {
             public readonly string DisplayName;
-            private readonly string _iniPath;
-            private readonly FieldInfo[] _allFields;
+            private readonly string _iniPath;            // FruitLib config class; null for MelonPreferences
+            private readonly Action _saveElsewhere;      // MelonPreferences; null for a config class
+            private readonly List<FruitSetting> _all = new List<FruitSetting>();
 
-            private readonly List<string>                        _catOrder = new List<string>();
-            private readonly Dictionary<string, List<FieldInfo>> _cats     = new Dictionary<string, List<FieldInfo>>();
+            private readonly List<string>                           _catOrder = new List<string>();
+            private readonly Dictionary<string, List<FruitSetting>> _cats     = new Dictionary<string, List<FruitSetting>>();
             private string _selectedCat;
             private float  _scrollY, _maxScrollY;
 
@@ -522,11 +533,11 @@ namespace FruitLib
             private float _catTabW;
             private float _lastTotalW = -1f;
 
-            private static FieldInfo _editField;
-            private static string    _editBuf    = "";
-            private static int       _editCursor = 0;
+            private static FruitSetting _editField;
+            private static string       _editBuf    = "";
+            private static int          _editCursor = 0;
 
-            private static FieldInfo _rebindField;
+            private static FruitSetting _rebindField;
 
             internal static void CancelEdit()
             {
@@ -535,41 +546,48 @@ namespace FruitLib
             }
             internal static GUIStyle _smallBtnStyle;
 
-            private readonly Dictionary<FieldInfo, object> _defaults = new Dictionary<FieldInfo, object>();
-
+            /// <summary>A FruitLib mod: its config class's public static fields, saved to its ini.</summary>
             public ModEntry(string name, string iniPath, Type configType)
             {
                 DisplayName = name;
                 _iniPath    = iniPath;
-                _allFields  = configType.GetFields(BindingFlags.Public | BindingFlags.Static);
-
-                foreach (var f in _allFields)
+                foreach (var f in configType.GetFields(BindingFlags.Public | BindingFlags.Static))
                 {
-                    if (f.IsSpecialName || !IsRenderable(f.FieldType)) continue;
-                    _defaults[f] = f.GetValue(null);
-                    var attr = (MenuCategoryAttribute)Attribute.GetCustomAttribute(
-                                   f, typeof(MenuCategoryAttribute));
-                    if (attr == null) continue;   // no category = ini-only, never drawn
-                    string cat = attr.Name;
-                    if (!_cats.ContainsKey(cat))
-                    {
-                        _cats[cat] = new List<FieldInfo>();
-                        _catOrder.Add(cat);
-                    }
-                    _cats[cat].Add(f);
+                    var setting = FruitSetting.FromField(f);
+                    if (setting != null) Add(setting);
                 }
-
                 _selectedCat = _catOrder.Count > 0 ? _catOrder[0] : "";
             }
 
+            /// <summary>A MelonPreferences category, saved through MelonLoader.</summary>
+            public ModEntry(string name, List<FruitSetting> settings, Action save)
+            {
+                DisplayName    = name;
+                _saveElsewhere = save;
+                foreach (var setting in settings) Add(setting);
+                _selectedCat = _catOrder.Count > 0 ? _catOrder[0] : "";
+            }
+
+            private void Add(FruitSetting setting)
+            {
+                _all.Add(setting);
+                if (setting.Category == null) return;   // no category = stored, never drawn
+                if (!_cats.TryGetValue(setting.Category, out var list))
+                {
+                    _cats[setting.Category] = list = new List<FruitSetting>();
+                    _catOrder.Add(setting.Category);
+                }
+                list.Add(setting);
+            }
+
             /// <summary>
-            /// Fills <paramref name="into"/> with the fields a native control can draw.
+            /// Fills <paramref name="into"/> with the settings a native control can draw.
             ///
-            /// The range comes from a MenuRange attribute when the mod declares one. When it
-            /// does not, it is derived from the field's default rather than its current value
-            /// - deriving from the current value would make the range move as you drag, which
-            /// is unusable. The guess is deliberately generous, because a slider that cannot
-            /// reach a value is worse than one that is coarse.
+            /// The range comes from a MenuRange attribute (or a MelonPreferences ValueRange)
+            /// when there is one. When not, it is derived from the default rather than the
+            /// current value - deriving from the current value would make the range move as
+            /// you drag, which is unusable. The guess is deliberately generous, because a
+            /// slider that cannot reach a value is worse than one that is coarse.
             /// </summary>
             internal List<string> Categories() => new List<string>(_catOrder);
 
@@ -578,39 +596,36 @@ namespace FruitLib
                 foreach (var cat in _catOrder)
                 {
                     if (only != null && cat != only) continue;
-                    if (!_cats.TryGetValue(cat, out var fields)) continue;
+                    if (!_cats.TryGetValue(cat, out var settings)) continue;
 
-                    foreach (var f in fields)
+                    foreach (var f in settings)
                     {
-                        if (f.FieldType == typeof(bool))
+                        if (f.Type == typeof(bool))
                         {
                             // A momentary bool is a button press, not a setting; a toggle
                             // would misrepresent it as state that sticks.
-                            var btn = (MenuButtonAttribute)Attribute.GetCustomAttribute(f, typeof(MenuButtonAttribute));
-                            if (btn?.Kind == ButtonKind.Momentary) continue;
-
-                            into.Add(new FruitField { Field = f, Label = LabelOf(f), Kind = FruitFieldKind.Bool });
+                            if (f.Momentary) continue;
+                            into.Add(new FruitField { Setting = f, Label = f.Label, Kind = FruitFieldKind.Bool });
                             continue;
                         }
 
-                        if (f.FieldType == typeof(KeyCode))
+                        if (f.Type == typeof(KeyCode))
                         {
-                            into.Add(new FruitField { Field = f, Label = LabelOf(f), Kind = FruitFieldKind.Key });
+                            into.Add(new FruitField { Setting = f, Label = f.Label, Kind = FruitFieldKind.Key });
                             continue;
                         }
 
-                        bool isInt = f.FieldType == typeof(int);
-                        if (!isInt && f.FieldType != typeof(float)) continue;   // string, and the rest
+                        bool isInt = f.Type == typeof(int);
+                        if (!isInt && f.Type != typeof(float)) continue;   // string, and the rest
 
-                        var range = (MenuRangeAttribute)Attribute.GetCustomAttribute(f, typeof(MenuRangeAttribute));
                         float min, max;
-                        if (range != null) { min = range.Min; max = range.Max; }
-                        else DeriveRange(_defaults.TryGetValue(f, out var d) ? d : f.GetValue(null), isInt, out min, out max);
+                        if (f.HasRange) { min = f.Min; max = f.Max; }
+                        else DeriveRange(f.Default ?? f.Value, isInt, out min, out max);
 
                         into.Add(new FruitField
                         {
-                            Field = f, Label = LabelOf(f), Kind = FruitFieldKind.Number,
-                            IsInt = isInt, Min = min, Max = max, RangeDeclared = range != null,
+                            Setting = f, Label = f.Label, Kind = FruitFieldKind.Number,
+                            IsInt = isInt, Min = min, Max = max, RangeDeclared = f.HasRange,
                         });
                     }
                 }
@@ -629,8 +644,8 @@ namespace FruitLib
 
             public void ResetToDefaults()
             {
-                foreach (var kvp in _defaults)
-                    kvp.Key.SetValue(null, kvp.Value);
+                foreach (var f in _all)
+                    if (f.Default != null) f.Value = f.Default;
                 WriteIni();
             }
 
@@ -726,23 +741,21 @@ namespace FruitLib
                     if (row % 2 == 0)
                         FruitMenu.Rect(0f, fy, cw, ROW, C_RowAlt);
 
-                    object current = f.GetValue(null);
+                    object current = f.Value;
 
                     // Field name — vertically centred
                     GUI.Label(new UnityEngine.Rect(labelX, fy, labelW, ROW),
-                              LabelOf(f), FieldLabelStyle());
+                              f.Label, FieldLabelStyle());
 
                     // ── bool ─────────────────────────────────────────────────
-                    if (f.FieldType == typeof(bool))
+                    if (f.Type == typeof(bool))
                     {
-                        var btnAttr = (MenuButtonAttribute)Attribute.GetCustomAttribute(
-                                          f, typeof(MenuButtonAttribute));
-                        if (btnAttr?.Kind == ButtonKind.Momentary)
+                        if (f.Momentary)
                         {
                             GUI.backgroundColor = C_Action;
                             if (GUI.Button(new UnityEngine.Rect(ctrlX, fy, boolW, ROW),
                                            "", ToggleStyle()))
-                                f.SetValue(null, true);
+                                f.Value = true;
                             GUI.backgroundColor = Color.white;
                         }
                         else
@@ -752,11 +765,11 @@ namespace FruitLib
                             bool next = GUI.Toggle(new UnityEngine.Rect(ctrlX, fy, boolW, ROW),
                                                    val, val ? "ON" : "OFF", ToggleStyle());
                             GUI.backgroundColor = Color.white;
-                            if (next != val) { f.SetValue(null, next); dirty = true; }
+                            if (next != val) { f.Value = next; dirty = true; }
                         }
                     }
                     // ── KeyCode — clickable, enters rebind mode ───────────────
-                    else if (f.FieldType == typeof(KeyCode))
+                    else if (f.Type == typeof(KeyCode))
                     {
                         bool rebinding = (_rebindField == f);
                         if (rebinding)
@@ -780,13 +793,13 @@ namespace FruitLib
                         }
                     }
                     // ── string — read-only display ────────────────────────────
-                    else if (f.FieldType == typeof(string))
+                    else if (f.Type == typeof(string))
                     {
                         GUI.Label(new UnityEngine.Rect(ctrlX, fy, kcW, ROW),
                                   current?.ToString() ?? "", DimStyle());
                     }
                     // ── float ────────────────────────────────────────────────
-                    else if (f.FieldType == typeof(float))
+                    else if (f.Type == typeof(float))
                     {
                         float val     = (float)current;
                         float base0   = FloatStep(val);
@@ -798,11 +811,11 @@ namespace FruitLib
                         // Minus buttons (outer -> inner = big -> small)
                         GUI.backgroundColor = C_Minus;
                         if (GUI.Button(new UnityEngine.Rect(m3X, fy, stepW, ROW), StepLabel(s0), SmallBtnStyle()))
-                        { if (editing) ClearEdit(); f.SetValue(null, val - s0); dirty = true; }
+                        { if (editing) ClearEdit(); f.Value = val - s0; dirty = true; }
                         if (GUI.Button(new UnityEngine.Rect(m2X, fy, stepW, ROW), StepLabel(s1), SmallBtnStyle()))
-                        { if (editing) ClearEdit(); f.SetValue(null, val - s1); dirty = true; }
+                        { if (editing) ClearEdit(); f.Value = val - s1; dirty = true; }
                         if (GUI.Button(new UnityEngine.Rect(m1X, fy, stepW, ROW), StepLabel(s2), SmallBtnStyle()))
-                        { if (editing) ClearEdit(); f.SetValue(null, val - s2); dirty = true; }
+                        { if (editing) ClearEdit(); f.Value = val - s2; dirty = true; }
                         GUI.backgroundColor = Color.white;
 
                         // custom value box, click to enter edit mode
@@ -827,15 +840,15 @@ namespace FruitLib
                         // Plus buttons (inner -> outer = small -> big)
                         GUI.backgroundColor = C_Plus;
                         if (GUI.Button(new UnityEngine.Rect(p1X, fy, stepW, ROW), StepLabel(s2), SmallBtnStyle()))
-                        { if (editing) ClearEdit(); f.SetValue(null, val + s2); dirty = true; }
+                        { if (editing) ClearEdit(); f.Value = val + s2; dirty = true; }
                         if (GUI.Button(new UnityEngine.Rect(p2X, fy, stepW, ROW), StepLabel(s1), SmallBtnStyle()))
-                        { if (editing) ClearEdit(); f.SetValue(null, val + s1); dirty = true; }
+                        { if (editing) ClearEdit(); f.Value = val + s1; dirty = true; }
                         if (GUI.Button(new UnityEngine.Rect(p3X, fy, stepW, ROW), StepLabel(s0), SmallBtnStyle()))
-                        { if (editing) ClearEdit(); f.SetValue(null, val + s0); dirty = true; }
+                        { if (editing) ClearEdit(); f.Value = val + s0; dirty = true; }
                         GUI.backgroundColor = Color.white;
                     }
                     // ── int ──────────────────────────────────────────────────
-                    else if (f.FieldType == typeof(int))
+                    else if (f.Type == typeof(int))
                     {
                         int  val     = (int)current;
                         int  base0   = IntStep(val);
@@ -847,11 +860,11 @@ namespace FruitLib
                         // Minus buttons
                         GUI.backgroundColor = C_Minus;
                         if (GUI.Button(new UnityEngine.Rect(m3X, fy, stepW, ROW), StepLabel(s0), SmallBtnStyle()))
-                        { if (editing) ClearEdit(); f.SetValue(null, val - s0); dirty = true; }
+                        { if (editing) ClearEdit(); f.Value = val - s0; dirty = true; }
                         if (GUI.Button(new UnityEngine.Rect(m2X, fy, stepW, ROW), StepLabel(s1), SmallBtnStyle()))
-                        { if (editing) ClearEdit(); f.SetValue(null, val - s1); dirty = true; }
+                        { if (editing) ClearEdit(); f.Value = val - s1; dirty = true; }
                         if (GUI.Button(new UnityEngine.Rect(m1X, fy, stepW, ROW), StepLabel(s2), SmallBtnStyle()))
-                        { if (editing) ClearEdit(); f.SetValue(null, val - s2); dirty = true; }
+                        { if (editing) ClearEdit(); f.Value = val - s2; dirty = true; }
                         GUI.backgroundColor = Color.white;
 
                         // Value box
@@ -876,11 +889,11 @@ namespace FruitLib
                         // Plus buttons
                         GUI.backgroundColor = C_Plus;
                         if (GUI.Button(new UnityEngine.Rect(p1X, fy, stepW, ROW), StepLabel(s2), SmallBtnStyle()))
-                        { if (editing) ClearEdit(); f.SetValue(null, val + s2); dirty = true; }
+                        { if (editing) ClearEdit(); f.Value = val + s2; dirty = true; }
                         if (GUI.Button(new UnityEngine.Rect(p2X, fy, stepW, ROW), StepLabel(s1), SmallBtnStyle()))
-                        { if (editing) ClearEdit(); f.SetValue(null, val + s1); dirty = true; }
+                        { if (editing) ClearEdit(); f.Value = val + s1; dirty = true; }
                         if (GUI.Button(new UnityEngine.Rect(p3X, fy, stepW, ROW), StepLabel(s0), SmallBtnStyle()))
-                        { if (editing) ClearEdit(); f.SetValue(null, val + s0); dirty = true; }
+                        { if (editing) ClearEdit(); f.Value = val + s0; dirty = true; }
                         GUI.backgroundColor = Color.white;
                     }
                 }
@@ -891,12 +904,12 @@ namespace FruitLib
                 if (dirty) WriteIni();
             }
 
-            private static void HandleEditKeys(FieldInfo f, ref bool dirty)
+            private static void HandleEditKeys(FruitSetting f, ref bool dirty)
             {
                 var ev = Event.current;
                 if (ev.type != EventType.KeyDown) return;
 
-                bool isFloat = f.FieldType == typeof(float);
+                bool isFloat = f.Type == typeof(float);
 
                 switch (ev.keyCode)
                 {
@@ -963,7 +976,7 @@ namespace FruitLib
                 }
             }
 
-            private static void HandleRebindKey(FieldInfo f, ref bool dirty)
+            private static void HandleRebindKey(FruitSetting f, ref bool dirty)
             {
                 var ev = Event.current;
                 if (ev.type == EventType.MouseDown)
@@ -972,7 +985,7 @@ namespace FruitLib
                                             KeyCode.Mouse3, KeyCode.Mouse4 };
                     if (ev.button >= 0 && ev.button < mouseKeys.Length)
                     {
-                        f.SetValue(null, mouseKeys[ev.button]);
+                        f.Value = mouseKeys[ev.button];
                         _rebindField = null; dirty = true;
                         ev.Use();
                     }
@@ -989,32 +1002,32 @@ namespace FruitLib
 
                     case KeyCode.Backspace:
                     case KeyCode.Delete:
-                        f.SetValue(null, KeyCode.None);
+                        f.Value = KeyCode.None;
                         _rebindField = null; dirty = true;
                         ev.Use(); break;
 
                     default:
                         if (ev.keyCode != KeyCode.None)
                         {
-                            f.SetValue(null, ev.keyCode);
+                            f.Value = ev.keyCode;
                             _rebindField = null; dirty = true;
                         }
                         ev.Use(); break;
                 }
             }
 
-            private static void TryApplyBuffer(FieldInfo f, ref bool dirty)
+            private static void TryApplyBuffer(FruitSetting f, ref bool dirty)
             {
-                if (f.FieldType == typeof(float))
+                if (f.Type == typeof(float))
                 {
                     if (float.TryParse(_editBuf, NumberStyles.Float,
                                        CultureInfo.InvariantCulture, out float fv))
-                    { f.SetValue(null, fv); dirty = true; }
+                    { f.Value = fv; dirty = true; }
                 }
-                else if (f.FieldType == typeof(int))
+                else if (f.Type == typeof(int))
                 {
                     if (int.TryParse(_editBuf, out int iv))
-                    { f.SetValue(null, iv); dirty = true; }
+                    { f.Value = iv; dirty = true; }
                 }
             }
 
@@ -1066,27 +1079,23 @@ namespace FruitLib
                 return 1;
             }
 
-            private static bool IsRenderable(Type t) =>
-                t == typeof(bool) || t == typeof(float) || t == typeof(int) ||
-                t == typeof(string) || t == typeof(KeyCode);
 
             private void WriteIni()
             {
                 try
                 {
+                    if (_saveElsewhere != null) { _saveElsewhere(); return; }
+
                     var sb = new System.Text.StringBuilder();
                     sb.AppendLine("# Written by FruitLib in-game menu — comments restored on restart.");
-                    foreach (var f in _allFields)
+                    foreach (var f in _all)
                     {
-                        if (f.IsSpecialName || !IsRenderable(f.FieldType)) continue;
-                        var btnAttr = (MenuButtonAttribute)Attribute.GetCustomAttribute(
-                                          f, typeof(MenuButtonAttribute));
-                        if (btnAttr?.Kind == ButtonKind.Momentary) continue;
-                        object val = f.GetValue(null);
-                        string s = f.FieldType == typeof(float)
+                        if (f.Momentary) continue;
+                        object val = f.Value;
+                        string s = f.Type == typeof(float)
                             ? ((float)val).ToString("0.##############", CultureInfo.InvariantCulture)
                             : val?.ToString() ?? "";
-                        sb.AppendLine($"{f.Name} = {s}");
+                        sb.AppendLine($"{f.Key} = {s}");
                     }
                     File.WriteAllText(_iniPath, sb.ToString());
                     FruitMenu.OnConfigChanged?.Invoke();

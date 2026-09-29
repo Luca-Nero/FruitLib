@@ -52,7 +52,7 @@ namespace FruitLib
     {
         private const string Tag = "[BallisticsProbe]";
 
-        internal static bool Enabled => FruitHudConfig.BallisticsProbe;
+        internal static bool Enabled => FruitLibConfig.BallisticsProbe;
 
         /// <summary>Voxels walked by the aim test. A limb is tens of voxels across.</summary>
         private const int MaxPathSteps = 256;
@@ -90,7 +90,7 @@ namespace FruitLib
                 DumpConstants();
             }
 
-            var key = FruitHudConfig.BallisticsProbeKey;
+            var key = FruitLibConfig.BallisticsProbeKey;
             if (key != KeyCode.None && Input.GetKeyDown(key))
             {
                 bool shift = Input.GetKey(KeyCode.LeftShift)   || Input.GetKey(KeyCode.RightShift);

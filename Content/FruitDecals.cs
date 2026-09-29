@@ -73,7 +73,7 @@ namespace FruitLib
                     _feature ??= f;
                     added++;
                 }
-                MelonLogger.Msg($"[FruitDecals] Decal feature added to {added} renderer(s) of '{urp.name}' (Screen Space, {maxDrawDistance} m).");
+                FruitLog.Info($"[FruitDecals] Decal feature added to {added} renderer(s) of '{urp.name}' (Screen Space, {maxDrawDistance} m).");
                 return added > 0 || FindActive() != null;
             }
             catch (Exception e)

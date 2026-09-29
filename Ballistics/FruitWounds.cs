@@ -170,7 +170,7 @@ namespace FruitLib
 
                     _spread = offsets;
                     _spreadResolved = true;
-                    MelonLogger.Msg($"{Tag} using the game's own spread shape ({offsets.Count} offsets)");
+                    FruitLog.Info($"{Tag} using the game's own spread shape ({offsets.Count} offsets)");
                     break;
                 }
             }
@@ -203,7 +203,7 @@ namespace FruitLib
             var mesh = limb != null ? limb.VoxelMesh : null;
             if (mesh == null || power < 1 || w == null) return result;
 
-            FruitPerfMon.Begin("FruitWounds");
+            FruitPerfMon.Lib.Begin("Wounds");
             try
             {
                 int powerIn = power;
@@ -289,7 +289,7 @@ namespace FruitLib
                 MelonLogger.Warning($"{Tag} channel failed: {e.Message}");
                 return result;
             }
-            finally { FruitPerfMon.End("FruitWounds"); }
+            finally { FruitPerfMon.Lib.End("Wounds"); }
         }
 
         /// <summary>

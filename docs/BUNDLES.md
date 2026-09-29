@@ -28,7 +28,7 @@ interop type yourself. MelonLoader regenerates them, but their Unity 6 bodies pi
    (`Editor/` builder + test-suite generator, `FruitTest/Shaders/`, `GameStubs/`). A **FruitLib**
    menu appears. The reference project is `E:\Dev\Unity\AssetBundleTest`.
 5. **FruitLib → Set Game Folder...** → the folder with `FRUKT.exe`
-   (default `D:\SteamLibrary\steamapps\common\FRUKT Demo`).
+   (default `D:\SteamLibrary\steamapps\common\FRUKT`).
 
 ## Step 1: prove the pipeline with the test cube
 

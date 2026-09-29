@@ -4,7 +4,7 @@ using Object = UnityEngine.Object;
 namespace FruitLib
 {
     /// <summary>
-    /// Scene lookups that survive IL2CPP stripping on 0.14.
+    /// Scene lookups that survive IL2CPP stripping (true since 0.14, still true on Release).
     ///
     /// <b>The trap:</b> <c>Object.FindObjectOfType&lt;T&gt;(bool)</c> — the SINGULAR
     /// overload — is stripped from this build and throws

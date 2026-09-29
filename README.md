@@ -4,12 +4,12 @@ Shared library for FRUKT mods under MelonLoader: a settings menu built from the
 game's own controls, HUD, performance monitor, inventory items, sound effects,
 shared ballistics, and custom content through Unity AssetBundles.
 
-**Third-party mod authors start here → [`docs/README.md`](docs/README.md)**
+**Third-party mod authors start here → [`docs/README.md`](docs/README.md)**, and copy [`Templates/`](Templates/README.md) for a new mod.
 
 - [Config & menu](docs/config-and-menu.md)
 - [HUD](docs/hud.md)
 - [Performance monitor](docs/perfmon.md)
-- [Inventory items](docs/inventory.md) (replaces the old [toolbar slots](docs/toolbar.md))
+- [Inventory items](docs/inventory.md) (replaced the toolbar slots, removed in 5.0)
 - [Sound](docs/sound.md)
 - [Ballistics](docs/ballistics.md)
 - [Utilities](docs/utilities.md): paths, scene lookups, force fields, update checks
@@ -26,5 +26,5 @@ shared ballistics, and custom content through Unity AssetBundles.
 | `Ballistics/` | Specs, the public `FruitBallistics` facade, and projectile / explosion / wound / ejecta internals |
 | `Content/` | AssetBundles (+ their icall layer), decals, sound effects, the older JSON mesh loader |
 | `Utilities/` | Paths, scene lookups, stripped-API icalls, crash trace, force fields, update check |
-| `Debug/` | Probes and in-game tests, all off unless their `*Probe` setting is on |
-| `Deprecated/` | Kept for old mods to compile against. Nothing new goes here |
+| `Debug/` | Probes and in-game tests. Their hooks install only if *Debug hooks + crash trace* was on at launch; output only while their `*Probe` setting is on |
+| `Templates/` | Starting files for a new mod (not compiled into FruitLib): see [`Templates/README.md`](Templates/README.md) |

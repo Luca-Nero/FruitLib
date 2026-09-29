@@ -88,12 +88,18 @@ namespace FruitLib
             bool isNowOpen = FruitMenu.IsOpen;
             FruitMenu.JustClosed = _wasMenuOpen && !isNowOpen;
             _wasMenuOpen = isNowOpen;
+
+            // Settings changed for MelonPreferences mods take effect as the game resumes.
+            if (FruitMenu.JustClosed) FruitPreferencesBridge.Flush();
         }
+
+        public override void OnApplicationQuit() => Safely("FruitMenu", FruitPreferencesBridge.Flush);
 
         public override void OnGUI() { FruitMenu.Draw(); FruitHud.Draw(); }
 
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
         {
+            Safely("FruitMenu", FruitPreferencesBridge.Flush);
             _pauseVC      = null;
             _pollCountdown = 0;
             FruitMenu.PauseVC = null;

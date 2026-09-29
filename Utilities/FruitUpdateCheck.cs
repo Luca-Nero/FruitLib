@@ -11,7 +11,7 @@ namespace FruitLib
     {
         public static void Register(string modName, string currentVersion, string owner, string repo)
         {
-            if (!FruitHudConfig.CheckForUpdates) return;
+            if (!FruitLibConfig.CheckForUpdates) return;
             Task.Run(() => CheckAsync(modName, currentVersion, owner, repo));
         }
 

@@ -1,22 +1,20 @@
-﻿<Project>
-  <!-- Release reference set. Points at ModRefs, built from the Steam install's
-       MelonLoader folder (Il2CppAssemblies + net6 + SupportModules\Il2Cpp.dll).
-       Regenerate it with Tools\sync_modrefs.ps1 after any game update - the interop
-       DLLs are version-specific.
+<Project>
+  <!-- Every assembly a FRUKT mod can reference, against the Release build.
 
-       Probe CI's layout (ModRefs beside the repo) before the local one
-       (Frukt\Mods\<mod> -> Frukt\ModRefs).
+       ModRefsDir is a folder holding copies of them: everything in the game's
+       MelonLoader\Il2CppAssemblies and MelonLoader
+et6, plus FruitLib.dll. It is looked
+       for beside the repo (CI) and two levels up (Frukt\Mods\<mod> -> Frukt\ModRefs), or
+       pass -p:ModRefsDir=... yourself.
 
-       This mod was ported from 0.1 on 2026-09-11 and no longer builds against the 0.1
-       reference set: 0.14 removed ToolbarItemSlotView.ptc/dtc, ToolbarView.pth and the
-       whole PauseViewController type, so the sources changed shape, not just names. -->
+       Refresh both the folder and this list after every game update: the Il2Cpp*.dll
+       wrappers are regenerated per game version, and a stale one compiles fine and then
+       throws TypeLoadException in game. <Private>false</Private> keeps them out of your
+       output; the game already has them. -->
   <PropertyGroup>
     <ModRefsDir Condition="'$(ModRefsDir)' == '' And Exists('$(MSBuildThisFileDirectory)..\ModRefs')">$(MSBuildThisFileDirectory)..\ModRefs\</ModRefsDir>
     <ModRefsDir Condition="'$(ModRefsDir)' == '' And Exists('$(MSBuildThisFileDirectory)..\..\ModRefs')">$(MSBuildThisFileDirectory)..\..\ModRefs\</ModRefsDir>
   </PropertyGroup>
-  <Target Name="FruitLibCheckRefs" BeforeTargets="ResolveAssemblyReferences">
-    <Error Condition="'$(ModRefsDir)' == ''" Text="ModRefs not found. Expected it beside the repo or at Frukt\ModRefs.." />
-  </Target>
   <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>$(ModRefsDir)0Harmony.dll</HintPath>
@@ -56,6 +54,10 @@
     </Reference>
     <Reference Include="bHapticsLib">
       <HintPath>$(ModRefsDir)bHapticsLib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="FruitLib">
+      <HintPath>$(ModRefsDir)FruitLib.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Iced">

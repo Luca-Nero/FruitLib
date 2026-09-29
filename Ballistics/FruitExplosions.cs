@@ -27,9 +27,9 @@ namespace FruitLib
 
         internal static void Detonate(ExplosionSpec s, BallisticsCommand cmd, bool cosmetic)
         {
-            FruitPerfMon.Begin("FruitExplosions");
+            FruitPerfMon.Lib.Begin("Explosions");
             try { DetonateInternal(s, cmd, cosmetic); }
-            finally { FruitPerfMon.End("FruitExplosions"); }
+            finally { FruitPerfMon.Lib.End("Explosions"); }
         }
 
         private static void DetonateInternal(ExplosionSpec s, BallisticsCommand cmd, bool cosmetic)

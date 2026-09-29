@@ -132,6 +132,8 @@ namespace FruitLib
     [HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnAppearItem))]
     internal static class FruitInventoryTrace_Appear
     {
+        static bool Prepare() => FruitDiagnostics.Hooks;
+
         static void Prefix(GodInventoryItem item)  { if (FruitInventoryAudit.IsOurs(item)) FruitTrace.Mark($"appear: begin {FruitInventoryAudit.Describe(item)}"); }
         static void Postfix(GodInventoryItem item) { if (FruitInventoryAudit.IsOurs(item)) FruitTrace.Mark("appear: done (parented to the hand, active)"); }
     }
@@ -139,12 +141,16 @@ namespace FruitLib
     [HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnItemSelect))]
     internal static class FruitInventoryTrace_Select
     {
+        static bool Prepare() => FruitDiagnostics.Hooks;
+
         static void Prefix(GodInventoryItem item) { if (FruitInventoryAudit.IsOurs(item)) FruitTrace.Mark($"select: begin {FruitInventoryAudit.Describe(item)}"); }
     }
 
     [HarmonyPatch(typeof(GodInventoryItem), nameof(GodInventoryItem.ActivateLogic))]
     internal static class FruitInventoryTrace_Activate
     {
+        static bool Prepare() => FruitDiagnostics.Hooks;
+
         static void Prefix(GodInventoryItem __instance)
         {
             if (!FruitInventoryAudit.IsOurs(__instance)) return;
@@ -158,6 +164,8 @@ namespace FruitLib
     [HarmonyPatch(typeof(GodInventoryItemInputProvider), nameof(GodInventoryItemInputProvider.Provide))]
     internal static class FruitInventoryTrace_Provide
     {
+        static bool Prepare() => FruitDiagnostics.Hooks;
+
         static void Prefix(IGIIMouseTarget mouseTarget)  { if (Ours(mouseTarget)) FruitTrace.Mark("select: input provider takes the item"); }
         static void Postfix(IGIIMouseTarget mouseTarget) { if (Ours(mouseTarget)) FruitTrace.Mark("select: input provider done"); }
 
@@ -177,6 +185,8 @@ namespace FruitLib
     [HarmonyPatch(typeof(GAItemsSelectRequestsProcessor), nameof(GAItemsSelectRequestsProcessor.TrySelectRequest))]
     internal static class FruitInventoryTrace_Request
     {
+        static bool Prepare() => FruitDiagnostics.Hooks;
+
         static void Prefix(GodInventoryItem item)
         {
             string what;
@@ -190,12 +200,16 @@ namespace FruitLib
     [HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnItemDeselect))]
     internal static class FruitInventoryTrace_Deselect
     {
+        static bool Prepare() => FruitDiagnostics.Hooks;
+
         static void Prefix(GodInventoryItem item) { if (FruitInventoryAudit.IsOurs(item)) FruitTrace.Mark($"deselect: begin {FruitInventoryAudit.Describe(item)}"); }
     }
 
     [HarmonyPatch(typeof(GodInventoryItem), nameof(GodInventoryItem.DeactivateLogic))]
     internal static class FruitInventoryTrace_Deactivate
     {
+        static bool Prepare() => FruitDiagnostics.Hooks;
+
         static void Prefix(GodInventoryItem __instance)  { if (FruitInventoryAudit.IsOurs(__instance)) FruitTrace.Mark("deselect: DeactivateLogic begin"); }
         static void Postfix(GodInventoryItem __instance) { if (FruitInventoryAudit.IsOurs(__instance)) FruitTrace.Mark("deselect: DeactivateLogic done"); }
     }
@@ -203,6 +217,8 @@ namespace FruitLib
     [HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnDisappearItem))]
     internal static class FruitInventoryTrace_Disappear
     {
+        static bool Prepare() => FruitDiagnostics.Hooks;
+
         static void Prefix(GodInventoryItem item)  { if (FruitInventoryAudit.IsOurs(item)) FruitTrace.Mark($"disappear: begin {FruitInventoryAudit.Describe(item)}"); }
         static void Postfix(GodInventoryItem item) { if (FruitInventoryAudit.IsOurs(item)) FruitTrace.Mark("disappear: done (back to the rack, inactive)"); }
     }

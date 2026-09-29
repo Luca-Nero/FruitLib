@@ -71,7 +71,7 @@ namespace FruitLib
                     MelonLogger.Warning("[FruitInventory] the injected item class had lost has_references; restored it. " +
                                         "Without it the GC frees everything the item references.");
                 }
-                else MelonLogger.Msg($"[FruitInventory] GC flags: {state}");
+                else FruitLog.Info($"[FruitInventory] GC flags: {state}");
 
                 FruitTrace.Mark("GC: " + state);
             }

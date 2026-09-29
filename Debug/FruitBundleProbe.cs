@@ -16,7 +16,7 @@ namespace FruitLib
     /// </summary>
     internal static class FruitBundleProbe
     {
-        internal static bool Enabled => FruitHudConfig.BundleProbe;
+        internal static bool Enabled => FruitLibConfig.BundleProbe;
 
         private static string Folder => Path.Combine(FruitPaths.UserData, "FruitBundles");
 
@@ -24,7 +24,7 @@ namespace FruitLib
         {
             FruitBundleTests.Tick();
             if (!Enabled) return;
-            var key = FruitHudConfig.BundleProbeKey;
+            var key = FruitLibConfig.BundleProbeKey;
             if (key == KeyCode.None || !Input.GetKeyDown(key)) return;
 
             if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))

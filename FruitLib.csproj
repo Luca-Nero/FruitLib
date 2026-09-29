@@ -17,7 +17,13 @@
     <MSBuildWarningsAsMessages>MSB3277</MSBuildWarningsAsMessages>
   </PropertyGroup>
 
-  <!-- Deploy to EVERY 0.14 instance, and to ModRefs.
+  <!-- Templates/ is source for other mods to copy, not part of FruitLib. -->
+  <ItemGroup>
+    <Compile Remove="Templates/**" />
+    <None Remove="Templates/**" />
+  </ItemGroup>
+
+  <!-- Deploy to every live FRUKT instance, and to ModRefs.
        ===================================================
        Same instance sweep as 10_Link, for a sharper reason: every other mod in
        this repo binds to FruitLib by name, so one instance left on a stale
@@ -26,30 +32,31 @@
        first, and reads as a bug in that mod.
 
        An instance is anything with a FRUKT.exe in it, found at any depth, with
-       Mods as its sibling. Pre-0.14 builds are excluded by name: FruitLib 3.x
-       binds 0.14-only types and cannot load on them at all.
+       Mods as its sibling. Installs carrying DEPRECATED_DONT_BUILD_AGAINST.md
+       (the old Demo) are skipped.
 
        The ModRefs copy is what the other mods COMPILE against. It is not
        optional bookkeeping: without it a dependent mod builds against the
-       previous FruitLib surface and only fails at runtime. 
-       
-       Addendum by User: Switching to newest release build 0.16A. Has been released via Steam so back to that folder. 
-       Furthermore after a PC rebuild everything dev reladted now lives in E:.
-       Merging Modrefs back to the main folder and repo-->
+       previous FruitLib surface and only fails at runtime.
+
+       Builds target the Steam Release install (FruktBuildsRoot); ModRefs lives at
+       E:\Dev\ModDev\Frukt\ModRefs and is its own repo, which CI checks out. -->
   <PropertyGroup>
     <FruktBuildsRoot Condition="'$(FruktBuildsRoot)' == ''">D:\SteamLibrary\steamapps\common</FruktBuildsRoot>
     <FruktModRefsDir Condition="'$(FruktModRefsDir)' == ''">E:\Dev\ModDev\Frukt\ModRefs</FruktModRefsDir>
   </PropertyGroup>
-
-  <ItemGroup>
-    <FruktInstance Include="$(FruktBuildsRoot)\**\FRUKT.exe"/>
-  </ItemGroup>
 
   <!-- Deploy is local only. GitHub Actions sets GITHUB_ACTIONS=true and the runner has no FRUKT
        install; SkipDeploy=true skips it by hand (e.g. a scratch build that must not touch
        the live game or ModRefs). -->
   <Target Name="PostBuild" AfterTargets="PostBuildEvent"
           Condition="'$(GITHUB_ACTIONS)' != 'true' And '$(SkipDeploy)' != 'true'">
+    <!-- An install carrying DEPRECATED_DONT_BUILD_AGAINST.md next to its FRUKT.exe (the old Demo) is skipped. -->
+    <ItemGroup>
+      <_FruktExe Include="$(FruktBuildsRoot)\**\FRUKT.exe" />
+      <FruktInstance Include="@(_FruktExe)"
+                     Condition="!Exists('%(RootDir)%(Directory)DEPRECATED_DONT_BUILD_AGAINST.md')" />
+    </ItemGroup>
     <Error Condition="'@(FruktInstance)' == ''"
            Text="No FRUKT instance found under '$(FruktBuildsRoot)'. Expected at least one FRUKT.exe. Set FruktBuildsRoot if the builds live elsewhere." />
     <Error Condition="!Exists('$(FruktModRefsDir)')"

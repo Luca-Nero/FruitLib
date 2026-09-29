@@ -103,7 +103,7 @@ namespace FruitLib
                 if (!injected)
                 {
                     _tickFlashOurselves = true;
-                    MelonLogger.Msg("[FruitMenu] no core services provider to copy; " +
+                    FruitLog.Info("[FruitMenu] no core services provider to copy; " +
                                     "driving the MODS button's flash from FruitLib instead.");
                 }
 
@@ -132,7 +132,7 @@ namespace FruitLib
                 button.onClick.AddListener(_onClick);
 
                 _button = clone;
-                MelonLogger.Msg($"[FruitMenu] native '{Label}' button inserted after SETTINGS " +
+                FruitLog.Info($"[FruitMenu] native '{Label}' button inserted after SETTINGS " +
                                 $"(provider={(injected ? "copied" : "absent")}).");
             }
             catch (Exception e) { GiveUp(e.Message); }

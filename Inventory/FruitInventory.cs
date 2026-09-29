@@ -258,7 +258,7 @@ namespace FruitLib
             if (string.IsNullOrEmpty(item.Category)) item.Category = nameof(FruitItemCategory.Etc);
 
             _items.Add(item);
-            MelonLogger.Msg($"[FruitInventory] queued {item} for '{item.Category}'");
+            FruitLog.Info($"[FruitInventory] queued {item} for '{item.Category}'");
 
             // Straight in if the game is already up; otherwise the boot hook picks it up.
             FruitInventoryNative.RegisterPending();
@@ -322,11 +322,17 @@ namespace FruitLib
             if (item.Holding && item.HeldInstance == instance) return;
             if (item.Holding) Deselected(item);
 
+            // One hand. Switching straight from one item to another can deliver the new
+            // select before the old deselect; putting the old one down first means every mod
+            // sees deselect-then-select, and the game's late deselect finds it already down.
+            foreach (var other in _items)
+                if (other != item && other.Holding) Deselected(other);
+
             item.Holding      = true;
             item.HeldInstance = instance;
             item.Held         = held;
             item.Slot         = slot;
-            MelonLogger.Msg($"[FruitInventory] {item} in hand (slot {slot})");
+            FruitLog.Info($"[FruitInventory] {item} in hand (slot {slot})");
             FruitTrace.Mark($"{item} in hand, slot {slot}: calling the mod's OnSelected");
             Invoke(item.OnSelected, item, nameof(FruitItem.OnSelected));
             FruitTrace.Mark($"{item} OnSelected returned");

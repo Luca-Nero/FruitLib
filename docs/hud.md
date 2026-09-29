@@ -7,6 +7,23 @@ width measurement and the menu gate.
 **Do not implement `OnGUI` for a HUD.** That's how mods used to end up hardcoding
 different corners and overlapping each other.
 
+## How it's drawn
+
+Since 5.0 panels are drawn with the game's own UI: TextMeshPro text in the same font,
+material and letter spacing as the game's HUD (borrowed from the kill counter, or the
+toolbar hint), on a canvas that scales with the screen as if it were 1080p. Before a
+level has loaded there's no HUD text to borrow from, so panels use a stand-in font,
+or IMGUI if there's no text at all, and switch over once the real one shows up.
+If the native build fails, or the player turns off *Native HUD*, the same panels are
+drawn with IMGUI. Your code is the same either way.
+
+Two things follow from drawing with the game's font:
+
+- **Stick to characters the font has.** A symbol the game's font lacks (e.g. `⬤`, box
+  drawing, emoji) shows as a placeholder square. Plain ASCII is always safe.
+- **Text is literal.** Rich-text tags are off, so a `<` in your text shows as `<`.
+
+
 ## Registering
 
 ```csharp
@@ -119,5 +136,5 @@ game restarts, so check the log if your HUD silently vanishes.
 
 FruitLib's own settings page (pause → **MODS** → **FruitLib**, and
 `UserData/FruitLibConfig.ini`) exposes corner, margins, gap
-between panels, font size, background alpha, a master enable, and a toggle key
+between panels, font size, background alpha, native or IMGUI drawing, a master enable, and a toggle key
 (default **F8**) that hides all mod HUDs for the session. Your panel inherits all of it.

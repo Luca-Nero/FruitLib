@@ -150,7 +150,7 @@ namespace FruitLib
 
             var sb = new StringBuilder($"[FruitInventory] {_categories.Count} categor{(_categories.Count == 1 ? "y" : "ies")} from {source}:");
             foreach (var c in _categories) sb.Append($" [{Label(c)} = {FruitInventory.Canonical(Label(c))}]");
-            MelonLogger.Msg(sb.ToString());
+            FruitLog.Info(sb.ToString());
         }
 
         internal static IReadOnlyList<string> CategoryNames()
@@ -270,7 +270,7 @@ namespace FruitLib
 
                 ApplyName(item);
 
-                MelonLogger.Msg($"[FruitInventory] registered {item} on '{item.ResolvedCategory}' " +
+                FruitLog.Info($"[FruitInventory] registered {item} on '{item.ResolvedCategory}' " +
                                 $"(prefab {item.InternalName}GII, {descriptor.m_freeRows?.Count ?? 0} card row(s))");
             }
             catch (Exception e)
@@ -410,7 +410,7 @@ namespace FruitLib
             var go = new GameObject(item.InternalName);
             go.transform.SetParent(_templateRoot.transform, false);
             var held = go.AddComponent<FruitHeldItem>();
-            FruitInventoryAudit.AuditOnce(held);
+            if (FruitDiagnostics.Hooks) FruitInventoryAudit.AuditOnce(held);
 
             if (item.Model != null)
             {
@@ -505,7 +505,7 @@ namespace FruitLib
                         item.Concrete._Category_k__BackingField = new IGodInventoryCategoryData(fixedUp.Pointer);
                     item.ResolvedCategory = Label(fixedUp);
 
-                    MelonLogger.Msg($"[FruitInventory] {item} re-pointed at the layout's '{item.ResolvedCategory}' category.");
+                    FruitLog.Info($"[FruitInventory] {item} re-pointed at the layout's '{item.ResolvedCategory}' category.");
                 }
                 catch (Exception e) { MelonLogger.Warning($"[FruitInventory] checking {item}'s category failed: {e.Message}"); }
             }
@@ -526,7 +526,7 @@ namespace FruitLib
             FruitHeldItem.EnsureConstructed(instance);
             FruitInventoryGc.Pin(instance, "on toolbar");
             _live[instance.Pointer] = new Live { Item = item, Instance = instance, Slot = index };
-            MelonLogger.Msg($"[FruitInventory] {item} put on toolbar slot {index}");
+            FruitLog.Info($"[FruitInventory] {item} put on toolbar slot {index}");
         }
 
         internal static void OnRemoving(GAToolbarGIIItemsHandler handler, int index)

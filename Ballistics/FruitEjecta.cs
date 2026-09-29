@@ -20,9 +20,9 @@ namespace FruitLib
         private const string Tag = "[FruitEjecta]";
         private const int ChunkLayer = 2;   // Ignore Raycast: rounds and other chunks pass through
 
-        internal static bool Enabled   => FruitHudConfig.Ejecta;
-        internal static int  MaxPerWound => Mathf.Max(0, FruitHudConfig.EjectaMaxCount);
-        internal static int  MinDepth    => Mathf.Max(1, FruitHudConfig.EjectaMinDepth);
+        internal static bool Enabled   => FruitLibConfig.Ejecta;
+        internal static int  MaxPerWound => Mathf.Max(0, FruitLibConfig.EjectaMaxCount);
+        internal static int  MinDepth    => Mathf.Max(1, FruitLibConfig.EjectaMinDepth);
 
         /// <summary>
         /// Chunks for one exit wound, from the power the round carried out of it. What blows
@@ -33,7 +33,7 @@ namespace FruitLib
         /// </summary>
         internal static int CountFor(int powerOut)
         {
-            float full = Mathf.Max(1f, FruitHudConfig.EjectaFullPower);
+            float full = Mathf.Max(1f, FruitLibConfig.EjectaFullPower);
             return Mathf.Clamp(Mathf.CeilToInt(MaxPerWound * Mathf.Clamp01(powerOut / full)), 1, MaxPerWound);
         }
 
@@ -45,6 +45,9 @@ namespace FruitLib
         private sealed class Handle { public bool Evict; }
         private static readonly LinkedList<Handle> _chunks = new LinkedList<Handle>();
         private static readonly LinkedList<Handle> _decals = new LinkedList<Handle>();
+
+        internal static int ChunkCount => _chunks.Count;
+        internal static int DecalCount => _decals.Count;
 
         /// <summary>A voxel's actual colour, or muscle red for an unwritten (all-zero) one -
         /// a black chunk reads as a rendering bug, not as gore.</summary>
@@ -67,11 +70,11 @@ namespace FruitLib
 
             float pressure = FruitPerfMon.PressureLevel;
             float fps      = FruitPerfMon.LongFps;
-            float target   = FruitHudConfig.EjectaTargetFps;
+            float target   = FruitLibConfig.EjectaTargetFps;
 
             int evict = pressure > 0.25f ? Mathf.RoundToInt(Mathf.Clamp01((pressure - 0.25f) / 0.75f) * 10f) : 0;
             if (fps > 0f && fps < target)
-                evict = Mathf.Max(evict, Mathf.RoundToInt((target - fps) * FruitHudConfig.EjectaCullSpeed));
+                evict = Mathf.Max(evict, Mathf.RoundToInt((target - fps) * FruitLibConfig.EjectaCullSpeed));
             if (evict <= 0) return;
 
             Mark(_decals, evict);
@@ -121,8 +124,8 @@ namespace FruitLib
             rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
 
-            Vector3 spread = Random.insideUnitSphere * FruitHudConfig.EjectaSpread;
-            rb.linearVelocity  = (forward + spread).normalized * FruitHudConfig.EjectaSpeed * (0.5f + (float)_rng.NextDouble());
+            Vector3 spread = Random.insideUnitSphere * FruitLibConfig.EjectaSpread;
+            rb.linearVelocity  = (forward + spread).normalized * FruitLibConfig.EjectaSpeed * (0.5f + (float)_rng.NextDouble());
             rb.angularVelocity = Random.onUnitSphere * Random.Range(5f, 15f);
 
             // A beat before the collider comes on, so it does not collide with the body it
@@ -179,7 +182,7 @@ namespace FruitLib
             if (!rb.isKinematic) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; rb.isKinematic = true; }
 
             Vector3 full = go.transform.localScale;
-            float life = FruitHudConfig.EjectaLifetime, fade = life * 0.65f, e = 0f;
+            float life = FruitLibConfig.EjectaLifetime, fade = life * 0.65f, e = 0f;
             while (e < life && go != null && !handle.Evict)
             {
                 e += Time.deltaTime;
@@ -227,15 +230,15 @@ namespace FruitLib
 
         private static void Decals(Vector3 point, Vector3 normal, Transform surface)
         {
-            if (!FruitHudConfig.BloodDecals || !EnsureAtlas()) return;
+            if (!FruitLibConfig.BloodDecals || !EnsureAtlas()) return;
 
             Vector3 tangent = Vector3.Cross(normal, Vector3.up);
             if (tangent.sqrMagnitude < 0.01f) tangent = Vector3.Cross(normal, Vector3.forward);
             tangent.Normalize();
             Vector3 bitangent = Vector3.Cross(tangent, normal).normalized;
 
-            float radius = FruitHudConfig.BloodDecalSize;
-            int target = Mathf.RoundToInt(FruitHudConfig.BloodDecalCount * Mathf.Clamp01(1f - FruitPerfMon.PressureLevel * 2f));
+            float radius = FruitLibConfig.BloodDecalSize;
+            int target = Mathf.RoundToInt(FruitLibConfig.BloodDecalCount * Mathf.Clamp01(1f - FruitPerfMon.PressureLevel * 2f));
             int placed = 0;
 
             for (int attempt = 0; attempt < target * 3 && placed < target; attempt++)
@@ -310,7 +313,7 @@ namespace FruitLib
 
         private static Rect AtlasTile()
         {
-            int cols = Mathf.Max(1, FruitHudConfig.BloodAtlasCols), rows = Mathf.Max(1, FruitHudConfig.BloodAtlasRows);
+            int cols = Mathf.Max(1, FruitLibConfig.BloodAtlasCols), rows = Mathf.Max(1, FruitLibConfig.BloodAtlasRows);
             int idx = _rng.Next(cols * rows);
             return new Rect((idx % cols) / (float)cols, (idx / cols) / (float)rows, 1f / cols, 1f / rows);
         }
@@ -330,7 +333,7 @@ namespace FruitLib
             if (surface != null) go.transform.SetParent(surface, true);
 
             Vector3 full = go.transform.localScale;
-            float life = FruitHudConfig.BloodDecalLifetime, fade = life * 0.7f, t = 0f;
+            float life = FruitLibConfig.BloodDecalLifetime, fade = life * 0.7f, t = 0f;
             while (t < life && go != null && !handle.Evict)
             {
                 t += Time.deltaTime;

@@ -13,7 +13,8 @@ namespace FruitLib
     /// the last step that actually completed. Slow by design - use it on events, never per
     /// frame.
     ///
-    /// Written to UserData/FruitLib_trace.log, which each launch starts fresh.
+    /// Written to UserData/FruitLib_trace.log, which each launch starts fresh. Off unless
+    /// FruitLib's Diagnostics setting "Debug hooks + crash trace" was on at launch.
     /// </summary>
     public static class FruitTrace
     {
@@ -32,9 +33,13 @@ namespace FruitLib
             }
         }
 
+        /// <summary>Whether marks are written: the Diagnostics switch as it stood at startup.
+        /// Check it before building an expensive message.</summary>
+        public static bool Enabled => !_broken && FruitDiagnostics.Hooks;
+
         public static void Mark(string what)
         {
-            if (_broken) return;
+            if (!Enabled) return;
             try { File.AppendAllText(FilePath, $"[{DateTime.Now:HH:mm:ss.fff}] {what}\n"); }
             catch (Exception e) { Fail(e); }
         }

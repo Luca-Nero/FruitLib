@@ -32,13 +32,13 @@ namespace FruitLib
         {
             if (string.IsNullOrEmpty(id) || sampler == null) return;
             _fields[id] = sampler;
-            MelonLogger.Msg($"[FruitForces] registered '{id}'");
+            FruitLog.Info($"[FruitForces] registered '{id}'");
         }
 
         public static void Unregister(string id)
         {
             if (string.IsNullOrEmpty(id)) return;
-            if (_fields.Remove(id)) MelonLogger.Msg($"[FruitForces] unregistered '{id}'");
+            if (_fields.Remove(id)) FruitLog.Info($"[FruitForces] unregistered '{id}'");
         }
 
         public static bool Any => _fields.Count > 0;

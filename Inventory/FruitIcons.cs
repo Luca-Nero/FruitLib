@@ -9,9 +9,6 @@ namespace FruitLib
     /// <summary>
     /// Sprites for inventory items: from a PNG embedded in a mod, from raw PNG bytes, or a
     /// generated disc for prototyping.
-    ///
-    /// These lived on FruitToolbar until the release build replaced the toolbar with an
-    /// inventory. FruitToolbar still forwards to them, so existing callers keep compiling.
     /// </summary>
     public static class FruitIcons
     {

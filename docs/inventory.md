@@ -8,7 +8,7 @@ Terminal). A FruitLib item is a real inventory item, the same as the native ones
 - it is spawned into the player's hand as a real item;
 - the game delivers the mouse input to it while it is held.
 
-This replaces the old toolbar-slot API. See [Migrating from FruitToolbar](#migrating-from-fruittoolbar).
+This replaces the old toolbar-slot API, removed in 5.0. See [Migrating from FruitToolbar](#migrating-from-fruittoolbar).
 
 ## Usage
 
@@ -158,6 +158,9 @@ For whoever has to fix this after a game update. The bodies are in
   instances to items. Postfixes on `GAToolbarSelectedItemProcessor.OnItemSelect` /
   `OnItemDeselect` drive `OnSelected` / `OnDeselected`. Selection by number key, scroll
   wheel or click all go through there.
+- **Ordering.** The game can deliver the new item's select before the old one's deselect.
+  Since 5.0 FruitLib puts the old FruitLib item down first, so `OnDeselected` of the
+  previous item always runs before `OnSelected` of the next. Mods don't need swap guards.
 
 FruitLib logs each step under `[FruitInventory]`: the categories it found, each
 registration with its prefab name, toolbar placements, and selections. Read that first
@@ -173,15 +176,16 @@ when something breaks.
 
 ## Migrating from FruitToolbar
 
-`FruitToolbar.Register` still works. It is now a thin, `[Obsolete]` layer over
-`FruitInventory`, and it files the item on the Tools shelf. What changed:
+`FruitToolbar` was removed in FruitLib 5.0. The release build has no fixed toolbar to add
+slots to, and driving the old slot system breaks the game. Port like this:
 
-- The item is not on the toolbar until the player sends it there from the inventory
-  window. The `int` your `OnSelected` / `OnDeselected` receive is the slot the player
-  chose.
-- `NativeBaseOverride`, `PreferredOrder`, `AutoCentreSlotRow` and `SlotRowOffset` do
-  nothing. FruitLib no longer adds slots.
-- `FruitToolbar.LoadIcon` / `MakeSolidIcon` forward to `FruitIcons.Load` / `FruitIcons.Solid`.
+| Before | Now |
+|---|---|
+| `FruitToolbar.Register(new FruitToolbarItem { ... })` | `FruitInventory.AddItem(new FruitItem { ..., Category = nameof(FruitItemCategory.Tool) })` |
+| `OnSelected = slot => ...` | `OnSelected = item => ...`, slot in `item.Slot` |
+| `slot.SetDisplay(name, icon)` | `item.SetDisplay(name, icon)`: it doesn't refresh a copy already on the toolbar, so give each variant its own item rather than cycling one |
+| `FruitToolbar.GetSlot(id)` | `FruitInventory.Get(id)?.Slot ?? -1` |
+| `FruitToolbar.LoadIcon` / `MakeSolidIcon` | `FruitIcons.Load` / `FruitIcons.Solid` |
+| `NativeBaseOverride`, `PreferredOrder`, `AutoCentreSlotRow`, `SlotRowOffset` | gone: the player chooses slots in the inventory window |
 
-New code should use `FruitInventory` directly: it adds categories, stats, a model and
-input callbacks, none of which the old API could express.
+The item isn't on the toolbar until the player sends it there from the inventory window.

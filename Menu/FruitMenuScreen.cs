@@ -273,7 +273,7 @@ namespace FruitLib
             // and the momentary bools that are really action buttons.
             page.AddLine("ALL SETTINGS", () => FruitMenu.OpenModPanel(index));
 
-            MelonLogger.Msg($"[FruitMenu] '{FruitMenu.ModName(index)}'" +
+            FruitLog.Info($"[FruitMenu] '{FruitMenu.ModName(index)}'" +
                             (category != null ? $" / {category}" : "") +
                             $": {_rows.Count} slider(s), {_keys.Count} binding(s).");
         }
@@ -335,7 +335,7 @@ namespace FruitLib
                     var field = _keys[_listening];
                     field.SetKey(key);
                     WriteKeyCell(page: _fields, index: _listening, key: key);
-                    MelonLogger.Msg($"[FruitMenu] '{field.Label}' bound to {key}.");
+                    FruitLog.Info($"[FruitMenu] '{field.Label}' bound to {key}.");
 
                     CancelListening();
 

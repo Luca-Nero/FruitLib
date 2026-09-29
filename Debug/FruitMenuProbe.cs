@@ -35,7 +35,7 @@ namespace FruitLib
         /// <summary>Frames of trace to keep printing after the last moving part stops.</summary>
         private const int TraceTail = 5;
 
-        internal static bool Enabled => FruitHudConfig.MenuProbe;
+        internal static bool Enabled => FruitLibConfig.MenuProbe;
 
         internal static void ResetForScene()
         {
@@ -48,7 +48,7 @@ namespace FruitLib
         {
             if (!Enabled || view == null) return;
 
-            if (FruitHudConfig.MenuProbeKey != KeyCode.None && Input.GetKeyDown(FruitHudConfig.MenuProbeKey))
+            if (FruitLibConfig.MenuProbeKey != KeyCode.None && Input.GetKeyDown(FruitLibConfig.MenuProbeKey))
                 DumpStructure(view, "on request");
 
             if (!_dumpedThisScene && view.IsOpen)
@@ -309,7 +309,7 @@ namespace FruitLib
             catch (Exception e)
             {
                 MelonLogger.Warning($"[FruitMenuProbe] trace failed, stopping: {e.Message}");
-                FruitHudConfig.MenuProbe = false;
+                FruitLibConfig.MenuProbe = false;
             }
         }
 
@@ -421,6 +421,8 @@ namespace FruitLib
     [HarmonyPatch(typeof(PausePresenter), nameof(PausePresenter.DrawScreen))]
     internal static class FruitMenuProbe_DrawScreenPatch
     {
+        static bool Prepare() => FruitDiagnostics.Hooks;
+
         static void Postfix(PausePresenter __instance) => FruitMenuProbe.OnDrawScreen(__instance);
     }
 }

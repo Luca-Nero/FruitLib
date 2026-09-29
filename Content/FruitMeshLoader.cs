@@ -66,7 +66,7 @@ namespace FruitLib
                 });
             }
 
-            MelonLogger.Msg($"[FruitMeshLoader] {_entries.Count} mesh(es) ready from '{assembly.GetName().Name}'.");
+            FruitLog.Info($"[FruitMeshLoader] {_entries.Count} mesh(es) ready from '{assembly.GetName().Name}'.");
         }
 
         public Mesh GetMesh(string name)

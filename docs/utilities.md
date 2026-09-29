@@ -2,6 +2,21 @@
 
 Small pieces every mod ends up needing.
 
+## FruitLog
+
+Informational logging that stays quiet unless the player turned on *Verbose log* in
+FruitLib's Diagnostics settings. With a dozen mods loaded, routine "built", "registered"
+and "equipped" lines from each of them bury the one warning that matters.
+
+```csharp
+FruitLog.Info("[MyMod] model built");        // only with Verbose log on
+if (FruitLog.Verbose) DumpExpensiveState();   // skip the work too
+MelonLogger.Warning("[MyMod] no camera");     // warnings and errors: always, straight to MelonLogger
+```
+
+Keep your one "MyMod vX loaded." line unconditional; everything routine after it goes
+through `FruitLog.Info`. The switch is live, no restart needed.
+
 ## FruitPaths
 
 Where your files go. Configs live in MelonLoader's `UserData` folder, not next to the DLLs in

@@ -120,7 +120,7 @@ namespace FruitLib
             }
             var fb = new FruitBundle(name, ab);
             _open[key] = fb;
-            MelonLogger.Msg($"[FruitBundle] '{name}' loaded, {fb.AssetNames().Length} asset(s).");
+            FruitLog.Info($"[FruitBundle] '{name}' loaded, {fb.AssetNames().Length} asset(s).");
             return fb;
         }
 

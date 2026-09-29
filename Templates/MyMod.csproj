@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Nullable>disable</Nullable>
+
+    <!-- The game ships its own System.* alongside netstandard's, so every build reports
+         several dozen unresolvable version conflicts. MelonLoader loads the game's, which
+         is what we want; the warnings only bury real ones. -->
+    <MSBuildWarningsAsMessages>MSB3277</MSBuildWarningsAsMessages>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <!-- Deploy to every live FRUKT install under FruktBuildsRoot (any FRUKT.exe, at any depth, with
+       Mods as its sibling). An install carrying DEPRECATED_DONT_BUILD_AGAINST.md next to its FRUKT.exe
+       (the old Demo) is skipped. Local only: CI / GitHub Actions have no install, and
+       -p:SkipDeploy=true skips it by hand for a compile-only build. -->
+  <PropertyGroup>
+    <FruktBuildsRoot Condition="'$(FruktBuildsRoot)' == ''">D:\SteamLibrary\steamapps\common</FruktBuildsRoot>
+  </PropertyGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent"
+          Condition="'$(CI)' != 'true' And '$(GITHUB_ACTIONS)' != 'true' And '$(SkipDeploy)' != 'true'">
+    <ItemGroup>
+      <_FruktExe Include="$(FruktBuildsRoot)\**\FRUKT.exe" />
+      <FruktInstance Include="@(_FruktExe)"
+                     Condition="!Exists('%(RootDir)%(Directory)DEPRECATED_DONT_BUILD_AGAINST.md')" />
+    </ItemGroup>
+    <Error Condition="'@(FruktInstance)' == ''"
+           Text="No live FRUKT instance under '$(FruktBuildsRoot)' (installs marked DEPRECATED_DONT_BUILD_AGAINST.md are skipped). Set FruktBuildsRoot if the game lives elsewhere." />
+
+    <Copy SourceFiles="$(TargetPath)"
+          DestinationFolder="%(FruktInstance.RootDir)%(FruktInstance.Directory)Mods" />
+
+    <Message Importance="high"
+             Text="MyMod -&gt; %(FruktInstance.RootDir)%(FruktInstance.Directory)Mods" />
+  </Target>
+
+</Project>

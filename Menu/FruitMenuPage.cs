@@ -107,7 +107,7 @@ namespace FruitLib
                     page._tableProto  = page.Borrow<SettingTable>(view, "TableProto");
                 }
 
-                MelonLogger.Msg($"[FruitMenu] page '{name}' built" +
+                FruitLog.Info($"[FruitMenu] page '{name}' built" +
                                 (withControls
                                     ? $" (toggle={(page._toggleProto != null)}, slider={(page._sliderProto != null)}, " +
                                       $"table={(page._tableProto != null)})"
@@ -329,7 +329,7 @@ namespace FruitLib
                 try { table.ShareTheWidestLastCell(); }
                 catch (Exception e) { MelonLogger.Warning($"[FruitMenu] evening up the key column failed: {e.Message}"); }
 
-                MelonLogger.Msg($"[FruitMenu] key table: {lines.Count} row(s), " +
+                FruitLog.Info($"[FruitMenu] key table: {lines.Count} row(s), " +
                                 $"{(lines.Count > 0 ? lines[0].CellCount : 0)} cell(s) per row.");
                 return table;
             }

@@ -9,7 +9,7 @@ models, shaders and decals through Unity AssetBundles.
 FruitLib is itself a MelonMod. Your mod references it at build time and expects
 it in the `Mods` folder at runtime.
 
-**Current version: 4.0.0**.
+**Current version: 5.0.0**. Starting a new mod? Copy the files in [`Templates/`](../Templates/README.md).
 
 ## Guides
 
@@ -17,13 +17,12 @@ it in the `Mods` folder at runtime.
 |---|---|
 | [Config & menu](config-and-menu.md) | Config classes, the in-game settings tab, ini files, input gating |
 | [HUD](hud.md) | On-screen readouts, stacked and positioned for you |
-| [Performance monitor](perfmon.md) | Live counters and timing sections |
+| [Performance monitor](perfmon.md) | A per-mod debug overlay: counters, timers and live values (5.0) |
 | [Inventory](inventory.md) | Custom items in the inventory window, by category |
-| [Toolbar](toolbar.md) | Superseded by the inventory; migration notes |
 | [Sound](sound.md) | The game's own sound effects, and its interface sounds |
 | [Ballistics](ballistics.md) | Projectiles and explosions through the game's wound model, multiplayer-ready (3.1.0) |
 | [AssetBundles](BUNDLES.md) | Custom models, shaders, animation and decals built in the Unity editor (3.2.0) |
-| [Utilities](utilities.md) | `FruitPaths`, `FruitScene`, `FruitForces`, `FruitUpdateCheck` |
+| [Utilities](utilities.md) | `FruitLog`, `FruitPaths`, `FruitScene`, `FruitForces`, `FruitUpdateCheck` |
 | [Meshes](meshes.md) | The older `*_mesh.json` loader (schema in [`MESH_FORMAT.md`](MESH_FORMAT.md)). Prefer bundles for new work |
 
 ## Setup
@@ -175,7 +174,7 @@ Avoid these in your own defaults (all rebindable by the player):
 | Key | What | Default state |
 |---|---|---|
 | F8 | Hide / show all mod HUD panels | on |
-| F11 | Performance overlay (**R** resets peaks while it's up) | on |
+| F11 | Performance overlay; Shift: next view, Ctrl: reset peaks | on |
 | F6 / F7 / F10 | Ballistics / menu / bundle diagnostics | only when their `*Probe` setting is on |
 
 ## Conventions worth matching
