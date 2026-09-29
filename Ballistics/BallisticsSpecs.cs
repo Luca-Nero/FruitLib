@@ -7,7 +7,7 @@ namespace FruitLib
 {
     /// <summary>
     /// How a projectile tears through a body. Every field maps onto the game's own bullet
-    /// (Spawnables.Bullets.Bullet, v0_17L); FruitLib walks the voxels the same way the game
+    /// (Spawnables.Bullets.Bullet); FruitLib walks the voxels the same way the game
     /// does and hands the result to the game's own cavitation and exit-tear builders, so a
     /// profile with native values produces a native wound.
     ///
@@ -76,8 +76,17 @@ namespace FruitLib
 
         public float MassGrams      = 7.9f;
         public float CaliberMm      = 7.62f;
-        /// <summary>Cd against air. Spitzer rifle bullets ~0.25-0.3, round-nose handgun ~0.4-0.5, buckshot ~0.47.</summary>
+        /// <summary>Cd against air. Spitzer rifle bullets ~0.25-0.3, round-nose handgun ~0.4-0.5, buckshot ~0.47.
+        /// Constant at every speed; set <see cref="BallisticCoefficientG7"/> for drag that follows Mach.</summary>
         public float DragCoefficient = 0.29f;
+        /// <summary>
+        /// G7 ballistic coefficient in lb/in², as printed on ammunition boxes and in load data
+        /// (7.62×39 FMJ ~0.14, 5.56 M855 ~0.15, .308 175 gr ~0.24, .50 BMG ~0.5). Above 0 it
+        /// replaces <see cref="DragCoefficient"/> with the G7 drag curve, which rises sharply
+        /// through the sound barrier - so a supersonic round sheds speed fast until it goes
+        /// subsonic, and a subsonic one barely slows. 0 = constant Cd.
+        /// </summary>
+        public float BallisticCoefficientG7 = 0f;
         public float MuzzleVelocity  = 715f;
         public float GravityScale    = 1f;
         public float Lifetime        = 4f;
@@ -97,14 +106,30 @@ namespace FruitLib
         /// <summary>Random yaw on leaving a body, degrees.</summary>
         public float PenetrationDeflect = 1f;
 
-        /// <summary>Incidence from the surface normal beyond which a hard surface deflects it.</summary>
+        /// <summary>Incidence from the surface normal beyond which concrete deflects it. Other
+        /// surfaces shift this (<see cref="SurfaceMaterial.RicochetAngleShift"/>), and there is a
+        /// few degrees of chance either side of it.</summary>
         public float RicochetAngle      = 70f;
         public int   MaxBounces         = 1;
+        /// <summary>Energy lost to a ricochet, before the surface scales it (<see cref="SurfaceMaterial.RicochetLossScale"/>).</summary>
         public float RicochetEnergyLoss = 0.5f;
         public float RicochetScatter    = 3f;
 
-        /// <summary>Impulse on a non-limb rigidbody at full power, N·s.</summary>
+        /// <summary>
+        /// Impulse on a non-limb rigidbody for a round at muzzle speed that stops dead in it,
+        /// N·s. What it actually pushes follows the speed the round lost there - a round that
+        /// passes through, or glances off, pushes less. Set it to mass (kg) × muzzle velocity
+        /// for a physically exact push; games usually want more.
+        /// </summary>
         public float WorldImpulse = 10f;
+
+        /// <summary>
+        /// How well it goes through surfaces, as a multiple of a full metal jacket of the same
+        /// mass and calibre: above 1 for a hard or steel core, below 1 for soft and hollow
+        /// points or lead shot, which flatten. 0 = never penetrates a surface. Everything else
+        /// comes from the round itself - mass over frontal area, and speed.
+        /// </summary>
+        public float PenetrationScale = 1f;
 
         public WoundProfile Wound = new WoundProfile();
 
@@ -112,14 +137,45 @@ namespace FruitLib
 
         internal float MassKg => Mathf.Max(0.0001f, MassGrams * 0.001f);
 
-        /// <summary>k in a = -k|v|v, per metre: ½ρ·Cd·A / m, sea-level air.</summary>
-        internal float DragK
+        internal float AreaM2
         {
             get
             {
                 float r = CaliberMm * 0.0005f;
-                return 0.5f * 1.225f * DragCoefficient * Mathf.PI * r * r / MassKg;
+                return Mathf.Max(1e-7f, Mathf.PI * r * r);
             }
+        }
+
+        /// <summary>Sectional density, kg/m²: what drives penetration.</summary>
+        internal float SectionalDensity => MassKg / AreaM2;
+
+        private const float AirDensity   = 1.225f;
+        private const float SpeedOfSound = 343f;
+
+        /// <summary>k in a = -k|v|v, per metre, at <paramref name="speed"/> through sea-level air:
+        /// ½ρ·Cd·A / m, or from the G7 curve when a ballistic coefficient is set.</summary>
+        internal float DragKAt(float speed)
+        {
+            if (BallisticCoefficientG7 > 0f)
+            {
+                // Retardation = (π/8)·ρ·v²·Cd_G7(M) / BC, with BC converted from lb/in² to kg/m².
+                float bc = BallisticCoefficientG7 * 703.0696f;
+                return Mathf.PI / 8f * AirDensity * G7(speed / SpeedOfSound) / bc;
+            }
+            return 0.5f * AirDensity * DragCoefficient * AreaM2 / MassKg;
+        }
+
+        // The G7 standard projectile's drag coefficient against Mach number.
+        private static readonly float[] G7Mach = { 0f,     0.7f,   0.8f,   0.85f,  0.9f,   0.95f,  1.0f,   1.05f,  1.1f,   1.2f,   1.3f,   1.5f,   1.75f,  2.0f,   2.5f,   3.0f,   4.0f   };
+        private static readonly float[] G7Cd   = { 0.1198f,0.1196f,0.1242f,0.1350f,0.1510f,0.2091f,0.3803f,0.4014f,0.3884f,0.3605f,0.3380f,0.3070f,0.2800f,0.2596f,0.2299f,0.2084f,0.1800f };
+
+        private static float G7(float mach)
+        {
+            if (mach <= G7Mach[0]) return G7Cd[0];
+            for (int i = 1; i < G7Mach.Length; i++)
+                if (mach <= G7Mach[i])
+                    return Mathf.Lerp(G7Cd[i - 1], G7Cd[i], (mach - G7Mach[i - 1]) / (G7Mach[i] - G7Mach[i - 1]));
+            return G7Cd[G7Cd.Length - 1];
         }
 
         internal int MuzzlePower => PowerOverride > 0

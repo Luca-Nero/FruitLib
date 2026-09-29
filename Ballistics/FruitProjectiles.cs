@@ -9,11 +9,14 @@ namespace FruitLib
     /// Rounds in flight. The integrator and surface rules are GunsGunsGuns' AkProjectiles;
     /// what is new is that nothing about a round's damage is a free parameter any more:
     ///
-    /// - It slows under real quadratic drag (a = -k|v|v, k = ½ρ·Cd·A/m) as well as gravity.
+    /// - It slows under real quadratic drag (a = -k|v|v, k = ½ρ·Cd·A/m, or the G7 curve) against
+    ///   the air around it - so wind drifts it - as well as gravity and any FruitForces field.
     /// - Its wound power is muzzle power x (v/v0)², i.e. it tracks kinetic energy, so drag,
-    ///   ricochets and bodies already passed through all cost what they physically should.
+    ///   ricochets, walls and bodies already passed through all cost what they physically should.
     /// - Bodies are walked by <see cref="FruitWounds"/>, the game's own wound model, and the
     ///   round leaves at the speed the power it has left corresponds to.
+    /// - Surfaces are a <see cref="SurfaceMaterial"/>: it ricochets, goes through (Poncelet) or
+    ///   stops, and a round that went through something tumbles from then on.
     ///
     /// A limb, once entered, is ignored by that round from then on: the voxel walk has already
     /// found the exit, and the limb's collider is usually bigger than its voxels.
@@ -24,6 +27,13 @@ namespace FruitLib
 
         /// <summary>Ejecta chunks sit on Ignore Raycast; rounds should not hit them.</summary>
         private const int HitMask = ~(1 << 2);
+
+        /// <summary>A tumbling round flies side-on: roughly three times the drag.</summary>
+        private const float TumbleDrag = 3f;
+        /// <summary>Losing more than this fraction of its speed in a surface knocks a round off its axis.</summary>
+        private const float TumbleAfterLoss = 0.15f;
+        /// <summary>Degrees either side of the ricochet angle over which a ricochet goes from never to always.</summary>
+        private const float RicochetBand = 4f;
 
         private static readonly List<Projectile> _rounds = new List<Projectile>();
         private static int _nextId;
@@ -42,6 +52,7 @@ namespace FruitLib
                 Velocity    = cmd.Direction.normalized * Mathf.Max(1f, spec.MuzzleVelocity),
                 Alive       = true,
                 Cosmetic    = cosmetic,
+                Owner       = cmd.Owner,
                 MuzzlePower = spec.MuzzlePower,
                 Rng         = new System.Random(cmd.Seed),
             };
@@ -63,15 +74,17 @@ namespace FruitLib
 
             for (int i = _rounds.Count - 1; i >= 0; i--)
             {
+                // A listener can end a round, or fire new ones, from inside this loop.
+                if (i >= _rounds.Count) continue;
                 var r = _rounds[i];
                 try
                 {
-                    if (!Step(r, dt)) End(i);
+                    if (!Step(r, dt)) End(_rounds.IndexOf(r));
                 }
                 catch (Exception e)
                 {
                     MelonLogger.Warning($"[FruitBallistics] round {r.Spec?.Id} failed and was removed: {e.Message}");
-                    End(i);
+                    End(_rounds.IndexOf(r));
                 }
             }
         }
@@ -79,16 +92,36 @@ namespace FruitLib
         /// <summary>Advances one round a frame. False when it is finished.</summary>
         private static bool Step(Projectile r, float dt)
         {
+            if (r.Killed) return false;
             var s = r.Spec;
             r.Age += dt;
             if (r.Age > s.Lifetime) return false;
 
-            // Integrate. Drag is applied implicitly (v / (1 + k|v|dt)) so a light, fast
-            // fragment in a long frame slows down rather than reversing.
+            if (FruitBallistics.WantsStep)
+            {
+                FruitBallistics.RaiseStep(r, dt);
+                if (r.Killed) return false;
+            }
+
+            // Integrate. Drag works on the round's speed through the air, so a wind moves it
+            // by how much the air pushes on it. It is applied implicitly (v / (1 + k|v|dt)) so
+            // a light, fast fragment in a long frame slows down rather than reversing.
             Vector3 v = r.Velocity;
             v += Physics.gravity * (s.GravityScale * dt);
-            if (s.ExternalForces && FruitForces.Any) v += FruitForces.SampleAt(r.Position) * dt;
-            v /= 1f + s.DragK * v.magnitude * dt;
+            Vector3 wind = Vector3.zero;
+            if (s.ExternalForces)
+            {
+                if (FruitForces.Any)
+                    v += FruitForces.Accelerate(new ForceQuery
+                    {
+                        Position = r.Position, Velocity = v, MassKg = s.MassKg, Dt = dt, Projectile = r,
+                    }) * dt;
+                if (FruitForces.AnyWind) wind = FruitForces.WindAt(r.Position);
+            }
+            Vector3 air   = v - wind;
+            float   speed = air.magnitude;
+            float   k     = s.DragKAt(speed) * (r.Tumbling ? TumbleDrag : 1f);
+            v = air / (1f + k * speed * dt) + wind;
             r.Velocity = v;
 
             if (r.PowerRatio < s.KillPowerRatio) return false;
@@ -106,11 +139,12 @@ namespace FruitLib
                 }
 
                 remaining -= hit.distance;
+                float through = 0f;
                 var limb = FruitWounds.LimbOf(hit.collider);
-                bool alive = limb != null ? HitLimb(r, hit, limb, dir) : HitSurface(r, hit, dir);
-                if (!alive) return false;
+                bool alive = limb != null ? HitLimb(r, hit, limb, dir) : HitSurface(r, hit, dir, out through);
+                if (!alive || r.Killed) return false;
 
-                remaining = Mathf.Max(0f, remaining - 0.02f);
+                remaining = Mathf.Max(0f, remaining - 0.02f - through);
             }
             return true;
         }
@@ -129,12 +163,15 @@ namespace FruitLib
             {
                 var h = hits[i];
                 if (h.collider == null || h.distance >= bestDist) continue;
+                if (r.IgnoredColliders != null && r.IgnoredColliders.Contains(h.collider.GetInstanceID())) continue;
                 var body = FruitWounds.BodyOf(h.collider);
                 if (body != null && r.IgnoredBodies.Contains(body.Pointer)) continue;
                 best = h; bestDist = h.distance; found = true;
             }
             return found;
         }
+
+        // ── Bodies ───────────────────────────────────────────────────────────────
 
         private static bool HitLimb(Projectile r, RaycastHit hit, Il2CppEffectors.LimbEffectorReceiver limb, Vector3 dir)
         {
@@ -143,8 +180,9 @@ namespace FruitLib
             if (body != null) r.IgnoredBodies.Add(body.Pointer);
 
             int powerIn = r.Power;
-            var res = FruitWounds.Channel(limb, body, hit.point, hit.normal, dir, powerIn, r.MuzzlePower,
-                                          s.Wound, FruitWounds.RoundHit(r.Id), r.Rng,
+            int initial = Mathf.Max(1, Mathf.RoundToInt(r.MuzzlePower * r.PowerScale));
+            var res = FruitWounds.Channel(limb, body, hit.point, hit.normal, dir, powerIn, initial,
+                                          r.Tumbling ? Tumbled(s.Wound) : s.Wound, FruitWounds.RoundHit(r.Id), r.Rng,
                                           firstBody: !r.WalkedBody, cosmetic: r.Cosmetic);
 
             if (!res.Touched)
@@ -156,7 +194,7 @@ namespace FruitLib
 
             r.WalkedBody = true;
 
-            float ratio = res.PowerOut / (float)Mathf.Max(1, r.MuzzlePower);
+            float ratio = res.PowerOut / (float)initial;
             bool flies = res.Exited && ratio >= s.KillPowerRatio;
             if (flies)
             {
@@ -176,35 +214,187 @@ namespace FruitLib
             return flies;
         }
 
-        private static bool HitSurface(Projectile r, RaycastHit hit, Vector3 dir)
+        /// <summary>
+        /// A round that arrives side-on has no neck to its wound track and tears a wider
+        /// channel. A copy per hit: limb hits are rare, and a mod may change its spec's wound
+        /// at any time.
+        /// </summary>
+        private static WoundProfile Tumbled(WoundProfile w)
         {
+            var t = w.Clone();
+            t.CleanEntryDepth = 0;
+            t.SpreadChance    = Mathf.Min(1f, w.SpreadChance * 1.5f + 0.1f);
+            if (w.CavitationPeakRadius > 0) t.CavitationPeakRadius = w.CavitationPeakRadius + 1;
+            return t;
+        }
+
+        // ── Surfaces ─────────────────────────────────────────────────────────────
+
+        /// <param name="through">Metres of surface crossed, when it went through.</param>
+        private static bool HitSurface(Projectile r, RaycastHit hit, Vector3 dir, out float through)
+        {
+            through = 0f;
             var s = r.Spec;
-            float ratio = r.PowerRatio;
-
-            if (!r.Cosmetic && hit.collider.attachedRigidbody != null && s.WorldImpulse > 0f)
-            {
-                try { hit.collider.attachedRigidbody.AddForceAtPosition(dir * (s.WorldImpulse * ratio), hit.point, ForceMode.Impulse); }
-                catch { }
-            }
-
+            float speedIn = r.Velocity.magnitude;
             float incidence = Vector3.Angle(-dir, hit.normal);
-            bool ricochet = incidence >= s.RicochetAngle && r.Bounces < s.MaxBounces;
 
-            FruitBallistics.RaiseSurfaceHit(new SurfaceHitInfo
+            var d = new SurfaceDecision
             {
                 Projectile = r, Collider = hit.collider, Point = hit.point, Normal = hit.normal,
-                Direction = dir, Incidence = incidence, Ricocheted = ricochet, PowerRatio = ratio,
-            });
+                Direction = dir, Incidence = incidence,
+                Material = FruitSurfaces.Resolve(hit.collider), Outcome = SurfaceOutcome.Physics,
+            };
+            Vector3 posBefore = r.Position, velBefore = r.Velocity;
+            FruitBallistics.RaiseBeforeSurfaceHit(ref d);
 
-            if (!ricochet) return false;
+            var info = new SurfaceHitInfo
+            {
+                Projectile = r, Collider = hit.collider, Point = hit.point, Normal = hit.normal,
+                Direction = dir, Incidence = incidence, PowerRatio = r.PowerRatio,
+                Material = d.Material ?? FruitSurfaces.Concrete, SpeedIn = speedIn, Outcome = d.Outcome,
+            };
 
+            bool alive;
+            switch (d.Outcome)
+            {
+                case SurfaceOutcome.PassThrough:
+                    (r.IgnoredColliders ??= new HashSet<int>()).Add(hit.collider.GetInstanceID());
+                    r.Position = hit.point;
+                    info.SpeedOut = speedIn;
+                    alive = true;
+                    break;
+
+                case SurfaceOutcome.Handled:
+                    if (r.Position == posBefore && r.Velocity == velBefore) r.Kill();
+                    info.SpeedOut = r.Killed ? 0f : r.Velocity.magnitude;
+                    alive = !r.Killed;
+                    break;
+
+                case SurfaceOutcome.Stop:
+                    alive = Stop(r, hit, dir, ref info);
+                    break;
+
+                case SurfaceOutcome.Ricochet:
+                    alive = Ricochet(r, hit, info.Material, ref info);
+                    break;
+
+                default:
+                    alive = Physical(r, hit, dir, ref info, out through);
+                    break;
+            }
+
+            FruitBallistics.RaiseSurfaceHit(info);
+            return alive && !r.Killed;
+        }
+
+        /// <summary>Ricochet if the angle says so, else through if it has the energy, else stop.</summary>
+        private static bool Physical(Projectile r, RaycastHit hit, Vector3 dir, ref SurfaceHitInfo info, out float through)
+        {
+            through = 0f;
+            var s = r.Spec;
+            var m = info.Material;
+
+            float critical = Mathf.Clamp(s.RicochetAngle + m.RicochetAngleShift, 0f, 89.5f);
+            float chance   = Mathf.InverseLerp(critical - RicochetBand, critical + RicochetBand, info.Incidence);
+            if (r.Bounces < s.MaxBounces && chance > 0f && r.Rng.NextDouble() < chance)
+                return Ricochet(r, hit, m, ref info);
+
+            if (Penetrate(r, hit, dir, m, ref info, out through)) return true;
+            return Stop(r, hit, dir, ref info);
+        }
+
+        private static bool Penetrate(Projectile r, RaycastHit hit, Vector3 dir, SurfaceMaterial m,
+                                      ref SurfaceHitInfo info, out float through)
+        {
+            through = 0f;
+            var s = r.Spec;
+            if (!FruitLibConfig.WallPenetration || s.PenetrationScale <= 0f || !m.Penetrable) return false;
+
+            // A tumbling round meets the surface side-on: about half the sectional density.
+            float sd = s.SectionalDensity * s.PenetrationScale * Mathf.Max(0f, FruitLibConfig.PenetrationScale)
+                       * (r.Tumbling ? 0.5f : 1f);
+            float speedIn = info.SpeedIn;
+            float reach   = Mathf.Min(m.Depth(sd, speedIn), m.MaxThickness);
+            if (reach < 0.002f) return false;
+
+            // Find the far side by casting back at this collider from as deep as the round
+            // could get. Nothing there means the surface is thicker than that - or the ray
+            // started inside it - and either way the round stays in.
+            reach += 0.01f;
+            if (!hit.collider.Raycast(new Ray(hit.point + dir * reach, -dir), out RaycastHit exit, reach)) return false;
+
+            float thickness = Mathf.Max(0.001f, reach - exit.distance);
+            float vOut = m.ExitSpeed(sd, speedIn, thickness);
+            float v0 = Mathf.Max(1f, s.MuzzleVelocity);
+            if (vOut <= 0f || (vOut / v0) * (vOut / v0) < s.KillPowerRatio) return false;
+
+            float lost = 1f - vOut / Mathf.Max(0.01f, speedIn);
+            Vector3 outDir = Deflect(r, dir, m.ExitScatter * lost + s.PenetrationDeflect);
+            Push(r, hit, dir * (speedIn - vOut));
+
+            r.Velocity = outDir * vOut;
+            r.Position = exit.point + dir * 0.01f;
+            r.Penetrations++;
+            if (lost > TumbleAfterLoss) r.Tumbling = true;
+
+            info.Penetrated = true;
+            info.Exit       = exit.point;
+            info.Thickness  = thickness;
+            info.SpeedOut   = vOut;
+            through = thickness;
+            return true;
+        }
+
+        /// <summary>
+        /// Off the surface: the part of the velocity along it mostly survives (Grip), the part
+        /// into it mostly does not (Restitution), so a round leaves flatter than it came in.
+        /// Speed then follows the energy the round and surface lose between them.
+        /// </summary>
+        private static bool Ricochet(Projectile r, RaycastHit hit, SurfaceMaterial m, ref SurfaceHitInfo info)
+        {
+            var s = r.Spec;
             r.Bounces++;
-            Vector3 outDir = Deflect(r, Vector3.Reflect(dir, hit.normal), s.RicochetScatter);
-            // Energy loss, so speed keeps sqrt of what is left.
-            float speed = r.Velocity.magnitude * Mathf.Sqrt(Mathf.Clamp01(1f - s.RicochetEnergyLoss));
+
+            Vector3 v  = r.Velocity;
+            Vector3 vn = Vector3.Project(v, hit.normal);
+            Vector3 vt = v - vn;
+            Vector3 outV = vt * m.Grip - vn * m.Restitution;
+            if (outV.sqrMagnitude < 1e-6f) outV = hit.normal;
+
+            Vector3 outDir = Deflect(r, outV.normalized, s.RicochetScatter);
+            if (Vector3.Dot(outDir, hit.normal) < 0.02f)   // scatter must not send it back into the surface
+                outDir = (Vector3.ProjectOnPlane(outDir, hit.normal).normalized + hit.normal * 0.05f).normalized;
+
+            float keep  = Mathf.Sqrt(Mathf.Clamp01(1f - s.RicochetEnergyLoss * m.RicochetLossScale));
+            float speed = v.magnitude * keep;
             r.Velocity = outDir * speed;
             r.Position = hit.point + hit.normal * 0.02f;
+            Push(r, hit, v - r.Velocity);
+
+            info.Ricocheted = true;
+            info.SpeedOut   = speed;
             return true;
+        }
+
+        private static bool Stop(Projectile r, RaycastHit hit, Vector3 dir, ref SurfaceHitInfo info)
+        {
+            Push(r, hit, dir * info.SpeedIn);
+            info.SpeedOut = 0f;
+            return false;
+        }
+
+        /// <summary>
+        /// The push the round gives what it hit: <see cref="ProjectileSpec.WorldImpulse"/> for a
+        /// full-speed round stopping dead, scaled by the velocity it actually lost there.
+        /// </summary>
+        private static void Push(Projectile r, RaycastHit hit, Vector3 lostVelocity)
+        {
+            var s = r.Spec;
+            if (r.Cosmetic || s.WorldImpulse <= 0f) return;
+            var rb = hit.collider.attachedRigidbody;
+            if (rb == null) return;
+            try { rb.AddForceAtPosition(lostVelocity * (s.WorldImpulse / Mathf.Max(1f, s.MuzzleVelocity)), hit.point, ForceMode.Impulse); }
+            catch { }
         }
 
         /// <summary>A random yaw of up to <paramref name="degrees"/> about the travel direction itself -
@@ -221,6 +411,7 @@ namespace FruitLib
 
         private static void End(int index)
         {
+            if (index < 0 || index >= _rounds.Count) return;
             var r = _rounds[index];
             _rounds.RemoveAt(index);
             r.Alive = false;

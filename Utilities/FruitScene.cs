@@ -1,10 +1,9 @@
-using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace FruitLib
 {
     /// <summary>
-    /// Scene lookups that survive IL2CPP stripping (true since 0.14, still true on Release).
+    /// Scene lookups that survive IL2CPP stripping.
     ///
     /// <b>The trap:</b> <c>Object.FindObjectOfType&lt;T&gt;(bool)</c> — the SINGULAR
     /// overload — is stripped from this build and throws
@@ -14,10 +13,7 @@ namespace FruitLib
     ///
     /// This is worth a type of its own because of how it fails. The call is usually
     /// inside a <c>try/catch</c> — scene lookups generally are — so the exception is
-    /// swallowed and whatever the lookup was for silently never happens. It cost a
-    /// debugging round in Rewind (a player-exclusion that quietly never ran) and it was
-    /// about to cost one here: the 0.1 mods use the singular form freely, and the 0.14
-    /// port carried ten of those calls across before this was caught.
+    /// swallowed and whatever the lookup was for silently never happens.
     ///
     /// Prefer <see cref="First{T}"/> over the Unity call everywhere, including in new
     /// code — there is no version of this where the singular overload is the better

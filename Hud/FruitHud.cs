@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Reflection;
-using System.Text;
 using MelonLoader;
 using UnityEngine;
 
@@ -98,7 +94,7 @@ namespace FruitLib
         internal static void Init()
         {
             FruitLibConfig.EnsureLoaded();
-            FruitMenu.Register("FruitLib", FruitLibConfig.IniPath, typeof(FruitLibConfig));
+            FruitMenu.Register("FruitLib", FruitLibConfig.IniPath, typeof(FruitLibConfig), FruitLibConfig.Write);
         }
 
         internal static void Tick()

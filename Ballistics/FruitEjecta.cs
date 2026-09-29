@@ -92,7 +92,13 @@ namespace FruitLib
         internal static void Spawn(Vector3 exit, Vector3 dir, List<Color> colours, Rigidbody host)
         {
             if (!Enabled || colours.Count == 0) return;
-            if (!_layerSetup) { Physics.IgnoreLayerCollision(ChunkLayer, ChunkLayer, true); _layerSetup = true; }
+            if (!_layerSetup)
+            {
+                // Once, whatever happens: a throw here must not stop every later wound's chunks.
+                _layerSetup = true;
+                try { Physics.IgnoreLayerCollision(ChunkLayer, ChunkLayer, true); }
+                catch (System.Exception e) { MelonLogger.Warning($"{Tag} chunks will collide with each other: {e.Message}"); }
+            }
 
             Collider[] ownBody = host != null ? host.transform.root.GetComponentsInChildren<Collider>() : null;
             int max = Mathf.RoundToInt(MaxPerWound * Mathf.Clamp01(1f - FruitPerfMon.PressureLevel));
@@ -103,30 +109,10 @@ namespace FruitLib
 
         private static IEnumerator Chunk(Vector3 p0, Vector3 forward, Color col, Collider[] ownBody)
         {
+            if (!Build(p0, forward, col, out var go, out var box, out var mat, out var rb)) yield break;
+
             var handle = new Handle();
             var node = _chunks.AddLast(handle);
-
-            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.name = "FruitLib_Ejecta";
-            go.layer = ChunkLayer;
-            go.transform.localScale = Vector3.one * 0.05f;
-            go.transform.position = p0;
-            var box = go.GetComponent<BoxCollider>();
-            if (box != null) box.enabled = false;
-
-            var mat = new Material(Shader.Find("Unlit/Color")) { color = col };
-            go.GetComponent<Renderer>().material = mat;
-
-            var rb = go.AddComponent<Rigidbody>();
-            rb.mass = 0.005f;
-            rb.drag = 0.3f;
-            rb.angularDrag = 0.5f;
-            rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-            rb.interpolation = RigidbodyInterpolation.Interpolate;
-
-            Vector3 spread = Random.insideUnitSphere * FruitLibConfig.EjectaSpread;
-            rb.linearVelocity  = (forward + spread).normalized * FruitLibConfig.EjectaSpeed * (0.5f + (float)_rng.NextDouble());
-            rb.angularVelocity = Random.onUnitSphere * Random.Range(5f, 15f);
 
             // A beat before the collider comes on, so it does not collide with the body it
             // is leaving; and then never with that body at all.
@@ -194,6 +180,59 @@ namespace FruitLib
             Finish(node, go, mat);
         }
 
+        /// <summary>
+        /// One chunk, launched. False, with nothing left behind, if any step of it fails.
+        ///
+        /// Only setters the Release build still has: collisionDetectionMode and drag /
+        /// angularDrag are stripped and throw, which used to leave every chunk behind as a
+        /// frozen cube that was never launched, evicted or destroyed. A chunk does not need
+        /// continuous collision anyway - it sweeps its own path with a raycast every frame.
+        /// </summary>
+        private static bool Build(Vector3 p0, Vector3 forward, Color col,
+                                  out GameObject go, out BoxCollider box, out Material mat, out Rigidbody rb)
+        {
+            go = null; box = null; mat = null; rb = null;
+            try
+            {
+                go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                go.name = "FruitLib_Ejecta";
+                go.layer = ChunkLayer;
+                go.transform.localScale = Vector3.one * Mathf.Max(0.005f, FruitLibConfig.EjectaSize);
+                go.transform.position = p0;
+                box = go.GetComponent<BoxCollider>();
+                if (box != null) box.enabled = false;
+
+                // Invisible chunks still fly, stick and leave blood decals.
+                var renderer = go.GetComponent<Renderer>();
+                if (FruitLibConfig.EjectaVisible)
+                {
+                    mat = new Material(Shader.Find("Unlit/Color")) { color = col };
+                    renderer.material = mat;
+                }
+                else renderer.enabled = false;
+
+                rb = go.AddComponent<Rigidbody>();
+                rb.mass = 0.005f;
+                rb.linearDamping  = 0.3f;
+                rb.angularDamping = 0.5f;
+                rb.interpolation  = RigidbodyInterpolation.Interpolate;
+
+                Vector3 spread = Random.insideUnitSphere * FruitLibConfig.EjectaSpread;
+                rb.linearVelocity  = (forward + spread).normalized * FruitLibConfig.EjectaSpeed * (0.5f + (float)_rng.NextDouble());
+                rb.angularVelocity = Random.onUnitSphere * Random.Range(5f, 15f);
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                if (_reportedBuildFailure++ == 0) MelonLogger.Warning($"{Tag} a chunk failed to build and was removed (reported once): {e}");
+                if (go != null) Object.Destroy(go);
+                if (mat != null) Object.Destroy(mat);
+                return false;
+            }
+        }
+
+        private static int _reportedBuildFailure;
+
         private static void Finish(LinkedListNode<Handle> node, GameObject go, Material mat)
         {
             if (node.List != null) node.List.Remove(node);
@@ -203,30 +242,54 @@ namespace FruitLib
 
         // ── Decals ───────────────────────────────────────────────────────────────
 
-        private static Texture2D _atlas;
-        private static Shader    _shader;
-        private static Material  _material;
-        private static bool      _atlasTried;
+        private static Material _material;
+        private static float    _nextAtlasLookup;
+        private static bool     _atlasWarned;
 
+        /// <summary>
+        /// The decal material, rebuilt whenever it or its atlas is gone.
+        ///
+        /// Built once and trusted forever, it broke on the first trip through the main menu:
+        /// DontDestroyOnLoad does nothing for a Material, so the game's unused-asset sweep
+        /// destroyed it and no decal spawned for the rest of the session. It is now pinned
+        /// with DontUnloadUnusedAsset (which keeps the atlas it references too), checked on
+        /// every use, and a failed lookup - say, a wound before any level has loaded the
+        /// atlas - is retried every couple of seconds instead of giving up.
+        /// </summary>
         private static bool EnsureAtlas()
         {
-            if (_material != null) return true;
-            if (_atlasTried) return false;
-            _atlasTried = true;
+            if (_material != null && _material.mainTexture != null) return true;
+            if (Time.unscaledTime < _nextAtlasLookup) return false;
+            _nextAtlasLookup = Time.unscaledTime + 2f;
 
-            foreach (var t in Resources.FindObjectsOfTypeAll<Texture2D>()) if (t.name == "Pixelblood") { _atlas = t; break; }
-            foreach (var s in Resources.FindObjectsOfTypeAll<Shader>()) if (s.name == "Sprites/Default") { _shader = s; break; }
+            if (_material != null) Object.Destroy(_material);
+            _material = null;
 
-            if (_atlas == null || _shader == null)
+            Texture2D atlas = null;
+            Shader shader = null;
+            foreach (var t in Resources.FindObjectsOfTypeAll<Texture2D>()) if (t != null && t.name == "Pixelblood") { atlas = t; break; }
+            foreach (var s in Resources.FindObjectsOfTypeAll<Shader>()) if (s != null && s.name == "Sprites/Default") { shader = s; break; }
+
+            if (atlas == null || shader == null)
             {
-                MelonLogger.Warning($"{Tag} Pixelblood atlas or Sprites/Default shader not found; blood decals off");
+                if (!_atlasWarned)
+                {
+                    _atlasWarned = true;
+                    MelonLogger.Warning($"{Tag} Pixelblood atlas or Sprites/Default shader not found yet; blood decals wait until they load");
+                }
                 return false;
             }
 
-            _material = new Material(_shader) { mainTexture = _atlas, color = Muscle, renderQueue = 3000 };
-            Object.DontDestroyOnLoad(_material);
+            _material = new Material(shader)
+            {
+                mainTexture = atlas, color = Muscle, renderQueue = 3000,
+                hideFlags = HideFlags.DontUnloadUnusedAsset,
+            };
             return true;
         }
+
+        /// <summary>A new scene may have just loaded the atlas: look again straight away.</summary>
+        internal static void ResetForScene() => _nextAtlasLookup = 0f;
 
         private static void Decals(Vector3 point, Vector3 normal, Transform surface)
         {

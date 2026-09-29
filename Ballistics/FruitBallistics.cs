@@ -19,25 +19,45 @@ namespace FruitLib
         public Vector3 Origin;
         public Vector3 Direction;
         public int     Seed;
+        /// <summary>Who fired it: 0 = this machine / not said. FruitNet puts peer ids here, and
+        /// force fields and surface hooks can use it to leave a player's own rounds alone.</summary>
+        public int     Owner;
     }
 
-    /// <summary>A round in flight. Read it; FruitLib moves it.</summary>
+    /// <summary>
+    /// A round in flight. FruitLib moves it; other mods may steer it from
+    /// <see cref="FruitBallistics.ProjectileStep"/> or <see cref="FruitBallistics.BeforeSurfaceHit"/>
+    /// by setting <see cref="Position"/> or <see cref="Velocity"/>, scaling <see cref="PowerScale"/>,
+    /// or calling <see cref="Kill"/>.
+    /// </summary>
     public sealed class Projectile
     {
         public int            Id       { get; internal set; }
         public ProjectileSpec Spec     { get; internal set; }
-        public Vector3        Position { get; internal set; }
-        public Vector3        Velocity { get; internal set; }
+        /// <summary>Settable: the round carries on from here (a portal, a teleport).</summary>
+        public Vector3        Position { get; set; }
+        /// <summary>Settable: direction and speed from here on. Speed is what the round's power
+        /// follows, so slowing a round also weakens it.</summary>
+        public Vector3        Velocity { get; set; }
         public float          Age      { get; internal set; }
         public bool           Alive    { get; internal set; }
+        /// <summary>Who fired it, from <see cref="BallisticsCommand.Owner"/>.</summary>
+        public int            Owner    { get; internal set; }
+        /// <summary>Surfaces it has gone through.</summary>
+        public int            Penetrations { get; internal set; }
+        /// <summary>Knocked off its axis by something it passed through: more drag, and a wider
+        /// wound in the next body it meets.</summary>
+        public bool           Tumbling { get; internal set; }
+        /// <summary>Multiplies the wound power it carries, without changing its flight. 1 = as fired.</summary>
+        public float          PowerScale = 1f;
         /// <summary>Flies, hits and reports, but damages and pushes nothing - a remote player's
         /// shot being drawn on this machine while the host does the real work.</summary>
         public bool           Cosmetic { get; internal set; }
         /// <summary>Free for the spawner, e.g. to find its own rounds for tracers.</summary>
         public object         Tag;
 
-        /// <summary>Current wound power, from speed: muzzle power x (v / v0)².</summary>
-        public int Power => Mathf.RoundToInt(MuzzlePower * PowerRatio);
+        /// <summary>Current wound power, from speed: muzzle power x (v / v0)² x <see cref="PowerScale"/>.</summary>
+        public int Power => Mathf.RoundToInt(MuzzlePower * PowerRatio * PowerScale);
         public float PowerRatio
         {
             get
@@ -48,11 +68,28 @@ namespace FruitLib
             }
         }
 
+        /// <summary>Ends the round at the start of its next step (or now, inside a hit).</summary>
+        public void Kill() => Killed = true;
+
+        // ── Per-mod data, so several mods can each hang something on the same round ──
+
+        private Dictionary<string, object> _data;
+
+        /// <summary>Stores a value on this round under your own key, e.g. "MyMod.Charge".</summary>
+        public void Set(string key, object value) { if (key != null) (_data ??= new Dictionary<string, object>())[key] = value; }
+
+        public T Get<T>(string key, T fallback = default)
+            => key != null && _data != null && _data.TryGetValue(key, out var v) && v is T t ? t : fallback;
+
+        public bool Has(string key) => key != null && _data != null && _data.ContainsKey(key);
+
         internal int                 MuzzlePower;
         internal int                 Bounces;
         internal bool                WalkedBody;
+        internal bool                Killed;
         internal System.Random       Rng;
         internal readonly HashSet<IntPtr> IgnoredBodies = new HashSet<IntPtr>();
+        internal HashSet<int>        IgnoredColliders;
     }
 
     public struct SurfaceHitInfo
@@ -64,7 +101,49 @@ namespace FruitLib
         public float      Incidence;
         public bool       Ricocheted;
         public float      PowerRatio;
+        /// <summary>What the surface was taken to be.</summary>
+        public SurfaceMaterial Material;
+        /// <summary>Went through: it left at <see cref="Exit"/>, <see cref="Thickness"/> metres further on.</summary>
+        public bool       Penetrated;
+        public Vector3    Exit;
+        public float      Thickness;
+        /// <summary>m/s on arrival and on leaving (0 if it stopped).</summary>
+        public float      SpeedIn, SpeedOut;
+        /// <summary>What was decided, by physics or by a <see cref="FruitBallistics.BeforeSurfaceHit"/> handler.</summary>
+        public SurfaceOutcome Outcome;
     }
+
+    /// <summary>What happens at a surface. <see cref="Physics"/> lets FruitLib decide.</summary>
+    public enum SurfaceOutcome
+    {
+        /// <summary>Material, angle and energy decide: ricochet, go through, or stop.</summary>
+        Physics,
+        /// <summary>The round ignores this collider for the rest of its flight and carries on unchanged.</summary>
+        PassThrough,
+        /// <summary>The round stops here.</summary>
+        Stop,
+        /// <summary>The round ricochets here, even past its bounce limit or below the angle.</summary>
+        Ricochet,
+        /// <summary>The handler dealt with it: moved the round (<see cref="Projectile.Position"/> /
+        /// <see cref="Projectile.Velocity"/>) or killed it. FruitLib only reports the hit. A round
+        /// left where it was is stopped, since it would hit the same thing again.</summary>
+        Handled,
+    }
+
+    /// <summary>A surface hit before anything is done about it. Handlers may change
+    /// <see cref="Material"/> and <see cref="Outcome"/>.</summary>
+    public struct SurfaceDecision
+    {
+        public Projectile Projectile;
+        public Collider   Collider;
+        public Vector3    Point, Normal, Direction;
+        /// <summary>Degrees from the surface normal; 90 is a perfect graze.</summary>
+        public float      Incidence;
+        public SurfaceMaterial Material;
+        public SurfaceOutcome  Outcome;
+    }
+
+    public delegate void SurfaceDecisionHandler(ref SurfaceDecision d);
 
     public struct WoundInfo
     {
@@ -85,6 +164,8 @@ namespace FruitLib
         public bool          HasGround;
         public RaycastHit    Ground;
         public bool          Cosmetic;
+        /// <summary>Who set it off, from <see cref="BallisticsCommand.Owner"/>.</summary>
+        public int           Owner;
     }
 
     /// <summary>
@@ -126,6 +207,21 @@ namespace FruitLib
         /// </summary>
         public static event Action ProjectilesMoved;
         public static event Action<SurfaceHitInfo> SurfaceHit;
+
+        /// <summary>
+        /// Raised for every round, every frame, before it moves - the place to steer, slow,
+        /// teleport or <see cref="Projectile.Kill"/> it. For a plain acceleration a
+        /// <see cref="FruitForces"/> field is simpler and composes with other mods'.
+        /// </summary>
+        public static event Action<Projectile, float> ProjectileStep;
+
+        /// <summary>
+        /// Raised when a round meets a surface that is not a body, before FruitLib decides what
+        /// happens: set <see cref="SurfaceDecision.Outcome"/> for shields, portals and armour, or
+        /// swap <see cref="SurfaceDecision.Material"/>. Handlers run in subscription order and
+        /// each sees what the one before left.
+        /// </summary>
+        public static event SurfaceDecisionHandler BeforeSurfaceHit;
         public static event Action<WoundInfo>      LimbWounded;
         public static event Action<ExplosionInfo>  Exploded;
         /// <summary>A sampled fragment's arc, for debris visuals: whose explosion, start,
@@ -165,20 +261,28 @@ namespace FruitLib
 
         /// <summary>Fires a registered round. Returns it, or null if it was intercepted or unknown.</summary>
         public static Projectile SpawnProjectile(string specId, Vector3 origin, Vector3 direction)
+            => SpawnProjectile(specId, origin, direction, 0);
+
+        /// <summary>Fires a registered round on behalf of <paramref name="owner"/> (see <see cref="BallisticsCommand.Owner"/>).</summary>
+        public static Projectile SpawnProjectile(string specId, Vector3 origin, Vector3 direction, int owner)
             => Request(new BallisticsCommand
             {
                 Kind = BallisticsCommandKind.Projectile, SpecId = specId,
-                Origin = origin, Direction = direction.normalized, Seed = NextSeed(),
+                Origin = origin, Direction = direction.normalized, Seed = NextSeed(), Owner = owner,
             }) as Projectile;
 
         /// <summary>Detonates a registered explosive. <paramref name="forward"/> aims a cone;
         /// a full sphere ignores it.</summary>
         public static void SpawnExplosion(string specId, Vector3 origin, Vector3 forward)
+            => SpawnExplosion(specId, origin, forward, 0);
+
+        /// <summary>Detonates a registered explosive on behalf of <paramref name="owner"/>.</summary>
+        public static void SpawnExplosion(string specId, Vector3 origin, Vector3 forward, int owner)
             => Request(new BallisticsCommand
             {
                 Kind = BallisticsCommandKind.Explosion, SpecId = specId,
                 Origin = origin, Direction = forward.sqrMagnitude > 0f ? forward.normalized : Vector3.up,
-                Seed = NextSeed(),
+                Seed = NextSeed(), Owner = owner,
             });
 
         private static object Request(BallisticsCommand cmd)
@@ -239,6 +343,8 @@ namespace FruitLib
         {
             FruitProjectiles.Clear();
             FruitWounds.ResetForScene();
+            FruitEjecta.ResetForScene();
+            FruitSurfaces.ResetForScene();
         }
 
         // ── Event raising. One subscriber throwing must not stop the rest, or the round. ──
@@ -246,6 +352,23 @@ namespace FruitLib
         internal static void RaiseSpawned(Projectile p)       => Raise(ProjectileSpawned, p);
         internal static void RaiseEnded(Projectile p)         => Raise(ProjectileEnded, p);
         internal static void RaiseSurfaceHit(SurfaceHitInfo h) => Raise(SurfaceHit, h);
+
+        internal static bool WantsStep => ProjectileStep != null;
+        internal static void RaiseStep(Projectile p, float dt)
+        {
+            var evt = ProjectileStep;
+            if (evt == null) return;
+            foreach (Action<Projectile, float> h in evt.GetInvocationList())
+                try { h(p, dt); } catch (Exception e) { Report(h, e); }
+        }
+
+        internal static void RaiseBeforeSurfaceHit(ref SurfaceDecision d)
+        {
+            var evt = BeforeSurfaceHit;
+            if (evt == null) return;
+            foreach (SurfaceDecisionHandler h in evt.GetInvocationList())
+                try { h(ref d); } catch (Exception e) { Report(h, e); }
+        }
         internal static void RaiseWounded(WoundInfo w)        => Raise(LimbWounded, w);
         internal static void RaiseExploded(ExplosionInfo x)   => Raise(Exploded, x);
 

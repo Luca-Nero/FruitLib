@@ -23,6 +23,17 @@
     <None Remove="Templates/**" />
   </ItemGroup>
 
+  <!-- Development tools that have done their job (the AssetBundle test suite and probe, the
+       pause menu probe) stay out of the shipped DLL. Build with -p:DevTools=true to get them
+       back; FRUITLIB_DEVTOOLS switches on their settings and their calls from FruitLibMod. -->
+  <PropertyGroup Condition="'$(DevTools)' == 'true'">
+    <DefineConstants>$(DefineConstants);FRUITLIB_DEVTOOLS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(DevTools)' != 'true'">
+    <Compile Remove="Debug/FruitBundleTests.cs;Debug/FruitBundleProbe.cs;Debug/FruitMenuProbe.cs" />
+    <None Include="Debug/FruitBundleTests.cs;Debug/FruitBundleProbe.cs;Debug/FruitMenuProbe.cs" />
+  </ItemGroup>
+
   <!-- Deploy to every live FRUKT instance, and to ModRefs.
        ===================================================
        Same instance sweep as 10_Link, for a sharper reason: every other mod in

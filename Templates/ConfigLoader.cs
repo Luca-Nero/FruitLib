@@ -21,8 +21,8 @@ namespace MyMod
     // - Rewritten on every load, so new fields appear and removed ones drop out while
     //   the player's values are kept.
     //
-    // FruitLib's menu saves its own flat copy when a value changes in-game; the next Load
-    // restores the sections and comments. Only call this after FruitGate.Check passed.
+    // Register Write with FruitMenu (see Core.cs) and the menu saves through it too, so the
+    // file keeps its sections and comments. Only call this after FruitGate.Check passed.
     // ══════════════════════════════════════════════════════════════════════════════
     internal static class ConfigLoader
     {
@@ -79,7 +79,7 @@ namespace MyMod
             t == typeof(bool) || t == typeof(float) || t == typeof(int) ||
             t == typeof(string) || t == typeof(KeyCode);
 
-        private static void Write()
+        internal static void Write()
         {
             var sb = new StringBuilder();
             sb.AppendLine($"# {Title} - configuration");

@@ -22,12 +22,15 @@ steps back one page at a time.
 ## Registering
 
 ```csharp
-FruitMenu.Register("MyMod", ConfigLoader.IniPath, typeof(Config));
+FruitMenu.Register("MyMod", ConfigLoader.IniPath, typeof(Config), ConfigLoader.Write);
 ```
 
 - `displayName` → the line in the MODS list, and the page heading.
-- `iniFilePath` → where FruitMenu writes when the user edits a value.
+- `iniFilePath` → your ini.
 - `configType` → a class whose `public static` fields are your settings.
+- `save` → your own ini writer, called when the user edits a value (5.2). Without
+  it (the three-argument overload) FruitMenu writes `iniFilePath` itself, as a bare
+  `key = value` list.
 
 ## The config class
 
@@ -123,20 +126,19 @@ a toggle would misrepresent an action as state that sticks.
 public static bool DumpShaders;
 ```
 
-## Ini files: you own reading, FruitMenu owns writing
+## Ini files: your mod reads and writes them
 
 This is the part that catches people out.
 
-**`FruitMenu.Register` never reads your ini.** It writes the file whenever the
-user edits a value in-game, and that's all. Loading at startup, and writing the
-commented default file on first run, is your mod's job.
+**`FruitMenu.Register` never reads your ini.** Loading at startup, and writing the
+commented default file on first run, is your mod's job. When the user edits a value
+in-game, FruitMenu calls the `save` you registered, so the file has one writer.
 
 The practical shape, which every shipped mod uses, is a `ConfigLoader` class with
 `IniPath`, `Load()` and `Write()`, where `Load()` parses `key = value` lines by
-reflecting over the same config type. `Write()` re-emits the file with your
-explanatory comments, which is what restores them after FruitMenu's bare
-key/value rewrite. See `Mods/1_BombsAway/Config/ConfigLoader.cs` for a complete
-example to copy.
+reflecting over the same config type and `Write()` emits the file with your
+explanatory comments. Pass `Write` as `save`. Copy
+[`Templates/ConfigLoader.cs`](../Templates/ConfigLoader.cs).
 
 Build `IniPath` with [`FruitPaths.Config`](utilities.md#fruitpaths), which puts the
 file in `UserData` and migrates one an older build left next to the DLL:
@@ -159,7 +161,7 @@ The panel's footer button restores the values each field held **at the moment yo
 called `Register`** — not the values written in your source.
 
 ```csharp
-FruitMenu.Register("MyMod", path, typeof(Config));   // defaults captured here
+FruitMenu.Register("MyMod", path, typeof(Config), ConfigLoader.Write);   // defaults captured here
 ConfigLoader.Load();                                 // then user values applied
 ```
 

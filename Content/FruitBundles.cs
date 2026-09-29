@@ -16,7 +16,7 @@ namespace FruitLib
     /// The game's own code has AssetBundle.LoadFromFile/LoadFromMemory stripped, so dump.cs
     /// makes bundles look unavailable. They are not: UnityPlayer.dll still registers the native
     /// loaders, and AssetBundleNative calls them directly. Bundles must be built with the game's
-    /// exact editor version (6000.3.18f1 as of 0.17L) - see docs/BUNDLES.md.
+    /// exact editor version (6000.3.18f1) - see docs/BUNDLES.md.
     /// </summary>
     public sealed class FruitBundle
     {

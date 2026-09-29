@@ -1,6 +1,5 @@
 ﻿using System;
 using HarmonyLib;
-using Il2CppInfrastructure.Components.ManagedBehaviours;
 using Il2CppInfrastructure.Project.AssetsHandlers.SFX;
 using Il2CppPresenters.Pause;
 using Il2CppViews.Generic;

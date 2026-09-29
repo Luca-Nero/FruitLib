@@ -66,7 +66,9 @@ namespace FruitLib
             Safely("FruitMenu",    PauseTick);
             Safely("FruitBallistics",      FruitBallistics.Tick);
             Safely("FruitBallisticsProbe", FruitBallisticsProbe.Tick);
+#if FRUITLIB_DEVTOOLS
             Safely("FruitBundleProbe",     FruitBundleProbe.Tick);
+#endif
         }
 
         private void PauseTick()
@@ -82,7 +84,9 @@ namespace FruitLib
 
             FruitMenuNative.Tick(_pauseVC);
             FruitMenuScreen.Tick(_pauseVC);
+#if FRUITLIB_DEVTOOLS
             FruitMenuProbe.Tick(_pauseVC);
+#endif
             FruitMenu.OnPauseStateChanged(_pauseVC.IsOpen);
 
             bool isNowOpen = FruitMenu.IsOpen;
@@ -104,20 +108,22 @@ namespace FruitLib
             _pollCountdown = 0;
             FruitMenu.PauseVC = null;
             _reportedTickFailures.Clear();
+#if FRUITLIB_DEVTOOLS
             FruitMenuProbe.ResetForScene();
+#endif
             FruitBallistics.ResetForScene();
             FruitBallisticsProbe.ResetForScene();
+#if FRUITLIB_DEVTOOLS
             FruitBundleTests.ResetForScene();
+#endif
             FruitMenuScreen.ResetForScene();
             FruitMenuNative.ResetForScene();
             FruitInventory.ResetForScene();
         }
 
-        // The pause menu was rebuilt for the Steam demo build. PauseView no longer
-        // raises anything itself - it is a dumb view that owns a ManagedEvent per
-        // button, and PausePresenter is what turns the Continue click into an
-        // unpause. RequestUnpause is that handler, so it is the 1:1 successor to
-        // 0.14's PauseView.RaiseContinueRequested: Continue only, not Esc.
+        // PauseView raises nothing itself - it is a dumb view that owns a ManagedEvent
+        // per button, and PausePresenter is what turns the Continue click into an
+        // unpause. RequestUnpause is that handler: Continue only, not Esc.
         [HarmonyPatch(typeof(PausePresenter), nameof(PausePresenter.RequestUnpause))]
         static class Patch_PauseResume
         {

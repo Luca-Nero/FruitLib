@@ -48,22 +48,65 @@ unselected tools and views disabled instead of destroying them.
 
 ## FruitForces
 
-A shared registry of force fields, so one mod's physics can bend another's without either
-referencing the other. A gravity-well mod registers a sampler; everything that integrates its own
-motion (FruitLib's projectiles included) adds the sum to its acceleration.
+A shared registry of force fields and winds, so one mod's physics can bend another's without
+either referencing the other. A gravity-well mod registers a field; everything that integrates its
+own motion (FruitLib's projectiles included) adds the sum to its acceleration.
 
 ```csharp
 // The field owner:
 FruitForces.Register("MyMod:Wells", pos => SumOfMyWellsAt(pos));   // acceleration, m/s²
-FruitForces.Unregister("MyMod:Wells");
+FruitForces.Unregister("MyMod:Wells");                             // removes fields and winds
 
 // Anything that moves itself:
 if (FruitForces.Any) velocity += FruitForces.SampleAt(position) * dt;
 ```
 
-Samplers return **acceleration**, not force, so callers need no mass. Return `Vector3.zero`
+Fields return **acceleration**, not force, so callers need no mass. Return `Vector3.zero`
 outside your radius. They run per moving object per frame, so no allocation and no scene queries:
-read a few cached positions. Re-registering an id replaces it.
+read a few cached positions. Re-registering an id replaces it. A field that throws is reported
+once and switched off, so it can't take out other mods' physics or flood the log.
+
+### Fields that see the round
+
+The position-only form above is the simple case. The fuller form gets a `ForceQuery` (position,
+velocity, `MassKg`, `Dt`, and the `Projectile` when it is a FruitLib round, plus `SpecId`) and a
+`ForceOptions` filter that is checked before your field is called:
+
+```csharp
+FruitForces.Register("MyMod:Repulsor", q =>
+{
+    Vector3 away = q.Position - repulsorPos;
+    float d = away.magnitude;
+    return d < radius ? away / d * (strength * (1f - d / radius)) : Vector3.zero;
+},
+new ForceOptions
+{
+    SpecPrefix = "MyMod.",        // only rounds whose spec id starts with this (null = all)
+    IncludeCosmetic = true,       // default: a remote player's shot bends the same as on the host
+    IncludeOther = false,         // skip non-rounds, i.e. SampleAt callers (default: true)
+});
+```
+
+`FruitForces.Accelerate(query)` is the same sum for a caller that has more to say than a position
+(`SampleAt` is `Accelerate` with only the position filled in). The older
+`Register(id, ForceSampler)` overload, position in and acceleration out, still works unchanged.
+
+### Wind
+
+A wind moves the air, not the round. A round's drag is computed against the air around it, so a
+crosswind drifts a light or slow round further than a heavy one, which is how it should be, and
+no field of yours has to know the round's mass.
+
+```csharp
+FruitForces.RegisterWind("MyMod:Weather", pos => windDirection * windSpeed);   // air velocity, m/s
+Vector3 air = FruitForces.WindAt(somePosition);                                // summed over every wind
+```
+
+Winds add up, re-registering an id replaces it, and `Unregister` removes it.
+
+To do more than accelerate a round (redirect it, teleport it, stop it, change what a surface does
+to it), use `FruitBallistics.ProjectileStep` and `BeforeSurfaceHit` instead; see
+[ballistics](ballistics.md#steering-a-round).
 
 ## FruitUpdateCheck
 

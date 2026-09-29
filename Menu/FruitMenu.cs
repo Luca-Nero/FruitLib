@@ -4,8 +4,6 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using HarmonyLib;
-using Il2CppPresenters.Pause;
 using Il2CppViews.Pause;
 using MelonLoader;
 using UnityEngine;
@@ -114,9 +112,22 @@ namespace FruitLib
             return string.IsNullOrEmpty(label?.Text) ? f.Name : label.Text;
         }
 
+        /// <summary>
+        /// Lists a mod's config class in the MODS menu. When a value changes in-game FruitLib
+        /// writes <paramref name="iniFilePath"/> as a flat key = value list; prefer the overload
+        /// that takes the mod's own writer, which keeps its sections and help text.
+        /// </summary>
         public static void Register(string displayName, string iniFilePath, Type configType)
+            => Register(displayName, iniFilePath, configType, null);
+
+        /// <summary>
+        /// Lists a mod's config class in the MODS menu, saved through <paramref name="save"/>
+        /// when a value changes in-game, so the ini has one writer: the mod's own. Null falls
+        /// back to FruitLib's flat write.
+        /// </summary>
+        public static void Register(string displayName, string iniFilePath, Type configType, Action save)
         {
-            _mods.Add(new ModEntry(displayName, iniFilePath, configType));
+            _mods.Add(new ModEntry(displayName, iniFilePath, configType, save));
             FruitLog.Info($"[FruitLib] Registered: {displayName}");
         }
 
@@ -143,7 +154,7 @@ namespace FruitLib
 
         /// <summary>
         /// Picks up MelonPreferences categories created since the last look, so mods that
-        /// never call <see cref="Register"/> still get a page. They list after the FruitLib
+        /// never call <see cref="Register(string, string, Type, Action)"/> still get a page. They list after the FruitLib
         /// mods, one entry per category.
         /// </summary>
         internal static void SyncPreferences() =>
@@ -521,6 +532,7 @@ namespace FruitLib
             public readonly string DisplayName;
             private readonly string _iniPath;            // FruitLib config class; null for MelonPreferences
             private readonly Action _saveElsewhere;      // MelonPreferences; null for a config class
+            private readonly Action _ownerSave;          // the config class's own ini writer, if it gave one
             private readonly List<FruitSetting> _all = new List<FruitSetting>();
 
             private readonly List<string>                           _catOrder = new List<string>();
@@ -547,10 +559,11 @@ namespace FruitLib
             internal static GUIStyle _smallBtnStyle;
 
             /// <summary>A FruitLib mod: its config class's public static fields, saved to its ini.</summary>
-            public ModEntry(string name, string iniPath, Type configType)
+            public ModEntry(string name, string iniPath, Type configType, Action save)
             {
                 DisplayName = name;
                 _iniPath    = iniPath;
+                _ownerSave  = save;
                 foreach (var f in configType.GetFields(BindingFlags.Public | BindingFlags.Static))
                 {
                     var setting = FruitSetting.FromField(f);
@@ -1085,6 +1098,13 @@ namespace FruitLib
                 try
                 {
                     if (_saveElsewhere != null) { _saveElsewhere(); return; }
+
+                    if (_ownerSave != null)
+                    {
+                        _ownerSave();
+                        FruitMenu.OnConfigChanged?.Invoke();
+                        return;
+                    }
 
                     var sb = new System.Text.StringBuilder();
                     sb.AppendLine("# Written by FruitLib in-game menu — comments restored on restart.");

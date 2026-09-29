@@ -75,29 +75,6 @@ namespace FruitLib
         }
 
         private static bool IsNewer(string latest, string current)
-        {
-            var (lMaj, lMin, lPat) = ParseVersion(latest);
-            var (cMaj, cMin, cPat) = ParseVersion(current);
-
-            if (lMaj != cMaj) return lMaj > cMaj;
-            if (lMin != cMin) return lMin > cMin;
-            return lPat > cPat;
-        }
-
-        private static (int major, int minor, int patch) ParseVersion(string version)
-        {
-            if (string.IsNullOrEmpty(version)) return (0, 0, 0);
-
-            // drop prerelease/build metadata: "1.2.3-beta.1" / "1.2.3+build" → "1.2.3"
-            int cut = version.IndexOfAny(new[] { '-', '+' });
-            string core = cut >= 0 ? version.Substring(0, cut) : version;
-
-            var parts = core.Split('.');
-            int major = 0, minor = 0, patch = 0;
-            if (parts.Length > 0) int.TryParse(parts[0], out major);
-            if (parts.Length > 1) int.TryParse(parts[1], out minor);
-            if (parts.Length > 2) int.TryParse(parts[2], out patch);
-            return (major, minor, patch);
-        }
+            => FruitVersion.Compare(FruitVersion.Parse(latest), FruitVersion.Parse(current)) > 0;
     }
 }

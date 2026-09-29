@@ -1,7 +1,6 @@
 ﻿using System;
 using Il2CppAudio;
 using Il2CppInfrastructure.Project.AssetsHandlers.SFX;
-using Il2CppInterop.Runtime;
 using Il2CppPlayer.Appearances.God.InventoryItems;
 using MelonLoader;
 using UnityEngine;
@@ -35,10 +34,6 @@ namespace FruitLib
         /// <b>Not findable directly.</b> <c>SFXPlayerService</c> is a plain object built by
         /// Zenject, not a MonoBehaviour, so no scene search will ever turn one up. What can be
         /// found is something it was injected into, and the cursor tool is one.
-        ///
-        /// On 0.1 this came off a toolbar slot view instead, which held the service in a field
-        /// of its own. 0.14 removed that field along with the setter that populated it, so the
-        /// cursor tool is now the route.
         ///
         /// <b>The throttle is not optional.</b> Callers ask for a sound per event — one per
         /// bullet impact, in GunsGunsGuns' case — and a failed lookup here would otherwise run
@@ -97,8 +92,7 @@ namespace FruitLib
         /// <summary>
         /// The weapon sound for <paramref name="type"/>, as the engine stores it.
         ///
-        /// The Steam demo build replaced Unity's <c>AudioResource</c> with the game's own
-        /// <c>FAudioResource</c>, a ScriptableObject holding a list of interchangeable takes.
+        /// <c>FAudioResource</c> is a ScriptableObject holding a list of interchangeable takes.
         /// Prefer these over the <c>AudioClip</c> methods when you want to pick a take
         /// yourself, or play the same one twice — see <see cref="AsClip"/>.
         /// </summary>
@@ -142,15 +136,10 @@ namespace FruitLib
         /// <summary>
         /// One playable take out of <paramref name="res"/>, or null if it holds none.
         ///
-        /// Sounds with variants — gore, most organic impacts — used to be
-        /// <c>AudioRandomContainer</c>s, which are not <c>AudioClip</c>s, so this came back
-        /// null for them on 0.14 while their neighbours in the same category worked. The
-        /// Steam demo build made every sound an <c>FAudioResource</c> over a clip list, so
-        /// those now return a clip like any other; <c>Pick()</c> chooses the take.
-        ///
-        /// Because the take is chosen per call, a caller that wants the same one twice should
-        /// hold the returned clip rather than call again, and one that wants a specific take
-        /// should read <c>Clips</c> off the matching <c>*Resource</c> method.
+        /// <c>Pick()</c> chooses the take. Because the take is chosen per call, a caller that
+        /// wants the same one twice should hold the returned clip rather than call again, and
+        /// one that wants a specific take should read <c>Clips</c> off the matching
+        /// <c>*Resource</c> method.
         /// </summary>
         public static AudioClip AsClip(FAudioResource res)
         {

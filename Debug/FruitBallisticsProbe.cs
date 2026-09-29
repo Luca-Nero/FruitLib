@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using HarmonyLib;
 using Il2CppEffectors;
-using Il2CppEffectors.ReceiveMethods;
 using Il2CppEffectors.ReceiveMethods.Index;
 using Il2CppEffectors.Types;
 using Il2CppInterop.Runtime;
@@ -39,10 +38,9 @@ namespace FruitLib
     /// - <b>Aim test</b>, on the key: walks the voxel path under the crosshair and asks the
     ///   limb what each voxel would absorb, without applying anything. That settles whether
     ///   TryGetFeedback is a dry run and gives a resistance-per-voxel profile - the tissue
-    ///   map. With Shift held it also runs a replica of the game's own bullet walk down that
-    ///   path - power spent per step, crush channel, exit tear, cavitation - which is the
-    ///   prototype of FruitLib's wound channel. That one is destructive; aim at something
-    ///   expendable.
+    ///   map. With Shift held it also runs FruitLib's wound channel with the native 7.62
+    ///   profile down that path - crush channel, exit tear, cavitation. That one is
+    ///   destructive; aim at something expendable.
     ///
     /// Only concrete scalars are read off the feedback handler (Count, TotalAbsorbedInfluence
     /// and so on). The per-voxel Feedbacks list is a ReadOnlyNativeList&lt;T&gt;, and generic-
@@ -160,7 +158,7 @@ namespace FruitLib
             var p = FruitBallistics.SpawnProjectile(id, cam.transform.position + cam.transform.forward * 0.3f, cam.transform.forward);
             if (p != null)
                 MelonLogger.Msg($"{Tag} fired {id}#{p.Id}: {p.Spec.MuzzleVelocity:0} m/s, muzzle power {p.Power}, " +
-                                $"drag k {p.Spec.DragK:0.00000}/m");
+                                $"drag k {p.Spec.DragKAt(p.Spec.MuzzleVelocity):0.00000}/m");
         }
 
         private static void DetonateTestCharge()
@@ -456,7 +454,7 @@ namespace FruitLib
 
                 var comp = hit.collider.GetComponentInParent(Il2CppType.Of<LimbEffectorReceiver>());
                 var limb = comp != null ? comp.TryCast<LimbEffectorReceiver>() : null;
-                if (limb == null) { sb.AppendLine($"  {hit.collider.name} is not a limb"); return; }
+                if (limb == null) { SurfaceReport(sb, hit, ray.direction); return; }
 
                 var mesh = limb.VoxelMesh;
                 if (mesh == null) { sb.AppendLine("  limb has no voxel mesh"); return; }
@@ -473,10 +471,66 @@ namespace FruitLib
                 DryRunCheck(sb, limb, mesh, path);
                 ResistanceProfile(sb, limb, path);
 
-                if (destructive) NativeWoundTest(sb, limb, path, dir, hit.normal);
+                if (destructive) WoundTest(sb, limb, hit, dir);
             }
             catch (Exception e) { sb.AppendLine($"  aim test threw: {e}"); }
             finally { MelonLogger.Msg(sb.ToString()); }
+        }
+
+        /// <summary>
+        /// What a FruitLib round would make of the surface under the crosshair: which material it
+        /// resolves to and why, how thick it is along the aim, and how far three reference
+        /// rounds get into it. This is how the keyword table in FruitSurfaces gets calibrated
+        /// against the game's real maps.
+        /// </summary>
+        private static void SurfaceReport(StringBuilder sb, RaycastHit hit, Vector3 dir)
+        {
+            var c = hit.collider;
+            var path = new StringBuilder(c.name);
+            var t = c.transform.parent;
+            for (int i = 0; t != null && i < 4; i++, t = t.parent) path.Insert(0, t.name + "/");
+
+            sb.AppendLine($"  surface '{path}' ({c.GetIl2CppType().Name}), layer {c.gameObject.layer} '{LayerMask.LayerToName(c.gameObject.layer)}', {hit.distance:0.00} m away");
+
+            var rb = c.attachedRigidbody;
+            sb.AppendLine(rb != null ? $"    rigidbody: {rb.mass:0.##} kg, kinematic {rb.isKinematic}" : "    no rigidbody (static)");
+            try
+            {
+                var rend = c.GetComponent<Renderer>();
+                var mat  = rend != null ? rend.sharedMaterial : null;
+                sb.AppendLine($"    renderer material: {(mat != null ? mat.name : "none")}");
+            }
+            catch (Exception e) { sb.AppendLine($"    renderer material unreadable: {e.Message}"); }
+
+            var m = FruitSurfaces.Explain(c, out string why);
+            float incidence = Vector3.Angle(-dir, hit.normal);
+            sb.AppendLine($"    resolves to {m.Name} ({why}); incidence {incidence:0} deg, " +
+                          $"ricochet from ~{Mathf.Clamp(70f + m.RicochetAngleShift, 0f, 89.5f):0} deg for a round with the default RicochetAngle 70");
+
+            const float probe = 2f;
+            float thickness = -1f;
+            if (c.Raycast(new Ray(hit.point + dir * probe, -dir), out RaycastHit exit, probe))
+                thickness = probe - exit.distance;
+            sb.AppendLine(thickness > 0f
+                ? $"    thickness along the aim: {thickness * 100f:0.#} cm"
+                : $"    thickness along the aim: over {probe} m, or an open mesh (a round would stop here)");
+
+            foreach (var (name, spec) in new[]
+            {
+                ("9 mm FMJ ",   ProjectileSpec.Cartridge("probe.9mm", 8f,  9f,    360f, 0.45f)),
+                ("7.62x39  ",   ProjectileSpec.Cartridge("probe.762", 7.9f, 7.62f, 715f, 0.29f)),
+                (".50 BMG  ",   ProjectileSpec.Cartridge("probe.50",  42f, 12.7f, 890f, 0.62f)),
+            })
+            {
+                float sd    = spec.SectionalDensity * Mathf.Max(0f, FruitLibConfig.PenetrationScale);
+                float depth = m.Depth(sd, spec.MuzzleVelocity);
+                string line = $"    {name} at {spec.MuzzleVelocity:0} m/s: gets {depth * 100f:0.#} cm in";
+                if (thickness > 0f && thickness <= Mathf.Min(depth, m.MaxThickness))
+                    line += $", exits at {m.ExitSpeed(sd, spec.MuzzleVelocity, thickness):0} m/s";
+                else if (thickness > 0f)
+                    line += ", stops inside";
+                sb.AppendLine(line);
+            }
         }
 
         private static void DescribeMesh(StringBuilder sb, VoxelMesh mesh)
@@ -660,191 +714,33 @@ namespace FruitLib
         }
 
         /// <summary>
-        /// A step-for-step replica of Bullet.WalkThroughBody and SendWoundLayers (v0_17L), driven
-        /// with 7.62 values down the aimed path. This is the prototype of FruitLib's wound channel:
-        /// if a native 7.62 and this spend about the same power on the same body, any FruitLib
-        /// projectile can be handed the game's wound model with nothing more than a power value.
-        ///
-        /// What the game does, per voxel step along a VoxelRayStepper:
-        ///   1. Add the step to a BulletChannel.
-        ///   2. Signal the crush offsets around it (a single voxel for both calibres: radius 0),
-        ///      plus - once past the clean entry - each spread offset with ChannelSpreadChance.
-        ///      Every signal carries the bullet's whole remaining power as its influence. A
-        ///      shared visited set keeps a voxel from being paid for twice.
-        ///   3. TryGetFeedback (a dry run) and subtract every voxel's absorbed influence from
-        ///      power. At or below zero the bullet is spent.
-        /// Then Receive the accumulated crush signals with an IndexEffectorDescription carrying
-        /// the direction, an ExitTear at the last step if it came out (sized by leftover power
-        /// ratio), and a Cavitation along the channel if the calibre has one (9mm does not).
-        ///
-        /// The previous version of this test sent only the last two, which is why the torso
-        /// showed a cavity and an exit but no entry: the entry hole IS the crush layer, and the
-        /// envelope is deliberately zero-width for its first steps.
-        ///
-        /// One deliberate difference: the game stops spending partway through a step, voxel by
-        /// voxel. That needs the per-voxel Feedbacks list, which is a generic native list and
-        /// not safe to read from here, so this spends a whole step at a time off the totals.
+        /// FruitLib's own wound channel (<see cref="FruitWounds.Channel"/>), driven with the
+        /// game's 7.62 values down the aimed path, for comparison against a native 7.62 fired
+        /// through the same body with the shot trace on.
         /// </summary>
-        private static void NativeWoundTest(StringBuilder sb, LimbEffectorReceiver limb,
-                                            List<PathStep> path, Vector3 dir, Vector3 normal)
+        private static void WoundTest(StringBuilder sb, LimbEffectorReceiver limb, RaycastHit hit, Vector3 dir)
         {
-            sb.AppendLine("  FruitLib replica of the native 7.62 wound:");
+            sb.AppendLine("  FruitWounds.Channel with the native 7.62 profile:");
             try
             {
-                var offsets = NativeOffsets(sb);
-                var crush  = offsets.crush  ?? new List<int3> { int3.zero };
-                var spread = offsets.spread ?? FaceNeighbours;
+                var spec = ProjectileSpec.Native762("FruitLib.Probe762");
+                spec.Wound.Ejecta = false;
+                int initial = spec.MuzzlePower;
 
-                // GetCleanEntrySteps: CleanEntryDepth, stretched for an oblique entry and for a
-                // diagonal path (which crosses voxels faster than an axis-aligned one).
-                float cos    = Mathf.Max(Mathf.Abs(Vector3.Dot(normal, dir)), BodyWoundWalker.MIN_ENTRY_COSINE);
-                float maxAbs = Mathf.Max(Mathf.Abs(dir.x), Mathf.Max(Mathf.Abs(dir.y), Mathf.Abs(dir.z)));
-                int   clean  = Mathf.RoundToInt(Bullet762.CLEAN_ENTRY_DEPTH / (cos / maxAbs));
+                var res = FruitWounds.Channel(limb, FruitWounds.BodyOf(hit.collider), hit.point, hit.normal, dir,
+                                              initial, initial, spec.Wound, FruitWounds.NextBlastHit(),
+                                              new System.Random(), firstBody: true, cosmetic: false);
 
-                int   initial     = Bullet762.INITIAL_POWER;
-                float spreadOdds  = Bullet762.CHANNEL_SPREAD_CHANCE;
-                int   maxSteps    = Bullet762.MAX_PENETRATION_DEPTH;
-                int   power       = initial;
+                if (!res.Touched) { sb.AppendLine("    no voxels on the path"); return; }
 
-                var channel = new BulletChannel(dir, clean, path.Count);
-                var hit     = NextProbeHit();   // one shot: every layer carries the same hit
-                var result  = new IndexEffectorSignalsList(64, false);
-                var visited = new HashSet<int3>();
-                var spend   = new StringBuilder();
-                bool exhausted = false;
-                int  step      = 0;
-
-                foreach (var s in path)
-                {
-                    if (step > maxSteps) { exhausted = true; break; }
-                    channel.AddStep(s.Index);
-
-                    var stepSignals = new List<int3>();
-                    foreach (var o in crush)
-                        if (visited.Add(s.Index + o)) stepSignals.Add(s.Index + o);
-                    if (step >= clean)
-                        foreach (var o in spread)
-                            if (UnityEngine.Random.value < spreadOdds && visited.Add(s.Index + o))
-                                stepSignals.Add(s.Index + o);
-
-                    step++;
-                    if (stepSignals.Count == 0) continue;
-
-                    var list = new IndexEffectorSignalsList(stepSignals.Count, false);
-                    foreach (var v in stepSignals)
-                        list.Add(new IndexEffectorSignal(v, -power, InfluenceProcessType.Sum));
-
-                    if (!limb.TryGetFeedback(new IndexEffectorSignalsHandler<Destruction>(list),
-                                             out IReadOnlyIndexEffectorFeedbacksHandler fb) || fb == null)
-                        continue;   // nothing there to pay for - the game skips these too
-
-                    int cost = Mathf.RoundToInt(Mathf.Abs(fb.TotalAbsorbedInfluence));
-                    power -= cost;
-                    spend.Append($"{step - 1}:{cost} ");
-
-                    foreach (var v in stepSignals)
-                        result.Add(new IndexEffectorSignal(v, -(power + cost), InfluenceProcessType.Sum));
-
-                    if (power < 1) { exhausted = true; break; }
-                }
-
-                float ratio = Mathf.Max(0, power) / (float)initial;
-                sb.AppendLine($"    clean entry {clean} (cos {cos:0.##}), {step} step(s), power {initial} -> {Mathf.Max(0, power)} " +
-                              $"(spent {initial - Mathf.Max(0, power)}), {(exhausted ? "STOPPED inside" : $"exits at ratio {ratio:0.###}")}");
-                sb.AppendLine($"    spend per step (step:cost): {spend}");
-                if (!exhausted)
+                float ratio = res.PowerOut / (float)initial;
+                sb.AppendLine($"    {res.Steps} step(s), power {initial} -> {res.PowerOut} (spent {initial - res.PowerOut}), " +
+                              (res.Exited ? $"exits at ratio {ratio:0.###}" : "STOPPED inside"));
+                if (res.Exited)
                     sb.AppendLine($"    native would exit at {ratio * 400f:0.#} m/s from 400 (speed scales linearly with power)" +
-                                  (ratio < Bullet.SELF_DESTRUCT_POWER_RATIO ? ", and then self-destruct (below SELF_DESTRUCT_POWER_RATIO)" : ""));
-
-                // SendWoundLayers, in the game's order.
-                var crushHandler = new IndexEffectorSignalsHandler<Destruction>(result, new IndexEffectorDescription(dir, hit));
-                limb.Receive(crushHandler);
-                sb.AppendLine($"    crush layer: {visited.Count} voxel(s) signalled");
-
-                if (!exhausted)
-                {
-                    var tear = BulletWoundEffectorSignalsSamples.ExitTear(
-                        channel.Exit, Bullet762.TEAR_MIN_RADIUS, Bullet762.TEAR_MAX_RADIUS,
-                        Bullet762.EXIT_TEAR_DAMAGE, ratio, dir, hit);
-                    bool okTear = limb.TryReceive(tear, out IReadOnlyIndexEffectorFeedbacksHandler fbTear);
-                    sb.AppendLine($"    exit tear -> {okTear}: {Describe(fbTear)}");
-                }
-
-                if (Bullet762.CAVITATION_PEAK_RADIUS > 0)
-                {
-                    var cav = BulletWoundEffectorSignalsSamples.Cavitation(
-                        channel.Steps, channel.CleanEntrySteps,
-                        Bullet762.CAVITATION_PEAK_RADIUS, Bullet762.CAVITATION_DAMAGE, dir, hit);
-                    bool okCav = limb.TryReceive(cav, out IReadOnlyIndexEffectorFeedbacksHandler fbCav);
-                    sb.AppendLine($"    cavitation -> {okCav}: {Describe(fbCav)}");
-                }
+                                  (ratio < spec.KillPowerRatio ? ", and then self-destruct (below SELF_DESTRUCT_POWER_RATIO)" : ""));
             }
-            catch (Exception e) { sb.AppendLine($"    replica threw: {e}"); }
-        }
-
-        private static Il2CppSystem.Object _probeSource;
-        private static int _probeShots;
-
-        /// <summary>
-        /// The game stamps a shot's layers with EffectorHit(launcher, shot); pain reuses its
-        /// anchor for a repeated hit and never matches one with a null Source. The replica has
-        /// no launcher, so a sentinel of its own stands in (FruitWounds does the same).
-        /// </summary>
-        private static EffectorHit NextProbeHit()
-        {
-            if (_probeSource == null) _probeSource = new Il2CppSystem.Object();
-            return new EffectorHit(_probeSource, ++_probeShots);
-        }
-
-        private static readonly List<int3> FaceNeighbours = new List<int3>
-        {
-            new int3( 1, 0, 0), new int3(-1, 0, 0),
-            new int3( 0, 1, 0), new int3( 0,-1, 0),
-            new int3( 0, 0, 1), new int3( 0, 0,-1),
-        };
-
-        /// <summary>
-        /// The crush and spread shapes a live 7.62 was given by the voxel shapes provider. Since
-        /// the release they sit on the round's BodyWoundWalker, which fetches them when it takes
-        /// its wound dials, so only a round that has been fired at least once has them - the
-        /// pooled prefab does not. Null when none is found; the caller falls back to a single
-        /// voxel and the six face neighbours, and says so.
-        /// </summary>
-        private static (List<int3> crush, List<int3> spread) NativeOffsets(StringBuilder sb)
-        {
-            try
-            {
-                foreach (var b in Resources.FindObjectsOfTypeAll<Bullet762>())
-                {
-                    var w = b != null ? b.m_walker : null;
-                    if (w == null || w.m_crushOffsets == null || w.m_spreadOffsets == null) continue;
-                    var crush  = ReadOffsets(w.m_crushOffsets);
-                    var spread = ReadOffsets(w.m_spreadOffsets);
-                    sb.AppendLine($"    offsets from a live 7.62: crush {Format(crush)}, spread {Format(spread)}");
-                    return (crush, spread);
-                }
-                sb.AppendLine("    no fired 7.62 in the scene - using one-voxel crush and face-neighbour spread. " +
-                              "Fire the Lynx once first for the game's real shapes.");
-            }
-            catch (Exception e) { sb.AppendLine($"    reading native offsets threw: {e.Message}"); }
-            return (null, null);
-        }
-
-        private static List<int3> ReadOffsets(Il2CppSystem.Collections.Generic.IReadOnlyList<int3> list)
-        {
-            int n = list.Cast<Il2CppSystem.Collections.Generic.IReadOnlyCollection<int3>>().Count;
-            var result = new List<int3>(n);
-            for (int i = 0; i < n; i++) result.Add(list[i]);
-            return result;
-        }
-
-        private static string Format(List<int3> offsets)
-        {
-            var sb = new StringBuilder($"{offsets.Count}[");
-            for (int i = 0; i < offsets.Count && i < 30; i++)
-                sb.Append($"({offsets[i].x},{offsets[i].y},{offsets[i].z})");
-            if (offsets.Count > 30) sb.Append("...");
-            return sb.Append(']').ToString();
+            catch (Exception e) { sb.AppendLine($"    wound test threw: {e}"); }
         }
     }
 }

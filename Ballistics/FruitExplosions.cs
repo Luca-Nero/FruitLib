@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Il2CppEffectors;
 using Il2CppEffectors.ReceiveMethods.Index;
-using MelonLoader;
 using UnityEngine;
 
 namespace FruitLib
@@ -55,7 +54,7 @@ namespace FruitLib
             FruitBallistics.RaiseExploded(new ExplosionInfo
             {
                 Spec = s, Origin = origin, Forward = forward,
-                HasGround = hasGround, Ground = ground, Cosmetic = cosmetic,
+                HasGround = hasGround, Ground = ground, Cosmetic = cosmetic, Owner = cmd.Owner,
             });
 
             Fragments(s, origin, forward, hasGround ? ground.point.y : origin.y - 50f, quality, budget, shot, rng, cosmetic);

@@ -9,7 +9,7 @@ models, shaders and decals through Unity AssetBundles.
 FruitLib is itself a MelonMod. Your mod references it at build time and expects
 it in the `Mods` folder at runtime.
 
-**Current version: 5.0.0**. Starting a new mod? Copy the files in [`Templates/`](../Templates/README.md).
+**Current version: 5.3.0**. Starting a new mod? Copy the files in [`Templates/`](../Templates/README.md).
 
 ## Guides
 
@@ -57,7 +57,7 @@ public override void OnInitializeMelon()
 [MethodImpl(MethodImplOptions.NoInlining)]
 private void Init()
 {
-    FruitMenu.Register("MyMod", ConfigLoader.IniPath, typeof(Config));
+    FruitMenu.Register("MyMod", ConfigLoader.IniPath, typeof(Config), ConfigLoader.Write);
     _hud = FruitHud.Register("MyMod", BuildHud);
 }
 ```
@@ -106,7 +106,7 @@ namespace MyMod
 
         public override void OnInitializeMelon()
         {
-            FruitMenu.Register("MyMod", ConfigLoader.IniPath, typeof(Config));
+            FruitMenu.Register("MyMod", ConfigLoader.IniPath, typeof(Config), ConfigLoader.Write);
             ConfigLoader.Load();                    // your own ini reader, see the config guide
             _hud = FruitHud.Register("MyMod", BuildHud);
             FruitPerfMon.RegisterCounter("MyMod Things", () => _things.Count);

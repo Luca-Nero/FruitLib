@@ -25,7 +25,7 @@ namespace MyMod
         public const string Version = "1.0.0";
 
         // The oldest FruitLib this mod is built against.
-        private const int LibMajor = 5, LibMinor = 0, LibPatch = 0;
+        private const int LibMajor = 5, LibMinor = 2, LibPatch = 0;
         private bool _active;
 
         private static ModPerf _perf;
@@ -47,7 +47,7 @@ namespace MyMod
         private void Init()
         {
             ConfigLoader.Load();
-            FruitMenu.Register("MyMod", ConfigLoader.IniPath, typeof(Config));
+            FruitMenu.Register("MyMod", ConfigLoader.IniPath, typeof(Config), ConfigLoader.Write);
             FruitHud.Register("MyMod", BuildHud);
 
             // One item per variant: SetDisplay can't refresh a copy already on the toolbar,

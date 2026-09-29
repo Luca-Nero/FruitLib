@@ -18,8 +18,7 @@ namespace FruitLib
     /// <summary>
     /// The game's bullet wound, driven from outside the game's bullet.
     ///
-    /// This is BodyWoundWalker.WalkThroughBody and SendWoundLayers re-expressed (the release
-    /// moved them out of Bullet, where v0_17L had them):
+    /// This is BodyWoundWalker.WalkThroughBody and SendWoundLayers re-expressed:
     ///
     /// 1. Step through the limb's voxels along the path with the game's own VoxelRayStepper.
     ///    It yields only voxels that are still there, so an existing wound is crossed free.
