@@ -168,6 +168,87 @@ namespace FruitLib
         public int           Owner;
     }
 
+    /// <summary>How one leg of a fragment's flight ended.</summary>
+    public enum FragmentEnd
+    {
+        /// <summary>Flew out of time or landed nowhere in particular: nothing was hit.</summary>
+        Spent,
+        /// <summary>Went into a limb and stopped there.</summary>
+        Lodged,
+        /// <summary>Went through a limb and carries on (the next leg starts at the exit wound).</summary>
+        PassedThrough,
+        /// <summary>Glanced off a surface (the next leg starts there).</summary>
+        Ricocheted,
+        /// <summary>Went through a surface (the next leg starts at <see cref="FragmentTrace.Exit"/>).</summary>
+        Penetrated,
+        /// <summary>Stopped in a surface.</summary>
+        Stopped,
+        /// <summary>Hit a limb after the explosion's wound budget ran out: it pushed but did not
+        /// cut, and carries on through (next leg from <see cref="FragmentTrace.Exit"/>) if it had
+        /// the power for that much tissue.</summary>
+        OverBudget,
+        /// <summary>Too slow to matter any more.</summary>
+        TooWeak,
+    }
+
+    /// <summary>
+    /// One leg of one fragment: from the charge (or its last ricochet, wall or wound) to where
+    /// it ended. The arc is p(t) = <see cref="Start"/> + <see cref="ArcVelocity"/>·t + ½·g·t²
+    /// for t in [0, <see cref="Time"/>], which reaches <see cref="End"/> - the shape the hit test
+    /// swept, for drawing. <see cref="SpeedIn"/> and <see cref="SpeedOut"/> are the fragment's
+    /// physical speed, which is what penetration and wounds follow.
+    /// </summary>
+    public struct FragmentTrace
+    {
+        public ExplosionSpec Spec;
+        public int        Owner;
+        public bool       Cosmetic;
+        /// <summary>Which fragment of this detonation, and which leg of it (0 = from the charge).</summary>
+        public int        Fragment, Leg;
+        /// <summary>One of the spec's shaped-charge jet rays (<see cref="ExplosionSpec.JetRays"/>).</summary>
+        public bool       Jet;
+        /// <summary>Behind-armour spall a jet blew off the back of a wall (<see cref="ExplosionSpec.JetSpallCount"/>).</summary>
+        public bool       Spall;
+        /// <summary>A piece of bone thrown out of an exit wound (<see cref="ExplosionSpec.BoneFragments"/>).</summary>
+        public bool       Bone;
+        public Vector3    Start, ArcVelocity, End;
+        public float      Time;
+        public FragmentEnd EndedBy;
+        /// <summary>What it hit, if anything; null for <see cref="FragmentEnd.Spent"/>.</summary>
+        public Collider   Collider;
+        public Vector3    Normal;
+        /// <summary>Degrees from the surface normal; 90 is a perfect graze.</summary>
+        public float      Incidence;
+        /// <summary>The surface it met; null for limbs and misses.</summary>
+        public SurfaceMaterial Material;
+        /// <summary>Far side of a wall or a limb, for <see cref="FragmentEnd.Penetrated"/> and <see cref="FragmentEnd.PassedThrough"/>.</summary>
+        public Vector3    Exit;
+        public float      Thickness;
+        /// <summary>m/s on arriving at <see cref="End"/> and on leaving it (0 when it stopped there).</summary>
+        public float      SpeedIn, SpeedOut;
+    }
+
+    /// <summary>
+    /// How much of a detonation's shockwave and overpressure reached one body or limb, after
+    /// whatever stands between it and the charge. Raised once per target.
+    /// </summary>
+    public struct BlastTrace
+    {
+        public ExplosionSpec Spec;
+        public int       Owner;
+        public Vector3   Origin, Target;
+        /// <summary>True for an overpressure (wound) check on a limb, false for the shockwave push on a body.</summary>
+        public bool      Overpressure;
+        /// <summary>0..1: the fraction that got through. 1 = open line of sight.</summary>
+        public float     Transmission;
+        /// <summary>The first thing in the way, or null.</summary>
+        public Collider  Occluder;
+        public SurfaceMaterial OccluderMaterial;
+        /// <summary>Reflected peak overpressure on the target after cover, kPa, for charges with a
+        /// <see cref="ExplosionSpec.ChargeKgTNT"/>; 0 otherwise.</summary>
+        public float     PeakKPa;
+    }
+
     /// <summary>
     /// One place for every projectile and explosion in every mod.
     ///
@@ -227,6 +308,19 @@ namespace FruitLib
         /// <summary>A sampled fragment's arc, for debris visuals: whose explosion, start,
         /// velocity, flight time. Visuals belong to the mod that owns the spec - filter on it.</summary>
         public static event Action<ExplosionSpec, Vector3, Vector3, float> DebrisArc;
+
+        /// <summary>
+        /// Every leg of every fragment of every explosion: where it flew, what it hit, and whether
+        /// it ricocheted, went through or stopped. Thousands per detonation, so keep handlers
+        /// cheap and filter on <see cref="FragmentTrace.Spec"/> first. Only built while someone
+        /// listens. Fragments raise this instead of <see cref="SurfaceHit"/>, whose handlers
+        /// expect a <see cref="Projectile"/>.
+        /// </summary>
+        public static event Action<FragmentTrace> FragmentTraced;
+
+        /// <summary>What each body and limb in range got of the blast, after cover. Only built
+        /// while someone listens; cosmetic detonations push nothing and raise none.</summary>
+        public static event Action<BlastTrace> BlastTraced;
 
         // ── Multiplayer seam ────────────────────────────────────────────────────
 
@@ -345,6 +439,7 @@ namespace FruitLib
             FruitWounds.ResetForScene();
             FruitEjecta.ResetForScene();
             FruitSurfaces.ResetForScene();
+            FruitBlastInjury.ResetForScene();
         }
 
         // ── Event raising. One subscriber throwing must not stop the rest, or the round. ──
@@ -380,6 +475,12 @@ namespace FruitLib
             foreach (Action<ExplosionSpec, Vector3, Vector3, float> h in d.GetInvocationList())
                 try { h(s, p0, v, t); } catch (Exception e) { Report(h, e); }
         }
+
+        internal static bool WantsFragments => FragmentTraced != null;
+        internal static void RaiseFragment(in FragmentTrace t) => Raise(FragmentTraced, t);
+
+        internal static bool WantsBlast => BlastTraced != null;
+        internal static void RaiseBlast(in BlastTrace t) => Raise(BlastTraced, t);
 
         private static void Raise<T>(Action<T> evt, T arg)
         {

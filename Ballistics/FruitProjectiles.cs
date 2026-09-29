@@ -294,8 +294,7 @@ namespace FruitLib
             var s = r.Spec;
             var m = info.Material;
 
-            float critical = Mathf.Clamp(s.RicochetAngle + m.RicochetAngleShift, 0f, 89.5f);
-            float chance   = Mathf.InverseLerp(critical - RicochetBand, critical + RicochetBand, info.Incidence);
+            float chance = m.RicochetChance(s.RicochetAngle, info.Incidence, RicochetBand);
             if (r.Bounces < s.MaxBounces && chance > 0f && r.Rng.NextDouble() < chance)
                 return Ricochet(r, hit, m, ref info);
 
@@ -317,13 +316,10 @@ namespace FruitLib
             float reach   = Mathf.Min(m.Depth(sd, speedIn), m.MaxThickness);
             if (reach < 0.002f) return false;
 
-            // Find the far side by casting back at this collider from as deep as the round
-            // could get. Nothing there means the surface is thicker than that - or the ray
-            // started inside it - and either way the round stays in.
-            reach += 0.01f;
-            if (!hit.collider.Raycast(new Ray(hit.point + dir * reach, -dir), out RaycastHit exit, reach)) return false;
+            // Nothing on the far side within reach means the surface is thicker than that - or
+            // the ray started inside it - and either way the round stays in.
+            if (!FruitSurfaces.FarSide(hit.collider, hit.point, dir, reach, out Vector3 exit, out float thickness)) return false;
 
-            float thickness = Mathf.Max(0.001f, reach - exit.distance);
             float vOut = m.ExitSpeed(sd, speedIn, thickness);
             float v0 = Mathf.Max(1f, s.MuzzleVelocity);
             if (vOut <= 0f || (vOut / v0) * (vOut / v0) < s.KillPowerRatio) return false;
@@ -333,12 +329,12 @@ namespace FruitLib
             Push(r, hit, dir * (speedIn - vOut));
 
             r.Velocity = outDir * vOut;
-            r.Position = exit.point + dir * 0.01f;
+            r.Position = exit + dir * 0.01f;
             r.Penetrations++;
             if (lost > TumbleAfterLoss) r.Tumbling = true;
 
             info.Penetrated = true;
-            info.Exit       = exit.point;
+            info.Exit       = exit;
             info.Thickness  = thickness;
             info.SpeedOut   = vOut;
             through = thickness;
@@ -355,15 +351,8 @@ namespace FruitLib
             var s = r.Spec;
             r.Bounces++;
 
-            Vector3 v  = r.Velocity;
-            Vector3 vn = Vector3.Project(v, hit.normal);
-            Vector3 vt = v - vn;
-            Vector3 outV = vt * m.Grip - vn * m.Restitution;
-            if (outV.sqrMagnitude < 1e-6f) outV = hit.normal;
-
-            Vector3 outDir = Deflect(r, outV.normalized, s.RicochetScatter);
-            if (Vector3.Dot(outDir, hit.normal) < 0.02f)   // scatter must not send it back into the surface
-                outDir = (Vector3.ProjectOnPlane(outDir, hit.normal).normalized + hit.normal * 0.05f).normalized;
+            Vector3 v = r.Velocity;
+            Vector3 outDir = KeepOff(Deflect(r, m.Bounce(v, hit.normal).normalized, s.RicochetScatter), hit.normal);
 
             float keep  = Mathf.Sqrt(Mathf.Clamp01(1f - s.RicochetEnergyLoss * m.RicochetLossScale));
             float speed = v.magnitude * keep;
@@ -397,17 +386,25 @@ namespace FruitLib
             catch { }
         }
 
+        private static Vector3 Deflect(Projectile r, Vector3 dir, float degrees) => Deflect(r.Rng, dir, degrees);
+
         /// <summary>A random yaw of up to <paramref name="degrees"/> about the travel direction itself -
         /// not about world axes, which made GunsGunsGuns' scatter lopsided depending on aim.</summary>
-        private static Vector3 Deflect(Projectile r, Vector3 dir, float degrees)
+        internal static Vector3 Deflect(System.Random rng, Vector3 dir, float degrees)
         {
             if (degrees <= 0f) return dir;
             Vector3 side = Vector3.Cross(dir, Mathf.Abs(dir.y) < 0.99f ? Vector3.up : Vector3.right).normalized;
-            float spin  = (float)r.Rng.NextDouble() * 360f;
-            float angle = (float)r.Rng.NextDouble() * degrees;
+            float spin  = (float)rng.NextDouble() * 360f;
+            float angle = (float)rng.NextDouble() * degrees;
             Vector3 axis = Quaternion.AngleAxis(spin, dir) * side;
             return (Quaternion.AngleAxis(angle, axis) * dir).normalized;
         }
+
+        /// <summary>Scatter must not send a ricochet back into the surface it came off.</summary>
+        internal static Vector3 KeepOff(Vector3 dir, Vector3 normal)
+            => Vector3.Dot(dir, normal) < 0.02f
+                ? (Vector3.ProjectOnPlane(dir, normal).normalized + normal * 0.05f).normalized
+                : dir;
 
         private static void End(int index)
         {

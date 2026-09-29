@@ -52,6 +52,9 @@ namespace FruitLib
             public int     PowerOut;
             public int     Steps;
             public Vector3 Exit;
+            /// <summary>Steps that went through hard tissue (bone), and the power they cost.</summary>
+            public int     HardSteps;
+            public int     HardPower;
         }
 
         // ── Limbs ────────────────────────────────────────────────────────────────
@@ -243,10 +246,11 @@ namespace FruitLib
                     steps++;
                     if (_step.Count == 0) continue;
 
-                    int cost = Price(limb, _step, power, w.HardTissueScale);
+                    int cost = Price(limb, _step, power, w.HardTissueScale, out bool hard);
                     if (cost < 0) continue;   // nothing there to pay for; the game skips these too
 
                     foreach (var v in _step) { _crushIdx.Add(v); _crushForce.Add(-power); }
+                    if (hard) { result.HardSteps++; result.HardPower += Mathf.Min(cost, power); }
                     power -= cost;
                     if (power < 1) { exhausted = true; break; }
                 }
@@ -300,8 +304,11 @@ namespace FruitLib
         /// excess leaves soft tissue at native cost and lets <paramref name="hardScale"/> thin
         /// out just the bone.
         /// </summary>
-        private static int Price(LimbEffectorReceiver limb, List<int3> voxels, int power, float hardScale)
+        /// <param name="hard">True when the step was mostly hard tissue: it absorbed more than
+        /// twice what it gave way, which soft tissue never does.</param>
+        private static int Price(LimbEffectorReceiver limb, List<int3> voxels, int power, float hardScale, out bool hard)
         {
+            hard = false;
             var list = new IndexEffectorSignalsList(voxels.Count, false);
             foreach (var v in voxels) list.Add(new IndexEffectorSignal(v, -power, InfluenceProcessType.Sum));
             var handler = new IndexEffectorSignalsHandler<Destruction>(list);
@@ -313,6 +320,7 @@ namespace FruitLib
                     float absorbed = Mathf.Abs(fb.TotalAbsorbedInfluence);
                     float progress = Mathf.Abs(fb.TotalProgressesChange);
                     float cost = absorbed <= progress ? absorbed : progress + (absorbed - progress) * hardScale;
+                    hard = absorbed > progress * 2f;
                     return Mathf.Max(0, Mathf.RoundToInt(cost));
                 }
                 finally

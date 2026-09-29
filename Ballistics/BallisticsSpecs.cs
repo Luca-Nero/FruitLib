@@ -236,6 +236,12 @@ namespace FruitLib
     /// wounding through the same channel as bullets: each fragment is a small, fast round
     /// whose power falls off with distance.
     ///
+    /// Fragments meet the world the way rounds do: a steel chunk of <see cref="FragMassGrams"/>
+    /// at the speed its <see cref="FragPower"/> works out to, glancing off surfaces at shallow
+    /// angles, going through what it has the energy for (Poncelet, per <see cref="SurfaceMaterial"/>),
+    /// and carrying on out of limbs it passes through. The shockwave and overpressure are
+    /// shielded by cover (<see cref="BlastOcclusion"/>).
+    ///
     /// Visuals stay with the mod that owns them: listen to <see cref="FruitBallistics.Exploded"/>
     /// and <see cref="FruitBallistics.DebrisArc"/>.
     /// </summary>
@@ -253,12 +259,36 @@ namespace FruitLib
         public float BlastForce  = 5f;
         public float BlastUpward = 2f;
 
+        /// <summary>Walls between the charge and a body cut its shockwave and overpressure by
+        /// their <see cref="SurfaceMaterial.BlastTransmission"/>. Small things (under ~1 m) don't
+        /// count: a blast wraps round them.</summary>
+        public bool  BlastOcclusion  = true;
+        /// <summary>What still reaches something behind full cover, 0..1: a blast spills round
+        /// corners and over walls.</summary>
+        public float BlastDiffraction = 0.15f;
+
         // Overpressure: noisy surface damage on limbs close to the charge.
         public float OverpressureRadius     = 3.5f;
         public float OverpressureFalloffExp = 1f;
         public int   OverpressurePoints     = 12;
         public int   OverpressureWoundRadius = 2;
         public float OverpressureDamage     = -2500f;
+
+        /// <summary>
+        /// The charge, as kg of TNT (Comp B ~1.1x its mass, C4 ~1.3x). Above 0 overpressure is
+        /// physical: the blast wave's peak pressure at each limb from the charge's weight and the
+        /// distance (<see cref="FruitBlast"/>), hurting organs, then skin, then the whole limb as it
+        /// rises (<see cref="Injury"/>). <see cref="OverpressureRadius"/>, falloff and damage
+        /// scale then no longer apply; <see cref="OverpressurePoints"/>, <see cref="OverpressureWoundRadius"/>
+        /// and <see cref="OverpressureDamage"/> shape the visible part. 0 = the old radius model.
+        /// </summary>
+        public float ChargeKgTNT = 0f;
+        /// <summary>On or against a surface the charge's wave is thrown back off it: this many times
+        /// the charge (1.8 is the usual figure for a burst on the ground).</summary>
+        public float SurfaceBurstFactor = 1.8f;
+        /// <summary>Pressure thresholds for each kind of injury. <see cref="DamageScale"/> scales the
+        /// pressure the body is judged at.</summary>
+        public BlastInjuryProfile Injury = new BlastInjuryProfile();
 
         // Fragments.
         public int   FragCount   = 2000;
@@ -272,6 +302,86 @@ namespace FruitLib
         /// <summary>Fraction of power a fragment keeps per metre of flight, as exp(-x·d). Small
         /// irregular fragments shed speed fast.</summary>
         public float FragPowerFalloff = 0.08f;
+        /// <summary>
+        /// One fragment, grams. With <see cref="FragPower"/> (at 7.5 power per joule, as rounds)
+        /// it sets the fragment's real speed - 2 g at 2700 is ~600 m/s - and with a tumbling steel
+        /// chunk's frontal area, how well it goes through things. Lighter is faster but
+        /// penetrates less for the same power; a claymore's steel balls are ~0.7 g.
+        /// </summary>
+        public float FragMassGrams = 2f;
+        /// <summary>Through surfaces, relative to a steel chunk of that mass. 0 = never goes
+        /// through; FruitLib's own penetration settings apply on top.</summary>
+        public float FragPenetrationScale = 1f;
+        /// <summary>Incidence from the normal on concrete beyond which a fragment glances off,
+        /// shifted per material as for rounds. Irregular fragments skip at steeper angles than bullets.</summary>
+        public float FragRicochetAngle = 65f;
+        /// <summary>Ricochets per fragment. Each adds a sweep for the fragments that make one.</summary>
+        public int   FragMaxBounces = 1;
+        /// <summary>Energy lost to a ricochet, before the surface scales it.</summary>
+        public float FragRicochetEnergyLoss = 0.6f;
+        /// <summary>Random deflection off a ricochet, degrees. Fragments are not round.</summary>
+        public float FragRicochetScatter = 10f;
+
+        // Shaped-charge jet (HEAT). Off at 0 rays.
+        /// <summary>Extra fragments fired straight down <see cref="JetConeDeg"/> around the forward
+        /// direction: a shaped charge's jet. 0 = no jet.</summary>
+        public int   JetRays = 0;
+        /// <summary>Full angle of the jet, degrees.</summary>
+        public float JetConeDeg = 3f;
+        /// <summary>
+        /// Metres of surface each jet ray goes through at no cost - what a HEAT warhead is for.
+        /// Spent across every wall it meets; past it the ray penetrates like any fragment. The
+        /// jet also never ricochets while it has any left, and flies flat.
+        /// </summary>
+        public float JetPenetration = 0.8f;
+        /// <summary>Wound power of one jet ray; 0 = <see cref="FragPower"/>. A jet carries far
+        /// more than any fragment: 30000 is two rifle rounds.</summary>
+        public int   JetPower = 30000;
+        /// <summary>How the jet tears through a body: a crushed core and a big temporary cavity,
+        /// through bone. Null = <see cref="FragWound"/>.</summary>
+        public WoundProfile JetWound = new WoundProfile
+        {
+            CrushRadius = 1, CleanEntryDepth = 0, SpreadChance = 0.6f,
+            CavitationPeakRadius = 5, CavitationDamage = -600f,
+            TearMinRadius = 2f, TearMaxRadius = 4f, ExitTearDamage = -600f,
+            MaxDepth = 120, HardTissueScale = 0.05f, ImpactImpulse = 40f,
+        };
+
+        /// <summary>
+        /// Behind-armour spall: fragments of wall blown out of the back of every wall the jet
+        /// goes through (once per wall), scaled by the wall's <see cref="SurfaceMaterial.Spall"/>.
+        /// They come off a ragged patch round the exit: fast and along the jet from the middle,
+        /// slower and splayed out to <see cref="JetSpallConeDeg"/> from the rim. What actually
+        /// kills behind the armour. 0 = none.
+        /// </summary>
+        public int   JetSpallCount = 60;
+        public float JetSpallConeDeg = 60f;
+        /// <summary>Wound power of one spall fragment, scaled by the power the jet still had.</summary>
+        public int   JetSpallPower = 2500;
+        /// <summary>Average spall fragment, grams; chunks run from about a third of it to three
+        /// times, mostly small. A bigger chunk carries proportionally more power at the same speed.</summary>
+        public float JetSpallMassGrams = 3f;
+        /// <summary>
+        /// Scales the scab: the ragged patch of back face that comes away round the exit hole.
+        /// At 1 its radius is the hole plus ~0.8x the wall's thickness (the shear cone), so a
+        /// 100 mm wall sheds a ~11 cm patch and a 300 mm one ~27 cm.
+        /// </summary>
+        public float JetSpallCraterScale = 1f;
+        /// <summary>Wound budget for the jet, its spall and bone fragments, on top of
+        /// <see cref="MaxWounds"/>: they are traced last, and would otherwise only get what the
+        /// fragment field left.</summary>
+        public int   SecondaryMaxWounds = 120;
+
+        /// <summary>
+        /// Secondary fragments of bone: a fragment (or jet, or spall) that perforates bone blows
+        /// up to this many pieces out of the exit wound, in a cone along its path, so a body at
+        /// the charge wounds whoever is next to it. 0 = none. More bone crossed, more pieces.
+        /// </summary>
+        public int   BoneFragments = 4;
+        /// <summary>Wound power of one bone fragment from a full-power hit; scales with the power
+        /// that went into the bone. Bone is light and irregular, so they don't carry far.</summary>
+        public int   BoneFragmentPower = 900;
+        public float BoneFragmentConeDeg = 50f;
         public int   ArcSteps    = 12;
         public float DebrisRatio = 0.04f;
         public int   MaxDebris   = 24;
@@ -280,6 +390,9 @@ namespace FruitLib
         public float DamageScale = 1f;
         /// <summary>Wound budget per detonation; fragments past it still push, but do not cut.</summary>
         public int   MaxWounds   = 240;
+        /// <summary>Most of <see cref="MaxWounds"/> the overpressure may use (0..1), spread evenly
+        /// over every limb in range; the rest is kept for fragments.</summary>
+        public float OverpressureBudgetShare = 0.4f;
         /// <summary>Scale fragment and overpressure counts down under frame pressure (FruitPerfMon).</summary>
         public bool  AdaptiveQuality = true;
         public float MinQuality      = 0.25f;
@@ -295,10 +408,35 @@ namespace FruitLib
 
         internal bool IsFullSphere => HSpreadDeg >= 360f && VSpreadDeg >= 360f;
 
+        /// <summary>Power per joule, the same scale rounds use (<see cref="ProjectileSpec.PowerPerJoule"/>).</summary>
+        internal const float FragPowerPerJoule = 7.5f;
+
+        internal float FragMassKg => Mathf.Max(0.00005f, FragMassGrams * 0.001f);
+
+        /// <summary>A fragment's real speed at the charge, m/s, from its power and mass.</summary>
+        internal float FragVelocity => Mathf.Sqrt(2f * Mathf.Max(1, FragPower) / (FragPowerPerJoule * FragMassKg));
+
+        /// <summary>
+        /// Sectional density, kg/m². A tumbling fragment presents a quarter of its surface on
+        /// average; for a steel cube that is 1.5·(m/ρ)^⅔, so a 2 g chunk comes to ~33 kg/m² -
+        /// a fifth of a 7.62x39's, which is why fragments stop in walls rounds go through.
+        /// </summary>
+        internal float FragSectionalDensity
+        {
+            get
+            {
+                float m = FragMassKg;
+                float area = 1.5f * Mathf.Pow(m / 7850f, 2f / 3f);
+                return m / Mathf.Max(1e-8f, area);
+            }
+        }
+
         public ExplosionSpec Clone()
         {
             var c = (ExplosionSpec)MemberwiseClone();
             c.FragWound = FragWound?.Clone() ?? new WoundProfile();
+            c.Injury    = Injury?.Clone();
+            c.JetWound  = JetWound?.Clone();
             return c;
         }
     }

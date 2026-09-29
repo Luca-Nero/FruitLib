@@ -28,6 +28,9 @@ namespace FruitLib
         [MenuCategory("Ballistics"), MenuLabel("Penetration strength"), MenuRange(0.1f, 3f)]
         public static float PenetrationScale = 1f;
 
+        [MenuCategory("Ballistics"), MenuLabel("Walls shield from blasts")]
+        public static bool BlastOcclusion = true;
+
         // ── Wound effects ──
 
         [MenuCategory("Wound effects"), MenuLabel("Exit wound ejecta")]
@@ -173,8 +176,9 @@ namespace FruitLib
             ["MenuProbe"]    = "logs how the pause menu moves between its screens - structure once, then a line a frame while anything is animating. For working on the menu; noisy otherwise",
             ["MenuProbeKey"] = "dumps the pause menu structure again on demand while MenuProbe is on (None to disable the key)",
 #endif
-            ["WallPenetration"]    = "FruitLib rounds with enough energy go through walls, crates and props instead of stopping, slowing down and tumbling as they do. How far depends on the round and the material. Off = they only ricochet or stop",
-            ["PenetrationScale"]   = "multiplies how well every FruitLib round goes through surfaces. 1 = physical (a 9 mm through ~13 cm of wood, a 7.62x39 through ~36 cm)",
+            ["WallPenetration"]    = "FruitLib rounds and explosion fragments with enough energy go through walls, crates and props instead of stopping, slowing down and tumbling as they do. How far depends on the round and the material. Off = they only ricochet or stop",
+            ["PenetrationScale"]   = "multiplies how well every FruitLib round and fragment goes through surfaces. 1 = physical (a 9 mm through ~13 cm of wood, a 7.62x39 through ~36 cm, a 2 g grenade fragment through ~6 cm)",
+            ["BlastOcclusion"]     = "walls between an explosion and a body cut its shockwave and overpressure: concrete and steel stop nearly all of it, wood and drywall let some through. A blast still spills round cover a little. Off = blasts reach everything in range as before",
             ["Ejecta"]             = "tissue-coloured chunks thrown out of exit wounds by every FruitLib projectile and fragment. Master switch; a mod can also turn it off per weapon",
             ["EjectaMinDepth"]     = "a wound only throws ejecta if the round came out the far side after at least this many voxels (~23 mm each). Stops grazes and corner nicks from spraying chunks",
             ["EjectaFullPower"]    = "power a round must still carry out of an exit wound to throw the full chunk count; less throws proportionally fewer (at least one). A rifle round is ~15000, a buckshot pellet ~2100",

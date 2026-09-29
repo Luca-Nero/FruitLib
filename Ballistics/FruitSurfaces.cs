@@ -49,7 +49,38 @@ namespace FruitLib
         public float MaxThickness = 1f;
         public bool  Penetrable = true;
 
+        /// <summary>Of an explosion's shockwave and overpressure, the fraction that gets through
+        /// a wall of this (0..1). Blast also wraps round cover, which the explosion's own
+        /// <see cref="ExplosionSpec.BlastDiffraction"/> floors this at.</summary>
+        public float BlastTransmission = 0.05f;
+
+        /// <summary>How much of its back face a wall of this sheds when a jet goes through it,
+        /// relative to concrete (1). Brittle things scab and shatter; steel spalls less, wood
+        /// splinters, drywall crumbles, soil and water don't spall at all.</summary>
+        public float Spall = 1f;
+
         public SurfaceMaterial Clone() => (SurfaceMaterial)MemberwiseClone();
+
+        /// <summary>Chance (0..1) that something whose ricochet angle on concrete is
+        /// <paramref name="angleOnConcrete"/> glances off this at <paramref name="incidence"/>
+        /// degrees from the normal, ramping over <paramref name="band"/> degrees either side.</summary>
+        internal float RicochetChance(float angleOnConcrete, float incidence, float band)
+        {
+            float critical = Mathf.Clamp(angleOnConcrete + RicochetAngleShift, 0f, 89.5f);
+            return Mathf.InverseLerp(critical - band, critical + band, incidence);
+        }
+
+        /// <summary>
+        /// The velocity off the surface: the part along it mostly survives (<see cref="Grip"/>),
+        /// the part into it mostly does not (<see cref="Restitution"/>), so it leaves flatter
+        /// than it came in. Speed is settled separately, by energy.
+        /// </summary>
+        internal Vector3 Bounce(Vector3 v, Vector3 normal)
+        {
+            Vector3 vn = Vector3.Project(v, normal);
+            Vector3 outV = (v - vn) * Grip - vn * Restitution;
+            return outV.sqrMagnitude < 1e-6f ? normal : outV;
+        }
 
         /// <summary>How deep a round of sectional density <paramref name="sd"/> (kg/m²) entering at
         /// <paramref name="speed"/> m/s gets, in metres.</summary>
@@ -98,14 +129,17 @@ namespace FruitLib
         {
             // Strength calibrated against published penetration of 9 mm FMJ and 7.62×39 FMJ;
             // treat the rest as starting points.
-            Register(new SurfaceMaterial { Name = "Concrete", Density = 2400f, Strength = 2.0e8f, RicochetAngleShift =   0f, Restitution = 0.20f, Grip = 0.75f, RicochetLossScale = 1.0f, ExitScatter = 10f, MaxThickness = 0.5f });
-            Register(new SurfaceMaterial { Name = "Brick",    Density = 1900f, Strength = 1.2e8f, RicochetAngleShift =   2f, Restitution = 0.15f, Grip = 0.70f, RicochetLossScale = 1.1f, ExitScatter = 10f, MaxThickness = 0.5f });
-            Register(new SurfaceMaterial { Name = "Steel",    Density = 7850f, Strength = 3.0e9f, RicochetAngleShift =  -8f, Restitution = 0.30f, Grip = 0.85f, RicochetLossScale = 0.7f, ExitScatter =  6f, MaxThickness = 0.1f });
-            Register(new SurfaceMaterial { Name = "Wood",     Density =  500f, Strength = 3.6e7f, RicochetAngleShift =  10f, Restitution = 0.10f, Grip = 0.60f, RicochetLossScale = 1.3f, ExitScatter =  6f, MaxThickness = 1.0f });
-            Register(new SurfaceMaterial { Name = "Drywall",  Density =  700f, Strength = 5.0e6f, RicochetAngleShift =  12f, Restitution = 0.10f, Grip = 0.60f, RicochetLossScale = 1.4f, ExitScatter =  4f, MaxThickness = 0.5f });
-            Register(new SurfaceMaterial { Name = "Glass",    Density = 2500f, Strength = 5.0e7f, RicochetAngleShift =   3f, Restitution = 0.25f, Grip = 0.80f, RicochetLossScale = 1.0f, ExitScatter =  3f, MaxThickness = 0.1f });
-            Register(new SurfaceMaterial { Name = "Soil",     Density = 1600f, Strength = 1.5e7f, RicochetAngleShift =  12f, Restitution = 0.05f, Grip = 0.50f, RicochetLossScale = 1.5f, ExitScatter = 12f, MaxThickness = 2.0f });
-            Register(new SurfaceMaterial { Name = "Water",    Density = 1000f, Strength = 1.0e5f, RicochetAngleShift =  14f, Restitution = 0.05f, Grip = 0.80f, RicochetLossScale = 0.9f, ExitScatter = 15f, MaxThickness = 2.0f });
+            // BlastTransmission is a guess by kind of wall: masonry and steel stop a blast,
+            // stud walls and glass mostly don't (they fail and let it through). Spall likewise:
+            // brittle things scab, steel less, wood splinters, drywall crumbles, soil and water don't.
+            Register(new SurfaceMaterial { Name = "Concrete", Density = 2400f, Strength = 2.0e8f, RicochetAngleShift =   0f, Restitution = 0.20f, Grip = 0.75f, RicochetLossScale = 1.0f, ExitScatter = 10f, MaxThickness = 0.5f, BlastTransmission = 0.03f, Spall = 1.0f });
+            Register(new SurfaceMaterial { Name = "Brick",    Density = 1900f, Strength = 1.2e8f, RicochetAngleShift =   2f, Restitution = 0.15f, Grip = 0.70f, RicochetLossScale = 1.1f, ExitScatter = 10f, MaxThickness = 0.5f, BlastTransmission = 0.05f, Spall = 1.1f });
+            Register(new SurfaceMaterial { Name = "Steel",    Density = 7850f, Strength = 3.0e9f, RicochetAngleShift =  -8f, Restitution = 0.30f, Grip = 0.85f, RicochetLossScale = 0.7f, ExitScatter =  6f, MaxThickness = 0.1f, BlastTransmission = 0.02f, Spall = 0.6f });
+            Register(new SurfaceMaterial { Name = "Wood",     Density =  500f, Strength = 3.6e7f, RicochetAngleShift =  10f, Restitution = 0.10f, Grip = 0.60f, RicochetLossScale = 1.3f, ExitScatter =  6f, MaxThickness = 1.0f, BlastTransmission = 0.25f, Spall = 0.5f });
+            Register(new SurfaceMaterial { Name = "Drywall",  Density =  700f, Strength = 5.0e6f, RicochetAngleShift =  12f, Restitution = 0.10f, Grip = 0.60f, RicochetLossScale = 1.4f, ExitScatter =  4f, MaxThickness = 0.5f, BlastTransmission = 0.50f, Spall = 0.3f });
+            Register(new SurfaceMaterial { Name = "Glass",    Density = 2500f, Strength = 5.0e7f, RicochetAngleShift =   3f, Restitution = 0.25f, Grip = 0.80f, RicochetLossScale = 1.0f, ExitScatter =  3f, MaxThickness = 0.1f, BlastTransmission = 0.60f, Spall = 1.2f });
+            Register(new SurfaceMaterial { Name = "Soil",     Density = 1600f, Strength = 1.5e7f, RicochetAngleShift =  12f, Restitution = 0.05f, Grip = 0.50f, RicochetLossScale = 1.5f, ExitScatter = 12f, MaxThickness = 2.0f, BlastTransmission = 0.00f, Spall = 0.0f });
+            Register(new SurfaceMaterial { Name = "Water",    Density = 1000f, Strength = 1.0e5f, RicochetAngleShift =  14f, Restitution = 0.05f, Grip = 0.80f, RicochetLossScale = 0.9f, ExitScatter = 15f, MaxThickness = 2.0f, BlastTransmission = 0.10f, Spall = 0.0f });
 
             // Most specific first: the first keyword found wins. Substrings, so nothing that
             // hides inside common words ("iron" in "Environment", "door" in "outdoor", "tree" in "street").
@@ -178,6 +212,32 @@ namespace FruitLib
         }
 
         internal static void ResetForScene() => _cache.Clear();
+
+        /// <summary>
+        /// The far side of <paramref name="c"/> along <paramref name="dir"/> from <paramref name="entry"/>,
+        /// looking no deeper than <paramref name="reach"/> metres: a cast back at the collider from
+        /// that depth. False when it is thicker than that, or the cast started inside it.
+        /// </summary>
+        internal static bool FarSide(Collider c, Vector3 entry, Vector3 dir, float reach,
+                                     out Vector3 exit, out float thickness)
+            => FarSide(c, entry, dir, reach, out exit, out thickness, out _);
+
+        /// <param name="exitNormal">The far face's outward normal.</param>
+        internal static bool FarSide(Collider c, Vector3 entry, Vector3 dir, float reach,
+                                     out Vector3 exit, out float thickness, out Vector3 exitNormal)
+        {
+            exit = entry; thickness = 0f; exitNormal = dir;
+            reach += 0.01f;
+            if (!c.Raycast(new Ray(entry + dir * reach, -dir), out RaycastHit back, reach)) return false;
+            // A far side faces along the travel. Anything else is the entry face seen from
+            // behind - a terrain or one-sided mesh the query hit from below - and taking it
+            // would let a round through a surface of no thickness at all.
+            if (Vector3.Dot(back.normal, dir) <= 0f) return false;
+            exit = back.point;
+            exitNormal = back.normal;
+            thickness = Mathf.Max(0.001f, reach - back.distance);
+            return true;
+        }
 
         private static SurfaceMaterial Lookup(Collider c, out string why)
         {

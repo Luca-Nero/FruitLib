@@ -7,7 +7,10 @@ tissue ejecta; your mod owns what it looks and sounds like.
 
 Added in **3.1.0**. Gate on it with `FruitVersion.Require("MyMod", 3, 1)`. Surface materials and
 penetration, the `BeforeSurfaceHit` / `ProjectileStep` hooks, round owners and per-round data came
-in **5.3.0** (`FruitVersion.Require("MyMod", 5, 3)`).
+in **5.3.0** (`FruitVersion.Require("MyMod", 5, 3)`). Fragments that ricochet and go through walls,
+blast cover, and the `FragmentTraced` / `BlastTraced` events came in **5.4.0**
+(`FruitVersion.Require("MyMod", 5, 4)`, or `FruitGate.Check("MyMod", 5, 4, 0)` from the
+[FruitGate template](../Templates/README.md)).
 
 ## A round
 
@@ -85,7 +88,9 @@ density (mass over frontal area) and its speed, not just its energy. The far sid
 casting back at the collider, so the real thickness of the wall decides whether the round comes
 out. A round that gets through loses speed, scatters a little (`ExitScatter`), and pushes the
 surface by the speed it lost. A wall thicker than the round can reach, or than the material's
-`MaxThickness`, stops it.
+`MaxThickness`, stops it. A far-side hit whose normal faces against the travel is not an exit but
+the entry face seen from behind (a one-sided mesh, or terrain hit from below), and is rejected, so
+a round cannot pass through a surface of no thickness.
 
 Approximate depth of a full metal jacket at muzzle velocity, straight on:
 
@@ -153,7 +158,7 @@ the shot; `RemoveResolver` takes the same delegate back out. The other `SurfaceM
 `Restitution` and `Grip` (how much of the speed into and along the surface a ricochet keeps),
 `RicochetLossScale` (scales the spec's `RicochetEnergyLoss`), `ExitScatter` (degrees of random
 deflection leaving the far side, scaled by the speed lost), and `Penetrable = false` for a
-surface nothing gets through. `Depth(sd, speed)` and `ExitSpeed(sd, speed, thickness)` are public
+surface nothing gets through, and `BlastTransmission` ([below](#blast-cover)). `Depth(sd, speed)` and `ExitSpeed(sd, speed, thickness)` are public
 if you want the same numbers for your own use; `FruitSurfaces.Resolve(collider)` gives the
 material, and `Explain(collider, out why)` also the rule.
 
@@ -218,7 +223,7 @@ mods can each hang data on the same round without fighting over `Tag`.
 FruitBallistics.Register(new ExplosionSpec
 {
     Id = "MyMod.Grenade",
-    BlastRadius = 6f, FragCount = 2000, FragPower = 2700,
+    BlastRadius = 6f, FragCount = 2000, FragPower = 2700, FragMassGrams = 2f,
     HSpreadDeg = 360f, VSpreadDeg = 360f,     // less than 360 makes a cone along `forward`
 });
 
@@ -230,12 +235,71 @@ wounds what's close, and fragments that fly real arcs and wound through the nati
 power falling off over distance. `MaxWounds` caps the wounds per detonation, and
 `AdaptiveQuality` scales fragment counts down under [frame pressure](perfmon.md).
 
+### Fragments
+
+A fragment is a steel chunk of `FragMassGrams`. Its real speed follows from `FragPower` at 7.5
+power per joule, the same scale as rounds: 2 g at 2700 is about 600 m/s. Its sectional density
+comes from the average area a tumbling steel cube presents, about 33 kg/m² for 2 g, roughly a
+fifth of a 7.62x39's. So fragments go through drywall and thin wood but stop in concrete, where a
+rifle round would carry on. A lighter fragment is faster but penetrates less for the same power.
+
+At a surface a fragment follows the rules rounds do: it may **ricochet**, else **penetrate**
+(Poncelet, with the same [`SurfaceMaterial`](#what-a-surface-is-made-of) as rounds), else
+**stop**. Out of a limb it carries on with the speed the wound walk left it. Each of those starts a
+new *leg* of its flight, up to 4 legs per fragment. Wound power follows speed squared along the
+whole path, so a fragment that has been through a wall wounds less on the other side. Roughly how
+far a 2 g fragment at 2700 gets in, straight on: concrete 1 cm, brick 2 cm, steel 0.2 cm, wood
+6 cm, drywall 9 cm.
+
+| Field | What it does |
+|---|---|
+| `FragPower`, `FragMassGrams` | Wound power at the charge, and one fragment's mass. Together they set its speed. A claymore's steel balls are about 0.7 g |
+| `FragPenetrationScale` | Through surfaces, relative to a steel chunk of that mass. 0 = fragments never go through |
+| `FragRicochetAngle` | Angle **on concrete** beyond which a fragment glances off, shifted per material as for rounds. Default 65: irregular fragments skip at steeper angles than bullets |
+| `FragMaxBounces` | Ricochets per fragment (default 1). Each adds a sweep for the fragments that make one |
+| `FragRicochetEnergyLoss`, `FragRicochetScatter` | Energy lost to a ricochet (0.6) and random deflection in degrees (10) |
+| `FragPowerFalloff` | Power kept per metre of flight, as exp(-x·d) |
+| `FragImpulse` | Push on a body a fragment hits, scaled by the velocity it actually lost there: a fragment that goes through pushes less than one that stops |
+| `JetRays`, `JetConeDeg`, `JetPenetration` | A shaped charge's jet (HEAT), cones only. `JetRays` extra fragments (default 0 = none) fly flat down a `JetConeDeg` cone (3°) round the forward direction. Each goes through `JetPenetration` metres of wall (0.8) at no cost, spread over every wall it meets, and never ricochets while any is left. Past that it penetrates like any fragment. Up to 8 legs. `FragmentTrace.Jet` marks them |
+| `JetPower`, `JetWound` | What a jet ray does in a body: its own wound power (30000, two rifle rounds; 0 = `FragPower`) and profile (a crushed core, a big cavity, through bone) |
+| `JetSpallCount`, `JetSpallConeDeg`, `JetSpallPower`, `JetSpallMassGrams`, `JetSpallCraterScale` | Behind-armour spall (scabbing), what kills behind cover. The back of each wall the jet goes through (once per wall) sheds `JetSpallCount` chunks (60) × the material's `SurfaceMaterial.Spall`: concrete 1, brick 1.1, glass 1.2, steel 0.6, wood 0.5, drywall 0.3, soil and water 0. The chunks come off a ragged patch round the exit, whose radius is the hole plus ~0.8× the wall's thickness, times `JetSpallCraterScale`. Chunks from the middle fly fast along the jet; chunks from the rim are slower and splay out to the 60° cone. Sizes are skewed small, averaging `JetSpallMassGrams` (3 g), and power (2500) scales with size and with the power the jet still had. `FragmentTrace.Spall` marks them |
+| `JetMaxWounds` | Wound budget for the jet and its spall (120), kept apart from `MaxWounds`. They are traced last and would otherwise get only what the fragment field left |
+| `BoneFragments`, `BoneFragmentPower`, `BoneFragmentConeDeg` | Secondary fragments of bone. Anything that perforates bone throws up to this many pieces (4) out of the exit wound, in a cone (50°), with power (900) scaled by how hard the hit was. They come out of `SecondaryMaxWounds`, as do the jet and spall |
+| `ChargeKgTNT`, `SurfaceBurstFactor`, `Injury` | Physical overpressure (5.4). The charge in kg of TNT; above 0 it replaces the old radius model. `FruitBlast` works out the blast wave's reflected peak pressure at each limb's nearest point (Hopkinson-Cranz scaling, the Mills fit to Kingery-Bulmash), after cover and the charge's cone. A charge on a surface counts `SurfaceBurstFactor` (1.8) times over. What that pressure does follows `Injury`, a `BlastInjuryProfile`: organ thresholds in kPa (lung 150, stomach 250, brain 450, heart 500, liver 700) bruise the organ's own voxels, and tear it past twice the threshold. Visible damage on the side facing the charge starts at `SurfaceKPa` (1200); past `DisruptionKPa` (6000, contact range) the limb comes apart from inside. Thresholds rise for small charges, whose short blast the body tolerates better. Organ damage goes through the game's own pain and cognition. With the probe on, each organ injury is logged with its durability before and after |
+| `OverpressureBudgetShare` | Most of `MaxWounds` the overpressure may use (0.4), spread point by point over every limb in range, so a crowd can't use up the whole budget before a single fragment cuts |
+
+The player's `WallPenetration` and `PenetrationScale` settings ([below](#player-settings)) apply
+to fragments as they do to rounds; with walls off, a fragment only ricochets or stops.
+
+Fragments do not raise `SurfaceHit`, whose handlers expect a `Projectile`, and `BeforeSurfaceHit`
+does not steer them. Use `FragmentTraced` ([below](#events-where-your-visuals-go)) to see where
+they went.
+
+### Blast cover
+
+The shockwave push and the overpressure damage on each target are multiplied by the
+`BlastTransmission` (0..1) of every wall on the straight line from the charge to it, and the
+result is floored at the spec's `BlastDiffraction` (default 0.15), because a blast spills round
+corners and over walls. Only objects at least 1 m across count as walls, so crates, bodies and
+small props do not shield, and neither does the target's own body.
+
+| Material | Concrete | Brick | Steel | Wood | Drywall | Glass | Soil | Water |
+|---|---|---|---|---|---|---|---|---|
+| `BlastTransmission` | 0.03 | 0.05 | 0.02 | 0.25 | 0.50 | 0.60 | 0.00 | 0.10 |
+
+These are guesses by kind of wall, like the keyword table. A material you register defaults to
+0.05. `ExplosionSpec.BlastOcclusion = false` turns cover off for one spec, and the player can turn
+it off for every mod (`FruitLibConfig.BlastOcclusion`, "Walls shield from blasts"). Fragments are
+not affected: their own physics decides what stops them.
+
 ## Events: where your visuals go
 
 ```csharp
 FruitBallistics.SurfaceHit  += OnSurface;   // SurfaceHitInfo: collider, point, normal, material, outcome, penetrated, exit, speeds
 FruitBallistics.LimbWounded += OnWound;     // WoundInfo: limb, entry, exit, power in/out, exited
 FruitBallistics.Exploded    += OnExploded;  // ExplosionInfo: spec, origin, ground hit, owner
+FruitBallistics.FragmentTraced += OnFragment;  // FragmentTrace: one leg of one fragment (5.4.0)
+FruitBallistics.BlastTraced    += OnBlast;     // BlastTrace: what a body or limb got of the blast (5.4.0)
 ```
 
 | Event | Fires |
@@ -248,6 +312,8 @@ FruitBallistics.Exploded    += OnExploded;  // ExplosionInfo: spec, origin, grou
 | `LimbWounded` | A round or explosion fragment wounded a limb (`Projectile` is null for fragments). Overpressure wounds raise nothing |
 | `Exploded` | A detonation happened |
 | `DebrisArc` | One sampled fragment's flight, for debris visuals |
+| `FragmentTraced` | Every leg of every fragment: where it flew, what it hit, and how the leg ended (`EndedBy`). Thousands per detonation, and only built while someone is subscribed, so keep the handler cheap |
+| `BlastTraced` | Once per body (shockwave) or limb (overpressure) in range: the `Transmission` that got through, and the `Occluder` and its material. Not raised for cosmetic detonations, which push nothing |
 
 **Every mod hears every event.** Draw only your own: filter on the spec id prefix.
 
@@ -257,6 +323,45 @@ void OnSurface(SurfaceHitInfo hit)
     if (!hit.Projectile.Spec.Id.StartsWith("MyMod.")) return;
     SpawnSpark(hit.Point, hit.Normal);
     if (hit.Penetrated) SpawnSpark(hit.Exit, -hit.Direction);
+}
+```
+
+A `FragmentTrace` is one leg of a fragment's flight. `Start`, `ArcVelocity`, `Time` and `End`
+describe the arc (`p(t) = Start + ArcVelocity·t + ½·g·t²`, for drawing), `Fragment` and `Leg` say
+which one it is, and `SpeedIn` / `SpeedOut` are its physical speed at the end. `EndedBy` is one of
+`Spent` (hit nothing), `Lodged` (stopped in a limb), `PassedThrough` (out of a limb), `Ricocheted`,
+`Penetrated`, `Stopped` (in a surface), `OverBudget` (hit a limb after the wound budget ran out)
+or `TooWeak`. `Material`, `Incidence`, `Exit` and `Thickness` are filled in where they apply, and
+the next leg starts at `End`, or at `Exit` after a wall or a limb. On a cosmetic detonation a
+fragment that hits a limb is drawn `Lodged`: what the wound would have left is the host's to know.
+
+```csharp
+FruitBallistics.FragmentTraced += OnFragment;
+FruitBallistics.BlastTraced    += OnBlast;
+
+void OnFragment(FragmentTrace t)
+{
+    if (!t.Spec.Id.StartsWith("MyMod.")) return;                    // every mod's fragments arrive here
+    if (t.Fragment % 20 != 0) return;                               // a sample, not thousands
+
+    Vector3 prev = t.Start;
+    for (int i = 1; i <= 8; i++)                                    // the arc, in short segments
+    {
+        float s = t.Time * i / 8f;
+        Vector3 p = t.Start + t.ArcVelocity * s + 0.5f * Physics.gravity * s * s;
+        Debug.DrawLine(prev, p, t.Leg == 0 ? Color.yellow : Color.red, 5f);
+        prev = p;
+    }
+
+    if (t.EndedBy == FragmentEnd.Penetrated) SpawnHole(t.End, t.Exit, t.Thickness);
+    if (t.EndedBy == FragmentEnd.Ricocheted) SpawnSpark(t.End, t.Normal);
+}
+
+void OnBlast(BlastTrace t)
+{
+    if (!t.Spec.Id.StartsWith("MyMod.")) return;
+    if (t.Transmission < 1f)
+        MelonLogger.Msg($"blast at {t.Target}: {t.Transmission:P0} through {t.OccluderMaterial?.Name}");
 }
 ```
 
@@ -283,8 +388,10 @@ Only a networking mod touches these. Everyone else just calls `SpawnProjectile`.
 
 ## Player settings
 
-Under **Ballistics** in FruitLib's settings (and `FruitLibConfig.ini`): whether rounds go through
-walls at all (`WallPenetration`) and a multiplier on how well they do (`PenetrationScale`, 1 =
-physical), exit-wound ejecta and its thresholds, chunk count and speed, blood decals, and a target
+Under **Ballistics** in FruitLib's settings (and `FruitLibConfig.ini`): whether rounds and explosion
+fragments go through walls at all (`WallPenetration`), a multiplier on how well they do
+(`PenetrationScale`, 1 = physical), whether walls shield from blasts (`BlastOcclusion`, "Walls
+shield from blasts", 5.4.0), exit-wound ejecta and its thresholds, chunk count and speed, blood decals, and a target
 frame rate below which the oldest chunks and splats are cleared early. They apply to every mod's
-rounds, so don't build on penetration being on: with it off, a round only ricochets or stops.
+rounds and explosions, so don't build on penetration or cover being on: with penetration off, a round
+or fragment only ricochets or stops, and with `BlastOcclusion` off a blast reaches everything in range.
