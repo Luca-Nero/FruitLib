@@ -156,6 +156,19 @@ namespace FruitLib
             // OverlapSphereNonAlloc) - the first version of this used RaycastNonAlloc, and
             // every round flew straight through everything with no error at all.
             best = default;
+
+            // Nothing to skip: the nearest hit is the answer, and a single Raycast (which
+            // returns it directly) avoids RaycastAll's array.
+            bool ignoresColliders = r.IgnoredColliders != null && r.IgnoredColliders.Count > 0;
+            bool ignoresBodies = r.IgnoredBodies.Count > 0;
+            if (!ignoresColliders && !ignoresBodies)
+            {
+                if (!Physics.Raycast(r.Position, dir, out RaycastHit single, dist, HitMask, QueryTriggerInteraction.Ignore)
+                    || single.collider == null) return false;
+                best = single;
+                return true;
+            }
+
             var hits = Physics.RaycastAll(r.Position, dir, dist, HitMask, QueryTriggerInteraction.Ignore);
             float bestDist = float.MaxValue;
             bool found = false;
@@ -163,9 +176,12 @@ namespace FruitLib
             {
                 var h = hits[i];
                 if (h.collider == null || h.distance >= bestDist) continue;
-                if (r.IgnoredColliders != null && r.IgnoredColliders.Contains(h.collider.GetInstanceID())) continue;
-                var body = FruitWounds.BodyOf(h.collider);
-                if (body != null && r.IgnoredBodies.Contains(body.Pointer)) continue;
+                if (ignoresColliders && r.IgnoredColliders.Contains(h.collider.GetInstanceID())) continue;
+                if (ignoresBodies)
+                {
+                    var body = FruitWounds.BodyOf(h.collider);
+                    if (body != null && r.IgnoredBodies.Contains(body.Pointer)) continue;
+                }
                 best = h; bestDist = h.distance; found = true;
             }
             return found;

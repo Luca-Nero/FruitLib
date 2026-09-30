@@ -195,6 +195,18 @@ namespace FruitLib
 
         static bool Prefix(ref bool __result)
         {
+            // An exception escaping a Harmony prefix runs into the game's native code, so on
+            // failure let the game answer as if we were not here.
+            try { return Answer(ref __result); }
+            catch (Exception e)
+            {
+                MelonLogger.Warning($"[FruitMenu] back-navigation hook failed: {e.Message}");
+                return true;
+            }
+        }
+
+        private static bool Answer(ref bool __result)
+        {
             // Already answered this press. Swallowed rather than passed on, because by now
             // our stack may be empty and the game would read that as "nothing to step back
             // to" and close the menu.

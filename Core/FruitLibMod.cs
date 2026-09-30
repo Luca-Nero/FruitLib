@@ -127,7 +127,12 @@ namespace FruitLib
         [HarmonyPatch(typeof(PausePresenter), nameof(PausePresenter.RequestUnpause))]
         static class Patch_PauseResume
         {
-            static void Prefix() => FruitMenu.OnGameResumed();
+            // An exception escaping a Harmony prefix runs into the game's native code.
+            static void Prefix()
+            {
+                try { FruitMenu.OnGameResumed(); }
+                catch (Exception e) { MelonLogger.Warning($"[FruitLib] resume hook failed: {e.Message}"); }
+            }
         }
     }
 }

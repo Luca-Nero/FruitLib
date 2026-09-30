@@ -143,7 +143,15 @@ namespace FruitLib
 
     public static class FruitMeshUtil
     {
+        /// <summary>Gives the renderer fresh materials, one per group. Prefer
+        /// <see cref="ApplyNewMaterials"/>, which hands them back for destroying.</summary>
         public static void ApplyMaterials(Renderer renderer, FruitMaterialGroup[] groups,
+            Shader shader, Color fallbackColor)
+            => ApplyNewMaterials(renderer, groups, shader, fallbackColor);
+
+        /// <summary>Gives the renderer fresh materials, one per group, and returns them. Materials
+        /// are not destroyed with their GameObject, so the caller destroys these itself (5.5.0).</summary>
+        public static Material[] ApplyNewMaterials(Renderer renderer, FruitMaterialGroup[] groups,
             Shader shader, Color fallbackColor)
         {
             if (groups != null && groups.Length > 1)
@@ -155,17 +163,15 @@ namespace FruitLib
                     mats[m].color = new Color(groups[m].Kd[0], groups[m].Kd[1], groups[m].Kd[2], groups[m].Alpha);
                 }
                 renderer.materials = mats;
+                return mats;
             }
-            else if (groups != null && groups.Length == 1)
-            {
-                renderer.material = new Material(shader);
-                renderer.material.color = new Color(groups[0].Kd[0], groups[0].Kd[1], groups[0].Kd[2], groups[0].Alpha);
-            }
-            else
-            {
-                renderer.material = new Material(shader);
-                renderer.material.color = fallbackColor;
-            }
+
+            var mat = new Material(shader);
+            mat.color = groups != null && groups.Length == 1
+                ? new Color(groups[0].Kd[0], groups[0].Kd[1], groups[0].Kd[2], groups[0].Alpha)
+                : fallbackColor;
+            renderer.material = mat;
+            return new[] { mat };
         }
     }
 

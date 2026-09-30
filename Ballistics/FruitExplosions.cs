@@ -77,6 +77,9 @@ namespace FruitLib
             public readonly List<(Vector3 at, Vector3 dir, float power)> Bones = new List<(Vector3, Vector3, float)>();
             public float          V0, SD;
             public bool           Trace;
+            /// <summary>The parts that run: the spec's features less the command's.</summary>
+            public ExplosionFeatures F;
+            public bool Has(ExplosionFeatures f) => (F & f) != 0;
         }
 
         internal static void Detonate(ExplosionSpec s, BallisticsCommand cmd, bool cosmetic)
@@ -98,30 +101,34 @@ namespace FruitLib
                 ? Mathf.Lerp(1f, Mathf.Clamp01(s.MinQuality), FruitPerfMon.PressureLevel)
                 : 1f;
 
-            var b = new Blast { S = s, Cmd = cmd, Cosmetic = cosmetic, Origin = origin, Shot = shot, Rng = rng };
+            var b = new Blast
+            {
+                S = s, Cmd = cmd, Cosmetic = cosmetic, Origin = origin, Shot = shot, Rng = rng,
+                F = s.Features & ~cmd.Disabled,
+            };
             if (s.ChargeKgTNT > 0f)
             {
                 b.OnSurface = SurfaceBurst(s, origin);
                 b.W = s.ChargeKgTNT * (b.OnSurface ? Mathf.Max(1f, s.SurfaceBurstFactor) : 1f);
             }
 
-            if (!cosmetic) Shockwave(b, forward);
+            if (!cosmetic && b.Has(ExplosionFeatures.Shockwave)) Shockwave(b, forward);
 
             int budget = Mathf.Max(1, Mathf.RoundToInt(s.MaxWounds * quality));
-            if (!cosmetic) budget = Overpressure(b, forward, quality, budget);
+            if (!cosmetic && b.Has(ExplosionFeatures.Overpressure)) budget = Overpressure(b, forward, quality, budget);
 
             bool hasGround = Physics.Raycast(origin, Vector3.down, out RaycastHit ground, 200f, s.LayerMask, QueryTriggerInteraction.Ignore);
             FruitBallistics.RaiseExploded(new ExplosionInfo
             {
                 Spec = s, Origin = origin, Forward = forward,
-                HasGround = hasGround, Ground = ground, Cosmetic = cosmetic, Owner = cmd.Owner,
+                HasGround = hasGround, Ground = ground, Cosmetic = cosmetic, Owner = cmd.Owner, Features = b.F,
             });
 
             b.GroundY = hasGround ? ground.point.y : origin.y - 50f;
             b.Budget = budget;
             // The jet and its spall come last, so they get a budget of their own rather than
             // whatever the fragment field left over.
-            b.SecondaryBudget = s.JetRays > 0 || s.BoneFragments > 0
+            b.SecondaryBudget = (s.JetRays > 0 && b.Has(ExplosionFeatures.Jet)) || (s.BoneFragments > 0 && b.Has(ExplosionFeatures.BoneFragments))
                 ? Mathf.Max(1, Mathf.RoundToInt(s.SecondaryMaxWounds * quality)) : 0;
             b.V0 = s.FragVelocity;
             b.SD = s.FragSectionalDensity * Mathf.Max(0f, s.FragPenetrationScale) * Mathf.Max(0f, FruitLibConfig.PenetrationScale);
@@ -328,7 +335,8 @@ namespace FruitLib
                 float kPa = FruitBlast.ReflectedKPa(FruitBlast.IncidentKPa(dist, w) * cone * cover);
                 RaiseBlast(b, centre, true, cover, occluder, mat, kPa);
 
-                used += FruitBlastInjury.Organs(limb, kPa * s.DamageScale, duration, p, toLimb, b.Shot, b.Rng, cap - used);
+                if (b.Has(ExplosionFeatures.OrganInjury))
+                    used += FruitBlastInjury.Organs(limb, kPa * s.DamageScale, duration, p, toLimb, b.Shot, b.Rng, cap - used);
                 if (kPa * s.DamageScale >= p.SurfaceKPa * duration)
                     surface.Add((limb, centre, toLimb, kPa * s.DamageScale));
             }
@@ -445,7 +453,7 @@ namespace FruitLib
 
             Vector3 to = target - origin;
             float dist = to.magnitude;
-            if (s.BlastOcclusion && FruitLibConfig.BlastOcclusion && dist > 0.15f)
+            if (s.BlastOcclusion && b.Has(ExplosionFeatures.BlastCover) && FruitLibConfig.BlastOcclusion && dist > 0.15f)
             {
                 Vector3 dir = to / dist;
                 // Allocating on purpose: the NonAlloc overloads return nothing in this game.
@@ -554,14 +562,15 @@ namespace FruitLib
         private static void Fragments(Blast b, Vector3 forward, float quality)
         {
             var s = b.S;
-            int rays = Mathf.Max(1, Mathf.RoundToInt(s.FragCount * quality));
+            int rays = b.Has(ExplosionFeatures.Fragments) && s.FragCount > 0
+                ? Mathf.Max(1, Mathf.RoundToInt(s.FragCount * quality)) : 0;
             float golden = Mathf.PI * (3f - Mathf.Sqrt(5f));
 
             Quaternion coneRot = s.IsFullSphere ? Quaternion.identity : Quaternion.LookRotation(forward);
             float tanH = Mathf.Tan(Mathf.Min(s.HSpreadDeg * 0.5f, 89f) * Mathf.Deg2Rad);
             float tanV = Mathf.Tan(Mathf.Min(s.VSpreadDeg * 0.5f, 89f) * Mathf.Deg2Rad);
 
-            int maxDebris = s.DebrisRatio > 0f && FruitBallistics.WantsDebris
+            int maxDebris = rays > 0 && s.DebrisRatio > 0f && b.Has(ExplosionFeatures.Debris) && FruitBallistics.WantsDebris
                 ? Mathf.Min(Mathf.RoundToInt(rays * s.DebrisRatio), Mathf.Max(1, Mathf.RoundToInt(s.MaxDebris * quality)))
                 : 0;
             int debrisEvery = maxDebris > 0 ? Mathf.Max(1, rays / maxDebris) : int.MaxValue;
@@ -600,7 +609,7 @@ namespace FruitLib
 
             // The jet: its own rays, spread evenly over a narrow cone round the axis, so a
             // shaped charge always punches where it points however the pattern is turned.
-            int jetRays = s.JetRays > 0 && !s.IsFullSphere ? s.JetRays : 0;
+            int jetRays = s.JetRays > 0 && !s.IsFullSphere && b.Has(ExplosionFeatures.Jet) ? s.JetRays : 0;
             float jetHalf = Mathf.Clamp(s.JetConeDeg * 0.5f, 0f, 45f) * Mathf.Deg2Rad;
             b.SpallQuality = quality;
             for (int j = 0; j < jetRays; j++)
@@ -781,7 +790,7 @@ namespace FruitLib
             }
 
             float ratio = speedIn / k.V0;
-            if (rb != null && s.FragImpulse > 0f) AddImpulse(b, rb, dir * (s.FragImpulse * ratio));
+            if (rb != null && s.FragImpulse > 0f && b.Has(ExplosionFeatures.FragmentPush)) AddImpulse(b, rb, dir * (s.FragImpulse * ratio));
 
             int power = Mathf.RoundToInt(k.Power * s.DamageScale * ratio * ratio);
             if (power < 1)
@@ -797,6 +806,7 @@ namespace FruitLib
                 // crossing that much soft tissue would have cost it. Stopping it here made the
                 // first body in the way soak up everything past the budget.
                 trace.EndedBy = FragmentEnd.OverBudget;
+                if (!b.Has(ExplosionFeatures.LimbPassThrough)) return false;
                 if (!FruitSurfaces.FarSide(hit.collider, hit.point, dir, 1.5f, out Vector3 far, out float depth))
                     return false;
                 int left = power - Mathf.RoundToInt(depth * SoftTissueCostPerMetre(k.Wound));
@@ -835,13 +845,13 @@ namespace FruitLib
             });
 
             // Through bone and out: some of it comes along.
-            if (res.Exited && !k.Bone && s.BoneFragments > 0 && res.HardSteps > 0)
+            if (res.Exited && !k.Bone && s.BoneFragments > 0 && res.HardSteps > 0 && b.Has(ExplosionFeatures.BoneFragments))
                 QueueBone(b, res, dir, power);
 
             // Power tracks energy, so what is left out of the far side sets the speed.
             float vOut = speedIn * Mathf.Sqrt(Mathf.Clamp01(res.PowerOut / (float)power));
             float outRatio = vOut / k.V0;
-            if (!res.Exited || outRatio * outRatio < KillPowerRatio)
+            if (!res.Exited || outRatio * outRatio < KillPowerRatio || !b.Has(ExplosionFeatures.LimbPassThrough))
             {
                 trace.EndedBy = FragmentEnd.Lodged;
                 return false;
@@ -903,7 +913,8 @@ namespace FruitLib
 
             // Ricochet. A jet with penetration left does not glance off anything.
             float chance = m.RicochetChance(s.FragRicochetAngle, incidence, RicochetBand);
-            if (k.Free <= 0f && bounces < s.FragMaxBounces && chance > 0f && b.Rng.NextDouble() < chance)
+            if (b.Has(ExplosionFeatures.Ricochet) && (k.Free <= 0f || !b.Has(ExplosionFeatures.WallPenetration))
+                && bounces < s.FragMaxBounces && chance > 0f && b.Rng.NextDouble() < chance)
             {
                 bounces++;
                 float keep = Mathf.Sqrt(Mathf.Clamp01(1f - s.FragRicochetEnergyLoss * m.RicochetLossScale));
@@ -920,7 +931,7 @@ namespace FruitLib
 
             // Through. The free part (a jet's) comes first and costs nothing; Poncelet
             // prices whatever of the wall is left past it.
-            if (FruitLibConfig.WallPenetration && (k.SD > 0f || k.Free > 0f) && m.Penetrable)
+            if (FruitLibConfig.WallPenetration && b.Has(ExplosionFeatures.WallPenetration) && (k.SD > 0f || k.Free > 0f) && m.Penetrable)
             {
                 float reach = k.Free + Mathf.Min(m.Depth(k.SD, speedIn), m.MaxThickness);
                 if (reach >= 0.002f &&
@@ -932,7 +943,7 @@ namespace FruitLib
                     if (vOut > 0f && outRatio * outRatio >= KillPowerRatio)
                     {
                         // A jet that got through blows the back of the wall out - once per wall.
-                        if (k.Jet && b.S.JetSpallCount > 0 && b.Spalled.Add(hit.collider.GetInstanceID()))
+                        if (k.Jet && b.S.JetSpallCount > 0 && b.Has(ExplosionFeatures.Spall) && b.Spalled.Add(hit.collider.GetInstanceID()))
                             b.Spall.Add(new Scab
                             {
                                 At = exit, Axis = dir, Normal = exitNormal, PowerRatio = outRatio * outRatio,
@@ -965,7 +976,7 @@ namespace FruitLib
         /// the velocity it actually lost there.</summary>
         private static void Push(Blast b, in Shard k, RaycastHit hit, Vector3 lostVelocity)
         {
-            if (b.Cosmetic || b.S.FragImpulse <= 0f) return;
+            if (b.Cosmetic || b.S.FragImpulse <= 0f || !b.Has(ExplosionFeatures.FragmentPush)) return;
             var rb = FruitWounds.BodyOf(hit.collider);
             if (rb == null || rb.isKinematic) return;
             AddImpulse(b, rb, lostVelocity * (b.S.FragImpulse / Mathf.Max(1f, k.V0)));

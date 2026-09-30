@@ -73,7 +73,11 @@ namespace FruitLib
         {
             if (c == null) return null;
             int id = c.GetInstanceID();
-            if (_limbByCollider.TryGetValue(id, out var cached) && cached != null) return cached;
+            if (_limbByCollider.TryGetValue(id, out var cached))
+            {
+                if (ReferenceEquals(cached, null)) return null;   // stored null: known not to be a limb
+                if (cached != null) return cached;                // a destroyed limb falls through and is looked up again
+            }
 
             var comp = c.GetComponentInParent(LimbType);
             var limb = comp != null ? comp.TryCast<LimbEffectorReceiver>() : null;
@@ -83,8 +87,8 @@ namespace FruitLib
 
         internal static bool IsLimb(GameObject go) => go != null && go.GetComponentInParent(LimbType) != null;
 
-        internal static Rigidbody BodyOf(Collider c) =>
-            c == null ? null : (c.attachedRigidbody != null ? c.attachedRigidbody : c.GetComponentInParent<Rigidbody>());
+        /// <summary>The collider's rigidbody; attachedRigidbody already covers one on a parent.</summary>
+        internal static Rigidbody BodyOf(Collider c) => c == null ? null : c.attachedRigidbody;
 
         // ── Hits ─────────────────────────────────────────────────────────────────
         //

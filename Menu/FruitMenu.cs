@@ -131,6 +131,14 @@ namespace FruitLib
             FruitLog.Info($"[FruitLib] Registered: {displayName}");
         }
 
+        /// <summary>
+        /// Remembers what <paramref name="configType"/>'s settings hold right now, as the values
+        /// Reset to Defaults goes back to. Call it before the mod loads its ini: Register runs
+        /// after that load, so without it the "defaults" it sees are the player's own values.
+        /// Mods that never call it keep the old behaviour. Repeat calls for a type are ignored.
+        /// </summary>
+        public static void CaptureDefaults(Type configType) => FruitSetting.CaptureDefaults(configType);
+
         // ── State transitions ─────────────────────────────────────────────────
         internal static void OnPauseStateChanged(bool isPaused)
         {
@@ -350,26 +358,48 @@ namespace FruitLib
         // ── Draw ──────────────────────────────────────────────────────────────
         internal static void Draw()
         {
-            if (_state == MenuState.Closed || _mods.Count == 0) return;
-            CheckScale();
+            if (_drawBroken || _state == MenuState.Closed || _mods.Count == 0) return;
+
             var savedColor   = GUI.color;
             var savedContent = GUI.contentColor;
             var savedBg      = GUI.backgroundColor;
-            GUI.color        = Color.white;
-            GUI.contentColor = Color.white;
-            GUI.backgroundColor = Color.white;
-
-            if (_state == MenuState.Button)
+            try
             {
-                // Only when the pause menu would not take our button - see FruitMenuNative.
-                if (!FruitMenuNative.Present) DrawToggleButton();
-            }
-            else DrawPanel();
+                CheckScale();
+                GUI.color        = Color.white;
+                GUI.contentColor = Color.white;
+                GUI.backgroundColor = Color.white;
 
-            GUI.color        = savedColor;
-            GUI.contentColor = savedContent;
-            GUI.backgroundColor = savedBg;
+                if (_state == MenuState.Button)
+                {
+                    // Only when the pause menu would not take our button - see FruitMenuNative.
+                    if (!FruitMenuNative.Present) DrawToggleButton();
+                }
+                else DrawPanel();
+                _drawErrors = 0;
+            }
+            catch (Exception e)
+            {
+                // A throw here repeats on every OnGUI event: say it once, and give up only if it
+                // keeps failing, so one bad frame doesn't take the menu away for the session.
+                if (_drawErrors++ == 0)
+                    MelonLogger.Error($"[FruitLib] Menu draw error: {e}");
+                if (_drawErrors >= 120)
+                {
+                    _drawBroken = true;
+                    MelonLogger.Error("[FruitLib] Menu panel disabled: it failed to draw 120 times in a row.");
+                }
+            }
+            finally
+            {
+                GUI.color        = savedColor;
+                GUI.contentColor = savedContent;
+                GUI.backgroundColor = savedBg;
+            }
         }
+
+        private static bool _drawBroken;
+        private static int  _drawErrors;
 
         /// <summary>
         /// The corner button, drawn only when the native MODS entry could not be built.

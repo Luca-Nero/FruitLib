@@ -232,6 +232,53 @@ namespace FruitLib
     }
 
     /// <summary>
+    /// The parts of a detonation, each on its own switch (<see cref="ExplosionSpec.Features"/>).
+    /// A part that is off is skipped outright, costing nothing, whatever the spec's numbers say.
+    /// </summary>
+    [Flags]
+    public enum ExplosionFeatures
+    {
+        None = 0,
+        /// <summary>The blast pushing rigidbodies about.</summary>
+        Shockwave        = 1 << 0,
+        /// <summary>Blast wounds on limbs in range: the old radius model, or with a charge, the
+        /// physical one (skin, then the whole limb).</summary>
+        Overpressure     = 1 << 1,
+        /// <summary>With a charge, bruised and torn organs inside limbs the blast reaches
+        /// (<see cref="FruitBlastInjury"/>). Needs <see cref="Overpressure"/>.</summary>
+        OrganInjury      = 1 << 2,
+        /// <summary>Walls between the charge and a body shield it from the shockwave and
+        /// overpressure. Needs <see cref="ExplosionSpec.BlastOcclusion"/> and the player setting too.</summary>
+        BlastCover       = 1 << 3,
+        /// <summary>The fragment field (<see cref="ExplosionSpec.FragCount"/>).</summary>
+        Fragments        = 1 << 4,
+        /// <summary>Anything the explosion throws - fragments, jet, spall, bone - going through
+        /// walls. Off, every wall stops them; the jet's free metres included.</summary>
+        WallPenetration  = 1 << 5,
+        /// <summary>Anything it throws glancing off surfaces at shallow angles.</summary>
+        Ricochet         = 1 << 6,
+        /// <summary>Anything it throws carrying on out of a limb it went through. Off, whatever
+        /// wounds a limb (or reaches one past the wound budget) stays in it.</summary>
+        LimbPassThrough  = 1 << 7,
+        /// <summary>Hits pushing what they hit (<see cref="ExplosionSpec.FragImpulse"/>).</summary>
+        FragmentPush     = 1 << 8,
+        /// <summary>The shaped-charge jet (<see cref="ExplosionSpec.JetRays"/>).</summary>
+        Jet              = 1 << 9,
+        /// <summary>Spall the jet blows off the back of walls (<see cref="ExplosionSpec.JetSpallCount"/>).</summary>
+        Spall            = 1 << 10,
+        /// <summary>Bone thrown out of exit wounds (<see cref="ExplosionSpec.BoneFragments"/>).</summary>
+        BoneFragments    = 1 << 11,
+        /// <summary>The <see cref="FruitBallistics.DebrisArc"/> event, for a mod's debris visuals.</summary>
+        Debris           = 1 << 12,
+
+        /// <summary>Blast only: push, wounds and organs, with cover. No fragments.</summary>
+        BlastOnly = Shockwave | Overpressure | OrganInjury | BlastCover,
+        /// <summary>Fragments that fly straight and stop at the first thing they hit.</summary>
+        SimpleFragments = Fragments | FragmentPush | Debris,
+        All = (1 << 13) - 1,
+    }
+
+    /// <summary>
     /// An explosive. The physics and wounds of BombsAway's detonation, with fragments now
     /// wounding through the same channel as bullets: each fragment is a small, fast round
     /// whose power falls off with distance.
@@ -248,6 +295,14 @@ namespace FruitLib
     public sealed class ExplosionSpec
     {
         public string Id;
+
+        /// <summary>
+        /// Which parts of the detonation run; all by default. Clear a flag to leave that part out,
+        /// e.g. <c>Features &amp;= ~(ExplosionFeatures.WallPenetration | ExplosionFeatures.BoneFragments)</c>.
+        /// A single detonation can leave out more through the mask passed to
+        /// <see cref="FruitBallistics.SpawnExplosion(string, Vector3, Vector3, int, ExplosionFeatures)"/>.
+        /// </summary>
+        public ExplosionFeatures Features = ExplosionFeatures.All;
 
         /// <summary>Full sphere at 360 x 360; anything less is an elliptical cone along the
         /// forward direction given at detonation (a shaped charge, a claymore).</summary>

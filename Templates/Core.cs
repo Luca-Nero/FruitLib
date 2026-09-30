@@ -46,6 +46,8 @@ namespace MyMod
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void Init()
         {
+            // Before the ini loads, so Reset to Defaults restores these code defaults, not the player's ini.
+            FruitMenu.CaptureDefaults(typeof(Config));
             ConfigLoader.Load();
             FruitMenu.Register("MyMod", ConfigLoader.IniPath, typeof(Config), ConfigLoader.Write);
             FruitHud.Register("MyMod", BuildHud);

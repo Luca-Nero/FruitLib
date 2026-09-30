@@ -157,18 +157,25 @@ value being dragged towards something.
 
 ### Reset to Defaults, and why order matters
 
-The panel's footer button restores the values each field held **at the moment you
-called `Register`** — not the values written in your source.
+The panel's footer button restores the values each field held when FruitLib
+first saw it - by default **at the moment you called `Register`**, not the values
+written in your source. Register runs after your ini has loaded, so that is the
+player's own values, which is rarely what anyone wants.
+
+**`FruitMenu.CaptureDefaults` (since 5.5.0)** fixes that. Call it before you load
+your ini and "Reset to Defaults" means your code defaults, whatever order you load
+and register in:
 
 ```csharp
-FruitMenu.Register("MyMod", path, typeof(Config), ConfigLoader.Write);   // defaults captured here
-ConfigLoader.Load();                                 // then user values applied
+FruitMenu.CaptureDefaults(typeof(Config));   // snapshot the code defaults...
+ConfigLoader.Load();                         // ...then apply the user's ini
+FruitMenu.Register("MyMod", ConfigLoader.IniPath, typeof(Config), ConfigLoader.Write);
 ```
 
-Register first, as above, and "Reset to Defaults" means your code defaults. Load
-first and it means "whatever was in the user's ini at startup", which is rarely
-what anyone wants. GunsGunsGuns registers first; BombsAway, Singularity and
-FruitLab still load first. Register-first is the better order for new mods.
+It records every field `Register` would turn into a setting, once per type (repeat
+calls are ignored). A mod that never calls it behaves as before: register before
+loading, or Reset returns to the ini values from startup. New mods should call it
+(`Templates/Core.cs` does).
 
 ## Reacting to changes
 

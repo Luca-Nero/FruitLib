@@ -10,7 +10,8 @@ penetration, the `BeforeSurfaceHit` / `ProjectileStep` hooks, round owners and p
 in **5.3.0** (`FruitVersion.Require("MyMod", 5, 3)`). Fragments that ricochet and go through walls,
 blast cover, and the `FragmentTraced` / `BlastTraced` events came in **5.4.0**
 (`FruitVersion.Require("MyMod", 5, 4)`, or `FruitGate.Check("MyMod", 5, 4, 0)` from the
-[FruitGate template](../Templates/README.md)).
+[FruitGate template](../Templates/README.md)). Per-part switches for explosions
+(`ExplosionSpec.Features`, the `SpawnExplosion` mask) came in **5.5.0**.
 
 ## A round
 
@@ -234,6 +235,42 @@ The physics and wounds of BombsAway's detonation: a blast push, an overpressure 
 wounds what's close, and fragments that fly real arcs and wound through the native model with
 power falling off over distance. `MaxWounds` caps the wounds per detonation, and
 `AdaptiveQuality` scales fragment counts down under [frame pressure](perfmon.md).
+
+### Choosing what an explosion does (5.5.0)
+
+Every part of a detonation has a switch in `ExplosionSpec.Features` (an `ExplosionFeatures`
+flags enum, all on by default). A part that is off is skipped outright, whatever the spec's
+numbers say:
+
+| Flag | Part |
+|---|---|
+| `Shockwave` | The push on rigidbodies |
+| `Overpressure` | Blast wounds on limbs in range |
+| `OrganInjury` | With a charge (`ChargeKgTNT > 0`), organ bruising and tearing. Needs `Overpressure` |
+| `BlastCover` | Walls shielding bodies from the blast (the spec's `BlastOcclusion` and the player setting still apply) |
+| `Fragments` | The fragment field |
+| `WallPenetration` | Anything thrown going through walls: fragments, jet (its free metres too), spall, bone |
+| `Ricochet` | Anything thrown glancing off surfaces |
+| `LimbPassThrough` | Anything thrown carrying on out of a limb it wounded |
+| `FragmentPush` | Hits pushing what they hit (`FragImpulse`) |
+| `Jet` | The shaped-charge jet (`JetRays`) |
+| `Spall` | Spall off the back of walls the jet goes through |
+| `BoneFragments` | Bone thrown out of exit wounds |
+| `Debris` | The `DebrisArc` event, for your debris visuals |
+
+`BlastOnly` and `SimpleFragments` are ready-made combinations, and `All` is everything.
+
+```csharp
+// Fragments that never go through walls and throw no bone:
+spec.Features &= ~(ExplosionFeatures.WallPenetration | ExplosionFeatures.BoneFragments);
+
+// Or for one detonation only. The mask can leave parts out, never add what the spec has off:
+FruitBallistics.SpawnExplosion("MyMod.Grenade", position, forward, owner: 0,
+    ExplosionFeatures.All & ~ExplosionFeatures.WallPenetration);
+```
+
+The mask travels in `BallisticsCommand.Disabled`, so a networked detonation does the same on every
+machine. `ExplosionInfo.Features` tells your `Exploded` handler which parts ran.
 
 ### Fragments
 

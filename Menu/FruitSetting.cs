@@ -41,9 +41,36 @@ namespace FruitLib
 
         // ── From a FruitLib config class ─────────────────────────────────────────────
 
+        /// <summary>Whether a config field becomes a setting. The one place that decides, so
+        /// <see cref="CaptureDefaults"/> and <see cref="FromField"/> can never disagree.</summary>
+        private static bool IsSettingField(FieldInfo f) =>
+            !(f.IsSpecialName || f.IsLiteral || f.IsInitOnly || !Drawable(f.FieldType));
+
+        // What each field held before its mod loaded the ini. Reset to Defaults goes back to
+        // these; without an entry it falls back to whatever the field holds at registration.
+        private static readonly Dictionary<FieldInfo, object> _captured = new Dictionary<FieldInfo, object>();
+        private static readonly HashSet<Type> _capturedTypes = new HashSet<Type>();
+
+        /// <summary>Copies an array so a later in-place edit cannot rewrite the default with it.
+        /// Anything else the menu draws is a value type or an immutable string.</summary>
+        private static object Snapshot(object v) => v is Array a ? a.Clone() : v;
+
+        /// <summary>Records the current value of every field <see cref="FromField"/> would turn
+        /// into a setting. First call for a type wins; later ones are ignored.</summary>
+        internal static void CaptureDefaults(Type configType)
+        {
+            if (configType == null || !_capturedTypes.Add(configType)) return;
+            foreach (var f in configType.GetFields(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (!IsSettingField(f)) continue;
+                try { _captured[f] = Snapshot(f.GetValue(null)); }
+                catch (Exception e) { MelonLogger.Warning($"[FruitMenu] could not capture the default of '{f.Name}': {e.Message}"); }
+            }
+        }
+
         internal static FruitSetting FromField(FieldInfo f)
         {
-            if (f.IsSpecialName || f.IsLiteral || f.IsInitOnly || !Drawable(f.FieldType)) return null;
+            if (!IsSettingField(f)) return null;
 
             var cat   = (MenuCategoryAttribute)Attribute.GetCustomAttribute(f, typeof(MenuCategoryAttribute));
             var btn   = (MenuButtonAttribute)Attribute.GetCustomAttribute(f, typeof(MenuButtonAttribute));
@@ -59,7 +86,7 @@ namespace FruitLib
                 HasRange  = range != null,
                 Min       = range?.Min ?? 0f,
                 Max       = range?.Max ?? 0f,
-                Default   = f.GetValue(null),
+                Default   = _captured.TryGetValue(f, out var captured) ? Snapshot(captured) : Snapshot(f.GetValue(null)),
                 Get       = () => f.GetValue(null),
                 Set       = v => f.SetValue(null, v),
             };

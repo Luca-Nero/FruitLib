@@ -212,6 +212,9 @@ namespace FruitLib
         {
             if (_loaded) return;
             _loaded = true;
+            // Before the ini is read, so Reset to Defaults goes back to the code's values.
+            // Straight to FruitSetting: this can run from Harmony's patching, before FruitMenu is needed.
+            FruitSetting.CaptureDefaults(typeof(FruitLibConfig));
             Load();
         }
 

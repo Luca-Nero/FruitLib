@@ -11,6 +11,9 @@ namespace FruitLib
     {
         public static void Register(string modName, string currentVersion, string owner, string repo)
         {
+            // A mod can get here before FruitLib's own OnInitializeMelon has loaded the ini,
+            // which would read the default and bypass the player's opt-out.
+            FruitLibConfig.EnsureLoaded();
             if (!FruitLibConfig.CheckForUpdates) return;
             Task.Run(() => CheckAsync(modName, currentVersion, owner, repo));
         }

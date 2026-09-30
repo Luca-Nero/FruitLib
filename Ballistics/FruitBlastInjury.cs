@@ -72,14 +72,26 @@ namespace FruitLib
             new Queue<(LimbEffectorReceiver, AbstractOrgan, string)>();
         private static readonly HashSet<IntPtr> _limbsSeen = new HashSet<IntPtr>();
         private static float _nextSweep;
+        private static float _sweepInterval = 1f;
         private static readonly Il2CppSystem.Type LimbType = Il2CppInterop.Runtime.Il2CppType.Of<LimbEffectorReceiver>();
+
+        /// <summary>Organs whose voxel lookup came back empty: when to try again, and how many
+        /// empty answers so far. After <see cref="MaxEmptyLookups"/> the empty result is final.</summary>
+        private static readonly Dictionary<IntPtr, float> _retryAt = new Dictionary<IntPtr, float>();
+        private static readonly Dictionary<IntPtr, int> _emptyLookups = new Dictionary<IntPtr, int>();
+        private const int MaxEmptyLookups = 3;
+        private const float RetryDelay = 2f;
+        private static readonly int3[] NoVoxels = new int3[0];
 
         internal static void ResetForScene()
         {
             _organVoxels.Clear();
+            _retryAt.Clear();
+            _emptyLookups.Clear();
             _prewarm.Clear();
             _limbsSeen.Clear();
             _nextSweep = 0f;
+            _sweepInterval = 1f;
         }
 
         /// <summary>
@@ -101,15 +113,19 @@ namespace FruitLib
                 }
 
                 if (Time.unscaledTime < _nextSweep) return;
-                _nextSweep = Time.unscaledTime + 1f;
+                _nextSweep = Time.unscaledTime + _sweepInterval;
 
+                bool foundNew = false;
                 foreach (var o in UnityEngine.Object.FindObjectsByType(LimbType, FindObjectsInactive.Exclude, FindObjectsSortMode.None))
                 {
                     var limb = o?.TryCast<LimbEffectorReceiver>();
-                    if (limb == null || !_limbsSeen.Add(limb.Pointer)) continue;
+                    if (limb == null || _limbsSeen.Contains(limb.Pointer)) continue;
                     AbstractLimb body;
                     try { body = limb.m_limbReferences?.Limb; } catch { continue; }
                     if (body == null) continue;
+                    // Only now is the limb ready; one that was not stays unseen and is tried next sweep.
+                    _limbsSeen.Add(limb.Pointer);
+                    foundNew = true;
 
                     var spine = body.TryCast<Spine>();
                     if (spine != null)
@@ -129,6 +145,9 @@ namespace FruitLib
                     var head = body.TryCast<Head>();
                     if (head != null) Queue(limb, head.m_brain, "brain");
                 }
+
+                // Nothing new: look less often, up to every 8 s; a new limb brings it back to 1 s.
+                _sweepInterval = foundNew ? 1f : Mathf.Min(8f, _sweepInterval * 2f);
             }
             catch (Exception e)
             {
@@ -237,6 +256,7 @@ namespace FruitLib
         private static int3[] VoxelsOf(LimbEffectorReceiver limb, AbstractOrgan organ, string name)
         {
             if (_organVoxels.TryGetValue(organ.Pointer, out var cached)) return cached;
+            if (_retryAt.TryGetValue(organ.Pointer, out float retryAt) && Time.unscaledTime < retryAt) return NoVoxels;
 
             var found = new List<int3>();
             try
@@ -253,14 +273,18 @@ namespace FruitLib
                 int rMax = Mathf.Clamp(rBall * 3, 4, 24);
                 for (int r = 0; r <= rMax && found.Count < want; r++)
                 {
+                    // Visit this shell only: full z runs where x or y is on the shell, else just its two z faces.
                     for (int x = -r; x <= r; x++)
                     for (int y = -r; y <= r; y++)
-                    for (int z = -r; z <= r; z++)
                     {
-                        if (Math.Max(Math.Abs(x), Math.Max(Math.Abs(y), Math.Abs(z))) != r) continue;   // this shell only
-                        var idx = new int3(c.x + x, c.y + y, c.z + z);
-                        if (shape.TryGetOrganByVoxelIndex(idx, out AbstractOrgan owner) && owner != null && owner.Pointer == me)
-                            found.Add(idx);
+                        bool edge = x == -r || x == r || y == -r || y == r;
+                        int zStep = edge ? 1 : Math.Max(1, 2 * r);   // r == 0 is always an edge
+                        for (int z = -r; z <= r; z += zStep)
+                        {
+                            var idx = new int3(c.x + x, c.y + y, c.z + z);
+                            if (shape.TryGetOrganByVoxelIndex(idx, out AbstractOrgan owner) && owner != null && owner.Pointer == me)
+                                found.Add(idx);
+                        }
                     }
                     // Past the ball's radius with nothing at all: this is not the right space.
                     if (r > rBall + 2 && found.Count == 0) break;
@@ -268,10 +292,24 @@ namespace FruitLib
             }
             catch (Exception e) { MelonLogger.Warning($"{Tag} {name}: voxel lookup failed: {e.Message}"); }
 
-            if (found.Count == 0 && !_warnedSpace)
+            if (found.Count == 0)
             {
-                _warnedSpace = true;
-                MelonLogger.Warning($"{Tag} found no voxels for the {name} round its centre; organ blast injury is off for such organs");
+                // Perhaps the limb's voxel data is not ready yet: try again in a while, a few times,
+                // then accept that this organ has none.
+                _emptyLookups.TryGetValue(organ.Pointer, out int misses);
+                if (++misses < MaxEmptyLookups)
+                {
+                    _emptyLookups[organ.Pointer] = misses;
+                    _retryAt[organ.Pointer] = Time.unscaledTime + RetryDelay;
+                    return NoVoxels;
+                }
+                if (!_warnedSpace)
+                {
+                    _warnedSpace = true;
+                    MelonLogger.Warning($"{Tag} found no voxels for the {name} round its centre; organ blast injury is off for such organs");
+                }
+                _organVoxels[organ.Pointer] = NoVoxels;
+                return NoVoxels;
             }
             var arr = found.ToArray();
             _organVoxels[organ.Pointer] = arr;

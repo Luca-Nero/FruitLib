@@ -9,7 +9,7 @@ models, shaders and decals through Unity AssetBundles.
 FruitLib is itself a MelonMod. Your mod references it at build time and expects
 it in the `Mods` folder at runtime.
 
-**Current version: 5.4.0**. Starting a new mod? Copy the files in [`Templates/`](../Templates/README.md).
+**Current version: 5.5.0**. Starting a new mod? Copy the files in [`Templates/`](../Templates/README.md).
 
 ## Guides
 
@@ -20,7 +20,7 @@ it in the `Mods` folder at runtime.
 | [Performance monitor](perfmon.md) | A per-mod debug overlay: counters, timers and live values (5.0) |
 | [Inventory](inventory.md) | Custom items in the inventory window, by category |
 | [Sound](sound.md) | The game's own sound effects, and its interface sounds |
-| [Ballistics](ballistics.md) | Projectiles and explosions through the game's wound model, multiplayer-ready (3.1.0). Fragments that ricochet and penetrate, and blast cover (5.4.0) |
+| [Ballistics](ballistics.md) | Projectiles and explosions through the game's wound model, multiplayer-ready (3.1.0). Fragments that ricochet and penetrate, and blast cover (5.4.0). Per-part explosion switches (5.5.0) |
 | [AssetBundles](BUNDLES.md) | Custom models, shaders, animation and decals built in the Unity editor (3.2.0) |
 | [Utilities](utilities.md) | `FruitLog`, `FruitPaths`, `FruitScene`, `FruitForces`, `FruitUpdateCheck` |
 | [Meshes](meshes.md) | The older `*_mesh.json` loader (schema in [`MESH_FORMAT.md`](MESH_FORMAT.md)). Prefer bundles for new work |
@@ -106,8 +106,9 @@ namespace MyMod
 
         public override void OnInitializeMelon()
         {
-            FruitMenu.Register("MyMod", ConfigLoader.IniPath, typeof(Config), ConfigLoader.Write);
+            FruitMenu.CaptureDefaults(typeof(Config));   // before the ini loads, for Reset to Defaults
             ConfigLoader.Load();                    // your own ini reader, see the config guide
+            FruitMenu.Register("MyMod", ConfigLoader.IniPath, typeof(Config), ConfigLoader.Write);
             _hud = FruitHud.Register("MyMod", BuildHud);
             FruitPerfMon.RegisterCounter("MyMod Things", () => _things.Count);
         }

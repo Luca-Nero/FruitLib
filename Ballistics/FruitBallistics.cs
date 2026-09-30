@@ -22,6 +22,9 @@ namespace FruitLib
         /// <summary>Who fired it: 0 = this machine / not said. FruitNet puts peer ids here, and
         /// force fields and surface hooks can use it to leave a player's own rounds alone.</summary>
         public int     Owner;
+        /// <summary>Explosions only: parts of the spec's <see cref="ExplosionSpec.Features"/> left
+        /// out of this one detonation. None (the default) runs the spec as it is.</summary>
+        public ExplosionFeatures Disabled;
     }
 
     /// <summary>
@@ -166,6 +169,9 @@ namespace FruitLib
         public bool          Cosmetic;
         /// <summary>Who set it off, from <see cref="BallisticsCommand.Owner"/>.</summary>
         public int           Owner;
+        /// <summary>The parts that ran: the spec's <see cref="ExplosionSpec.Features"/> less
+        /// whatever the call left out. Visuals can follow it (no fragments, no debris).</summary>
+        public ExplosionFeatures Features;
     }
 
     /// <summary>How one leg of a fragment's flight ended.</summary>
@@ -373,11 +379,20 @@ namespace FruitLib
 
         /// <summary>Detonates a registered explosive on behalf of <paramref name="owner"/>.</summary>
         public static void SpawnExplosion(string specId, Vector3 origin, Vector3 forward, int owner)
+            => SpawnExplosion(specId, origin, forward, owner, ExplosionFeatures.All);
+
+        /// <summary>
+        /// Detonates a registered explosive with only <paramref name="features"/> of it: parts the
+        /// spec has on but the mask leaves out are skipped for this detonation alone. The mask
+        /// can't turn on what the spec has off. E.g. a charge that doesn't go through walls:
+        /// <c>SpawnExplosion(id, at, fwd, 0, ExplosionFeatures.All &amp; ~ExplosionFeatures.WallPenetration)</c>.
+        /// </summary>
+        public static void SpawnExplosion(string specId, Vector3 origin, Vector3 forward, int owner, ExplosionFeatures features)
             => Request(new BallisticsCommand
             {
                 Kind = BallisticsCommandKind.Explosion, SpecId = specId,
                 Origin = origin, Direction = forward.sqrMagnitude > 0f ? forward.normalized : Vector3.up,
-                Seed = NextSeed(), Owner = owner,
+                Seed = NextSeed(), Owner = owner, Disabled = ExplosionFeatures.All & ~features,
             });
 
         private static object Request(BallisticsCommand cmd)
@@ -412,7 +427,7 @@ namespace FruitLib
             }
             catch (Exception e) { MelonLogger.Warning($"{Tag} {cmd.Kind} '{cmd.SpecId}' failed: {e}"); return null; }
 
-            if (!cosmetic) Raise(Issued, cmd);
+            if (!cosmetic) Raise(Issued, cmd, _issuedList);
             return result;
         }
 
@@ -428,7 +443,7 @@ namespace FruitLib
             {
                 var moved = ProjectilesMoved;
                 if (moved != null)
-                    foreach (Action h in moved.GetInvocationList())
+                    foreach (Action h in _movedList.Of(moved))
                         try { h(); } catch (Exception e) { Report(h, e); }
             }
             FruitEjecta.Tick();
@@ -446,16 +461,49 @@ namespace FruitLib
 
         // ── Event raising. One subscriber throwing must not stop the rest, or the round. ──
 
-        internal static void RaiseSpawned(Projectile p)       => Raise(ProjectileSpawned, p);
-        internal static void RaiseEnded(Projectile p)         => Raise(ProjectileEnded, p);
-        internal static void RaiseSurfaceHit(SurfaceHitInfo h) => Raise(SurfaceHit, h);
+        /// <summary>
+        /// One event's subscribers as an array, rebuilt only when the event's delegate changes
+        /// (someone subscribed or unsubscribed). GetInvocationList allocates every call, and
+        /// fragments raise thousands of times per detonation.
+        /// </summary>
+        private sealed class ListenerCache
+        {
+            private sealed class Snapshot { public Delegate Source; public Delegate[] List; }
+            private Snapshot _snap;
+
+            public Delegate[] Of(Delegate d)
+            {
+                var s = _snap;
+                if (s != null && ReferenceEquals(s.Source, d)) return s.List;
+                s = new Snapshot { Source = d, List = d.GetInvocationList() };
+                _snap = s;
+                return s.List;
+            }
+        }
+
+        private static readonly ListenerCache _movedList = new ListenerCache();
+        private static readonly ListenerCache _spawnedList = new ListenerCache();
+        private static readonly ListenerCache _endedList = new ListenerCache();
+        private static readonly ListenerCache _surfaceHitList = new ListenerCache();
+        private static readonly ListenerCache _stepList = new ListenerCache();
+        private static readonly ListenerCache _beforeSurfaceList = new ListenerCache();
+        private static readonly ListenerCache _woundedList = new ListenerCache();
+        private static readonly ListenerCache _explodedList = new ListenerCache();
+        private static readonly ListenerCache _debrisList = new ListenerCache();
+        private static readonly ListenerCache _fragmentList = new ListenerCache();
+        private static readonly ListenerCache _blastList = new ListenerCache();
+        private static readonly ListenerCache _issuedList = new ListenerCache();
+
+        internal static void RaiseSpawned(Projectile p)       => Raise(ProjectileSpawned, p, _spawnedList);
+        internal static void RaiseEnded(Projectile p)         => Raise(ProjectileEnded, p, _endedList);
+        internal static void RaiseSurfaceHit(SurfaceHitInfo h) => Raise(SurfaceHit, h, _surfaceHitList);
 
         internal static bool WantsStep => ProjectileStep != null;
         internal static void RaiseStep(Projectile p, float dt)
         {
             var evt = ProjectileStep;
             if (evt == null) return;
-            foreach (Action<Projectile, float> h in evt.GetInvocationList())
+            foreach (Action<Projectile, float> h in _stepList.Of(evt))
                 try { h(p, dt); } catch (Exception e) { Report(h, e); }
         }
 
@@ -463,31 +511,31 @@ namespace FruitLib
         {
             var evt = BeforeSurfaceHit;
             if (evt == null) return;
-            foreach (SurfaceDecisionHandler h in evt.GetInvocationList())
+            foreach (SurfaceDecisionHandler h in _beforeSurfaceList.Of(evt))
                 try { h(ref d); } catch (Exception e) { Report(h, e); }
         }
-        internal static void RaiseWounded(WoundInfo w)        => Raise(LimbWounded, w);
-        internal static void RaiseExploded(ExplosionInfo x)   => Raise(Exploded, x);
+        internal static void RaiseWounded(WoundInfo w)        => Raise(LimbWounded, w, _woundedList);
+        internal static void RaiseExploded(ExplosionInfo x)   => Raise(Exploded, x, _explodedList);
 
         internal static bool WantsDebris => DebrisArc != null;
         internal static void RaiseDebris(ExplosionSpec s, Vector3 p0, Vector3 v, float t)
         {
             var d = DebrisArc;
             if (d == null) return;
-            foreach (Action<ExplosionSpec, Vector3, Vector3, float> h in d.GetInvocationList())
+            foreach (Action<ExplosionSpec, Vector3, Vector3, float> h in _debrisList.Of(d))
                 try { h(s, p0, v, t); } catch (Exception e) { Report(h, e); }
         }
 
         internal static bool WantsFragments => FragmentTraced != null;
-        internal static void RaiseFragment(in FragmentTrace t) => Raise(FragmentTraced, t);
+        internal static void RaiseFragment(in FragmentTrace t) => Raise(FragmentTraced, t, _fragmentList);
 
         internal static bool WantsBlast => BlastTraced != null;
-        internal static void RaiseBlast(in BlastTrace t) => Raise(BlastTraced, t);
+        internal static void RaiseBlast(in BlastTrace t) => Raise(BlastTraced, t, _blastList);
 
-        private static void Raise<T>(Action<T> evt, T arg)
+        private static void Raise<T>(Action<T> evt, T arg, ListenerCache cache)
         {
             if (evt == null) return;
-            foreach (Action<T> h in evt.GetInvocationList())
+            foreach (Action<T> h in cache.Of(evt))
                 try { h(arg); } catch (Exception e) { Report(h, e); }
         }
 
