@@ -64,7 +64,84 @@ namespace FruitLib
         private static readonly Dictionary<IntPtr, int3[]> _organVoxels = new Dictionary<IntPtr, int3[]>();
         private static bool _warnedSpace;
 
-        internal static void ResetForScene() => _organVoxels.Clear();
+        /// <summary>Set once any explosion with a charge is registered: from then on organs are
+        /// looked up ahead of time (<see cref="Tick"/>), not by the first blast to reach them.</summary>
+        internal static bool Wanted;
+
+        private static readonly Queue<(LimbEffectorReceiver limb, AbstractOrgan organ, string name)> _prewarm =
+            new Queue<(LimbEffectorReceiver, AbstractOrgan, string)>();
+        private static readonly HashSet<IntPtr> _limbsSeen = new HashSet<IntPtr>();
+        private static float _nextSweep;
+        private static readonly Il2CppSystem.Type LimbType = Il2CppInterop.Runtime.Il2CppType.Of<LimbEffectorReceiver>();
+
+        internal static void ResetForScene()
+        {
+            _organVoxels.Clear();
+            _prewarm.Clear();
+            _limbsSeen.Clear();
+            _nextSweep = 0f;
+        }
+
+        /// <summary>
+        /// Finds each organ's voxels before any blast needs them - one organ a frame, so a new
+        /// ragdoll costs a few milliseconds spread over a few frames instead of a hitch in the
+        /// middle of an explosion. New limbs are looked for once a second.
+        /// </summary>
+        internal static void Tick()
+        {
+            if (!Wanted) return;
+            try
+            {
+                if (_prewarm.Count > 0)
+                {
+                    var (limb, organ, name) = _prewarm.Dequeue();
+                    if (limb != null && organ != null && !_organVoxels.ContainsKey(organ.Pointer))
+                        VoxelsOf(limb, organ, name);
+                    return;
+                }
+
+                if (Time.unscaledTime < _nextSweep) return;
+                _nextSweep = Time.unscaledTime + 1f;
+
+                foreach (var o in UnityEngine.Object.FindObjectsByType(LimbType, FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+                {
+                    var limb = o?.TryCast<LimbEffectorReceiver>();
+                    if (limb == null || !_limbsSeen.Add(limb.Pointer)) continue;
+                    AbstractLimb body;
+                    try { body = limb.m_limbReferences?.Limb; } catch { continue; }
+                    if (body == null) continue;
+
+                    var spine = body.TryCast<Spine>();
+                    if (spine != null)
+                    {
+                        Queue(limb, spine.m_leftLung, "left lung");
+                        Queue(limb, spine.m_rightLung, "right lung");
+                        Queue(limb, spine.m_heart, "heart");
+                        continue;
+                    }
+                    var pelvis = body.TryCast<Pelvis>();
+                    if (pelvis != null)
+                    {
+                        Queue(limb, pelvis.m_stomach, "stomach");
+                        Queue(limb, pelvis.m_liver, "liver");
+                        continue;
+                    }
+                    var head = body.TryCast<Head>();
+                    if (head != null) Queue(limb, head.m_brain, "brain");
+                }
+            }
+            catch (Exception e)
+            {
+                // Not worth retrying every frame: the first blast will look them up as before.
+                Wanted = false;
+                MelonLogger.Warning($"{Tag} organ prewarm off: {e.Message}");
+            }
+        }
+
+        private static void Queue(LimbEffectorReceiver limb, AbstractOrgan organ, string name)
+        {
+            if (organ != null && !_organVoxels.ContainsKey(organ.Pointer)) _prewarm.Enqueue((limb, organ, name));
+        }
 
         /// <summary>How much tougher the body is against a short blast: the duration of a charge's
         /// positive phase scales with W^⅓ (~1.8 ms per kg^⅓), and the thresholds were set for ~3 ms.</summary>

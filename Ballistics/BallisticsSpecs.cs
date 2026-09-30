@@ -286,6 +286,10 @@ namespace FruitLib
         /// <summary>On or against a surface the charge's wave is thrown back off it: this many times
         /// the charge (1.8 is the usual figure for a burst on the ground).</summary>
         public float SurfaceBurstFactor = 1.8f;
+        /// <summary>With a charge, the shockwave push is the blast wave's impulse over each body's
+        /// frontal area and mass (<see cref="BlastForce"/> and <see cref="BlastRadius"/> no longer
+        /// apply); this scales it. 1 = physical.</summary>
+        public float BlastPushScale = 1f;
         /// <summary>Pressure thresholds for each kind of injury. <see cref="DamageScale"/> scales the
         /// pressure the body is judged at.</summary>
         public BlastInjuryProfile Injury = new BlastInjuryProfile();

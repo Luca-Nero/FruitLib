@@ -70,6 +70,9 @@ namespace FruitLib
             public EffectorHit    Shot;
             public System.Random  Rng;
             public int            Budget, SecondaryBudget;
+            /// <summary>The charge's effective kg of TNT (with the surface burst), and whether it is one.</summary>
+            public float          W;
+            public bool           OnSurface;
             /// <summary>Bone thrown out of exit wounds, still to fly: where, which way, power.</summary>
             public readonly List<(Vector3 at, Vector3 dir, float power)> Bones = new List<(Vector3, Vector3, float)>();
             public float          V0, SD;
@@ -96,6 +99,11 @@ namespace FruitLib
                 : 1f;
 
             var b = new Blast { S = s, Cmd = cmd, Cosmetic = cosmetic, Origin = origin, Shot = shot, Rng = rng };
+            if (s.ChargeKgTNT > 0f)
+            {
+                b.OnSurface = SurfaceBurst(s, origin);
+                b.W = s.ChargeKgTNT * (b.OnSurface ? Mathf.Max(1f, s.SurfaceBurstFactor) : 1f);
+            }
 
             if (!cosmetic) Shockwave(b, forward);
 
@@ -133,6 +141,7 @@ namespace FruitLib
         {
             var s = b.S;
             Vector3 origin = b.Origin;
+            if (s.ChargeKgTNT > 0f) { BlastPush(b, forward); return; }
             foreach (var col in Physics.OverlapSphere(origin, s.BlastRadius, s.LayerMask, QueryTriggerInteraction.Ignore))
             {
                 var rb = FruitWounds.BodyOf(col);
@@ -148,6 +157,49 @@ namespace FruitLib
                 float cover = Cover(b, pos, rb, overpressure: false);
                 float falloff = (1f - Mathf.Clamp01(dist / s.BlastRadius)) * cone * cover;
                 AddImpulse(b, rb, dir * (s.BlastForce * falloff) + Vector3.up * (s.BlastUpward * falloff));
+            }
+        }
+
+        /// <summary>
+        /// The push, from the same blast wave that does the wounding: the reflected impulse at
+        /// each body (<see cref="FruitBlast.ReflectedImpulse"/>) over the area it shows the
+        /// charge, divided by its mass. A light, broad thing flies; a heavy, narrow one barely
+        /// moves; a ragdoll's limbs each take their own share. A surface burst's wave comes off
+        /// the ground too, so it lifts. <see cref="ExplosionSpec.BlastPushScale"/> for taste.
+        /// </summary>
+        private static void BlastPush(Blast b, Vector3 forward)
+        {
+            var s = b.S;
+            Vector3 origin = b.Origin;
+            float range = Mathf.Min(FruitBlast.RangeFor(b.W, 3f), 40f);   // past ~3 kPa nothing moves
+            float scale = Mathf.Max(0f, s.BlastPushScale);
+            if (scale <= 0f) return;
+
+            foreach (var col in Physics.OverlapSphere(origin, range, s.LayerMask, QueryTriggerInteraction.Ignore))
+            {
+                var rb = FruitWounds.BodyOf(col);
+                if (rb == null || rb.isKinematic || b.Impulses.ContainsKey(rb.Pointer)) continue;
+
+                Vector3 centre = rb.worldCenterOfMass;
+                Vector3 to = centre - origin;
+                float dist = Mathf.Max(0.05f, Vector3.Distance(origin, col.ClosestPoint(origin)));
+                Vector3 dir = to.sqrMagnitude > 1e-6f ? to.normalized : Vector3.up;
+                float cone = ConeAttenuation(s, forward, dir);
+                if (cone < 0.01f) continue;
+
+                float cover = Cover(b, centre, rb, overpressure: false);
+                float impulse = FruitBlast.ReflectedImpulse(dist, b.W) * cone * cover;
+
+                // What it shows the charge: roughly the two largest dimensions of its box.
+                Vector3 sz = col.bounds.size;
+                float a = Mathf.Max(sz.x, Mathf.Max(sz.y, sz.z));
+                float c = Mathf.Min(sz.x, Mathf.Min(sz.y, sz.z));
+                float mid = sz.x + sz.y + sz.z - a - c;
+                float area = a * mid * 0.7f;
+
+                float dv = Mathf.Min(impulse * area / Mathf.Max(0.05f, rb.mass) * scale, 60f);
+                Vector3 push = b.OnSurface ? (dir + Vector3.up * 0.3f).normalized : dir;
+                AddImpulse(b, rb, push * dv);
             }
         }
 
@@ -243,7 +295,7 @@ namespace FruitLib
             Vector3 origin = b.Origin;
             var p = s.Injury ?? DefaultInjury;
 
-            float w = s.ChargeKgTNT * (SurfaceBurst(s, origin) ? Mathf.Max(1f, s.SurfaceBurstFactor) : 1f);
+            float w = b.W;
             float duration = FruitBlastInjury.DurationFactor(w);
             // Out to where the lowest threshold stops mattering (reflected ≥ 2x incident).
             float lowest = Mathf.Min(p.LungKPa, Mathf.Min(p.StomachKPa, p.SurfaceKPa)) * duration * 0.5f;
@@ -646,7 +698,18 @@ namespace FruitLib
                 Vector3 arcVel = dir * (k.ArcSpeed * (speed / k.V0));
                 float flight = BallisticGroundTime(gy, arcVel.y, p0.y - b.GroundY, timeLeft);
 
-                bool didHit = SweepArc(b, p0, arcVel, gy, flight, out RaycastHit hit, out float hitTime);
+                bool didHit;
+                RaycastHit hit;
+                float hitTime;
+                // The sweep starts a few centimetres out, and a sphere cast ignores anything it
+                // starts inside - so a charge lying on a floor would send half its fragments
+                // straight through it. Check that first stretch with a plain ray from the charge.
+                if (leg == 0 && StartBlocked(b, p0, dir, out hit))
+                {
+                    didHit = true;
+                    hitTime = 0f;
+                }
+                else didHit = SweepArc(b, p0, arcVel, gy, flight, out hit, out hitTime);
 
                 if (withDebris && leg == 0)
                     FruitBallistics.RaiseDebris(s, p0, arcVel, didHit ? hitTime : flight);
@@ -961,6 +1024,15 @@ namespace FruitLib
             }
             hit = default;
             return false;
+        }
+
+        /// <summary>Something solid between the charge and <paramref name="p0"/>, plus the sweep's
+        /// own radius past it - what the sweep itself would start inside.</summary>
+        private static bool StartBlocked(Blast b, Vector3 p0, Vector3 dir, out RaycastHit hit)
+        {
+            float len = Vector3.Distance(b.Origin, p0) + FragRadius;
+            return Physics.Raycast(b.Origin, dir, out hit, len, b.S.LayerMask, QueryTriggerInteraction.Ignore)
+                   && !Passed(b, hit.collider);
         }
 
         private static bool Passed(Blast b, Collider c)

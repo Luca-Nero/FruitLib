@@ -346,6 +346,7 @@ namespace FruitLib
         {
             if (spec == null || string.IsNullOrEmpty(spec.Id)) { MelonLogger.Warning($"{Tag} explosion spec needs an Id"); return; }
             _explosions[spec.Id] = spec;
+            if (spec.ChargeKgTNT > 0f) FruitBlastInjury.Wanted = true;
         }
 
         public static bool TryGetProjectile(string id, out ProjectileSpec spec) => _projectiles.TryGetValue(id ?? "", out spec);
@@ -431,6 +432,7 @@ namespace FruitLib
                         try { h(); } catch (Exception e) { Report(h, e); }
             }
             FruitEjecta.Tick();
+            FruitBlastInjury.Tick();
         }
 
         internal static void ResetForScene()

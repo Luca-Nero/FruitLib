@@ -44,6 +44,19 @@ namespace FruitLib
         /// <summary>Peak incident overpressure <paramref name="metres"/> from <paramref name="kgTnt"/>, kPa.</summary>
         public static float IncidentKPa(float metres, float kgTnt) => IncidentKPa(Scaled(metres, kgTnt));
 
+        /// <summary>
+        /// Positive-phase impulse on a surface facing the wave, Pa·s (= kPa·ms): what actually
+        /// throws things. The scaled incident impulse falls off about as 200/Z kPa·ms per kg^⅓
+        /// over the range bodies get thrown (Kingery-Bulmash, Z ~0.5 to 20) and levels off near
+        /// the charge; reflection roughly doubles it.
+        /// </summary>
+        public static float ReflectedImpulse(float metres, float kgTnt)
+        {
+            float w3 = Mathf.Pow(Mathf.Max(1e-4f, kgTnt), 1f / 3f);
+            float z = Mathf.Max(0.4f, Scaled(metres, kgTnt));
+            return 2f * 200f / z * w3;
+        }
+
         /// <summary>How far out the incident overpressure still reaches <paramref name="kPa"/>, metres.</summary>
         public static float RangeFor(float kgTnt, float kPa)
         {
