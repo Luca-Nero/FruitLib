@@ -22,6 +22,7 @@ it in the `Mods` folder at runtime.
 | [Sound](sound.md) | The game's own sound effects, and its interface sounds |
 | [Ballistics](ballistics.md) | Projectiles and explosions through the game's wound model, multiplayer-ready (3.1.0). Fragments that ricochet and penetrate, and blast cover (5.4.0). Per-part explosion switches (5.5.0) |
 | [AssetBundles](BUNDLES.md) | Custom models, shaders, animation and decals built in the Unity editor (3.2.0) |
+| [World menu](world-menu.md) | Know when the player used the terminal's World > SCENE resets, and add buttons of your own to that page (5.5.0) |
 | [Utilities](utilities.md) | `FruitLog`, `FruitPaths`, `FruitScene`, `FruitForces`, `FruitUpdateCheck` |
 | [Meshes](meshes.md) | The older `*_mesh.json` loader (schema in [`MESH_FORMAT.md`](MESH_FORMAT.md)). Prefer bundles for new work |
 

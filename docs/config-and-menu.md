@@ -202,7 +202,8 @@ if (!FruitMenu.IsInputSuppressed)
 |---|---|
 | `FruitMenu.IsOpen` | The menu is showing |
 | `FruitMenu.JustClosed` | True for exactly one frame after it closes |
-| `FruitMenu.IsInputSuppressed` | Either of the above — so **use this one** |
+| `FruitMenu.GameMenuOpen` | One of the game's own menus is open: the terminal (items / world), a context menu (5.5.0) |
+| `FruitMenu.IsInputSuppressed` | Any of the above, or a game menu closed this frame or the last — so **use this one**. Since 5.5.0 it covers the game's menus too, so clicking in the terminal no longer reaches a mod's held item |
 | `FruitMenu.IsGamePaused` | The game's pause menu is up, ours or not |
 | `FruitMenu.BlocksGameplayInput` | Paused, or in or just out of the mod menu |
 

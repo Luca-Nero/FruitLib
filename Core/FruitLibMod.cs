@@ -118,6 +118,8 @@ namespace FruitLib
 #endif
             FruitMenuScreen.ResetForScene();
             FruitMenuNative.ResetForScene();
+            FruitWorldMenu.ResetForScene();
+            FruitGameMenus.ResetForScene();
             FruitInventory.ResetForScene();
         }
 
