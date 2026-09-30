@@ -219,6 +219,13 @@ namespace FruitLib
                 r.Velocity = outDir * (s.MuzzleVelocity * Mathf.Sqrt(ratio));
                 r.Position = res.Exit + outDir * 0.03f;
             }
+            else
+            {
+                // Lodged. Left at the frame's start it would end up to a frame's travel short
+                // of the body (12 m at 700 m/s, 60 fps) and a tracer would stop in the air;
+                // the wound walk's last point is where the round really came to rest.
+                r.Position = res.Exit;
+            }
 
             // After the exit is applied, so a listener reading the round sees it leaving.
             FruitBallistics.RaiseWounded(new WoundInfo
@@ -281,7 +288,12 @@ namespace FruitLib
                     break;
 
                 case SurfaceOutcome.Handled:
-                    if (r.Position == posBefore && r.Velocity == velBefore) r.Kill();
+                    if (r.Position == posBefore && r.Velocity == velBefore)
+                    {
+                        // Nobody moved it, so it ends where it hit, not where the frame began.
+                        r.Position = hit.point;
+                        r.Kill();
+                    }
                     info.SpeedOut = r.Killed ? 0f : r.Velocity.magnitude;
                     alive = !r.Killed;
                     break;
@@ -384,6 +396,7 @@ namespace FruitLib
         private static bool Stop(Projectile r, RaycastHit hit, Vector3 dir, ref SurfaceHitInfo info)
         {
             Push(r, hit, dir * info.SpeedIn);
+            r.Position = hit.point;   // ProjectileEnded listeners (tracers) read where it stopped
             info.SpeedOut = 0f;
             return false;
         }

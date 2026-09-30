@@ -114,7 +114,7 @@ namespace MyMod
                 sb.AppendLine();
             }
 
-            File.WriteAllText(IniPath, sb.ToString());
+            FruitPaths.WriteAllTextAtomic(IniPath, sb.ToString());
         }
 
         private static string Format(FieldInfo f)

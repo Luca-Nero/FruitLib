@@ -138,7 +138,8 @@ The practical shape, which every shipped mod uses, is a `ConfigLoader` class wit
 `IniPath`, `Load()` and `Write()`, where `Load()` parses `key = value` lines by
 reflecting over the same config type and `Write()` emits the file with your
 explanatory comments. Pass `Write` as `save`. Copy
-[`Templates/ConfigLoader.cs`](../Templates/ConfigLoader.cs).
+[`Templates/ConfigLoader.cs`](../Templates/ConfigLoader.cs). Write the file with
+`FruitPaths.WriteAllTextAtomic`, not `File.WriteAllText`, so a crash mid-write can't truncate it.
 
 Build `IniPath` with [`FruitPaths.Config`](utilities.md#fruitpaths), which puts the
 file in `UserData` and migrates one an older build left next to the DLL:

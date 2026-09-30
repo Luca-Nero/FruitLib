@@ -1156,7 +1156,7 @@ namespace FruitLib
                             : val?.ToString() ?? "";
                         sb.AppendLine($"{f.Key} = {s}");
                     }
-                    File.WriteAllText(_iniPath, sb.ToString());
+                    FruitPaths.WriteAllTextAtomic(_iniPath, sb.ToString());
                     FruitMenu.OnConfigChanged?.Invoke();
                 }
                 catch (Exception e)

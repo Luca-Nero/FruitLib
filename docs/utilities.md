@@ -31,6 +31,9 @@ build of your mod left the file next to its DLL, it's moved across, so an update
 player's settings. If both exist, `UserData` wins and the old one is left alone.
 `FruitPaths.UserData` is the folder itself, created if missing.
 
+`FruitPaths.WriteAllTextAtomic(path, contents)` (5.5.0) writes a file via a temp file and a
+replace, so a crash mid-write can't leave a truncated ini. Use it for every config write.
+
 ## FruitScene
 
 Scene lookups that survive this build's IL2CPP stripping.

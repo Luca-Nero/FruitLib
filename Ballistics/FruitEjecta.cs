@@ -40,7 +40,12 @@ namespace FruitLib
         internal static readonly Color Muscle = new Color(0.42f, 0.05f, 0.05f);
 
         private static readonly System.Random _rng = new System.Random();
-        private static bool _layerSetup;
+        // Chunks on layer 2 must not collide with each other, but that is one global matrix
+        // cell shared with everything else the game keeps on Ignore Raycast. So the cell is
+        // flipped only while a chunk is alive, and put back to what the game had after.
+        private static bool _layerScoped;    // we have changed the cell and owe it back
+        private static bool _layerOriginal;  // what the game had before we touched it
+        private static bool _layerWarned;
 
         private sealed class Handle { public bool Evict; }
         private static readonly LinkedList<Handle> _chunks = new LinkedList<Handle>();
@@ -92,14 +97,6 @@ namespace FruitLib
         internal static void Spawn(Vector3 exit, Vector3 dir, List<Color> colours, Rigidbody host)
         {
             if (!Enabled || colours.Count == 0) return;
-            if (!_layerSetup)
-            {
-                // Once, whatever happens: a throw here must not stop every later wound's chunks.
-                _layerSetup = true;
-                try { Physics.IgnoreLayerCollision(ChunkLayer, ChunkLayer, true); }
-                catch (System.Exception e) { MelonLogger.Warning($"{Tag} chunks will collide with each other: {e.Message}"); }
-            }
-
             Collider[] ownBody = host != null ? host.transform.root.GetComponentsInChildren<Collider>() : null;
             int max = Mathf.RoundToInt(MaxPerWound * Mathf.Clamp01(1f - FruitPerfMon.PressureLevel));
             int n = Mathf.Min(colours.Count, max);
@@ -113,6 +110,7 @@ namespace FruitLib
 
             var handle = new Handle();
             var node = _chunks.AddLast(handle);
+            IgnoreChunkCollisions();
 
             // A beat before the collider comes on, so it does not collide with the body it
             // is leaving; and then never with that body at all.
@@ -238,6 +236,34 @@ namespace FruitLib
             if (node.List != null) node.List.Remove(node);
             if (go != null) Object.Destroy(go);
             if (mat != null) Object.Destroy(mat);
+            if (_chunks.Count == 0) RestoreChunkCollisions();
+        }
+
+        /// <summary>Idempotent: the original is read once, before the first change.</summary>
+        private static void IgnoreChunkCollisions()
+        {
+            if (_layerScoped) return;
+            try
+            {
+                // Stripped in some builds; if it will not read, assume the game default (collide).
+                try { _layerOriginal = Physics.GetIgnoreLayerCollision(ChunkLayer, ChunkLayer); }
+                catch { _layerOriginal = false; }
+
+                Physics.IgnoreLayerCollision(ChunkLayer, ChunkLayer, true);
+                _layerScoped = true;
+            }
+            catch (System.Exception e)
+            {
+                if (!_layerWarned) { _layerWarned = true; MelonLogger.Warning($"{Tag} chunks will collide with each other: {e.Message}"); }
+            }
+        }
+
+        private static void RestoreChunkCollisions()
+        {
+            if (!_layerScoped) return;
+            _layerScoped = false;
+            try { Physics.IgnoreLayerCollision(ChunkLayer, ChunkLayer, _layerOriginal); }
+            catch (System.Exception e) { MelonLogger.Warning($"{Tag} could not restore the layer {ChunkLayer} collision setting: {e.Message}"); }
         }
 
         // ── Decals ───────────────────────────────────────────────────────────────
@@ -289,7 +315,15 @@ namespace FruitLib
         }
 
         /// <summary>A new scene may have just loaded the atlas: look again straight away.</summary>
-        internal static void ResetForScene() => _nextAtlasLookup = 0f;
+        internal static void ResetForScene()
+        {
+            _nextAtlasLookup = 0f;
+
+            // The chunks die with the scene, but their coroutines only notice a frame later:
+            // do not leave the matrix changed until then. A chunk spawned in the meantime
+            // switches it back on.
+            RestoreChunkCollisions();
+        }
 
         private static void Decals(Vector3 point, Vector3 normal, Transform surface)
         {

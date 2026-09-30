@@ -292,7 +292,7 @@ namespace FruitLib
                     sb.AppendLine();
                 }
 
-                File.WriteAllText(IniPath, sb.ToString());
+                FruitPaths.WriteAllTextAtomic(IniPath, sb.ToString());
             }
             catch (Exception e) { MelonLogger.Warning($"[FruitLib] Config write failed: {e.Message}"); }
         }

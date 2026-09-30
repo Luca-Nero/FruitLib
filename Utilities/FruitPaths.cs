@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using MelonLoader;
 
 namespace FruitLib
@@ -75,6 +76,42 @@ namespace FruitLib
             catch (Exception e) { MelonLogger.Warning($"[FruitLib] could not move {fileName} to UserData: {e.Message}"); }
 
             return target;
+        }
+
+        /// <summary>
+        /// Writes a file so a crash part-way through cannot leave it truncated: the text goes to
+        /// a temporary file beside it, is flushed to disk, and only then replaces the real one.
+        /// A plain File.WriteAllText empties the ini first, so an interrupted write left the
+        /// next launch with a half file whose missing keys silently took their defaults. Use this
+        /// for every config write. Throws on failure, like File.WriteAllText.
+        /// </summary>
+        /// <remarks>Since 5.5.0.</remarks>
+        public static void WriteAllTextAtomic(string path, string contents)
+        {
+            string tmp = path + ".tmp";
+
+            // UTF-8 without a byte-order mark, which is what File.WriteAllText writes.
+            byte[] bytes = new UTF8Encoding(false).GetBytes(contents ?? "");
+            using (var fs = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                fs.Write(bytes, 0, bytes.Length);
+                fs.Flush(true);   // to the disk itself, not just the OS cache
+            }
+
+            if (!File.Exists(path))
+            {
+                File.Move(tmp, path);
+                return;
+            }
+
+            try { File.Replace(tmp, path, null); }
+            catch (Exception)
+            {
+                // Some filesystems (network shares, some Wine setups) refuse Replace. Copy over
+                // instead: not atomic, but the finished temp file is still there if this dies.
+                File.Copy(tmp, path, true);
+                File.Delete(tmp);
+            }
         }
     }
 }
