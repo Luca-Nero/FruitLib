@@ -111,6 +111,7 @@ and restart the game without rebuilding the mod.
 | `bundle.AssetNames()` / `bundle.Unload(all)` | List contents / unload (`true` also destroys what came out of it) |
 | `FruitNative.SetInteger`, `SetController` | Animator methods the game stripped |
 | `FruitNative.SetBlendShapeWeight` / `GetBlendShapeWeight` | Blend shapes, likewise |
+| `FruitNative.LoadImage(tex, bytes)` | `ImageConversion.LoadImage`, whose wrapper throws on Release (5.5.1) |
 | `FruitDecals.Ensure()` / `Place(...)` | Decals (see below) |
 
 Loading the same bundle twice returns the already-open one rather than failing, as a

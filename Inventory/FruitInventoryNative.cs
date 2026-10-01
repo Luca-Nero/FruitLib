@@ -3,15 +3,18 @@ using System.Collections.Generic;
 using System.Text;
 using HarmonyLib;
 using Il2CppData.Icons;
+using Il2CppData.Objects;
 using Il2CppData.Player.Inventory.God;
 using Il2CppInfrastructure.Project.Registration.Native;
 using Il2CppInterop.Runtime;
 using Il2CppInterop.Runtime.Attributes;
 using Il2CppInterop.Runtime.Injection;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppPlayer.Appearances.God.InventoryItems;
 using Il2CppPlayer.Appearances.God.Toolbar;
 using Il2CppServices.Audio;
 using Il2CppUI.Terminal;
+using Il2CppViews.Terminal;
 using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -89,6 +92,8 @@ namespace FruitLib
             try { layout = terminal.Layout; }
             catch (Exception e) { MelonLogger.Warning($"[FruitInventory] reading the terminal's layout failed: {e.Message}"); }
 
+            InjectIntoLayout(layout);
+
             var cats = layout?.m_categories;
             if (cats != null && cats.Length > 0)
             {
@@ -127,6 +132,7 @@ namespace FruitLib
             }
             catch (Exception e) { MelonLogger.Warning($"[FruitInventory] scanning category assets failed: {e.Message}"); }
 
+            AddCustomCategories();
             LogCategories("native items");
         }
 
@@ -141,6 +147,143 @@ namespace FruitLib
             if (c == null) return;
             foreach (var known in _categories) if (known.Pointer == c.Pointer) return;
             _categories.Add(c);
+        }
+
+        // ── Custom categories ─────────────────────────────────────────────────────
+        //
+        // A mod's shelf is a category asset of the game's own type, built at runtime and added
+        // to the layout's m_categories in the window's pre-validation hook, so the window
+        // accepts it by reference like the native four (TerminalItemsService.Categories reads
+        // the layout live). The window draws one square per category from an authored strip
+        // and throws past its end, so FitCategoryStrip grows the strip to match.
+
+        internal static void OnCategoryAdded(FruitCategory category)
+        {
+            if (_registry == null) return;   // the boot harvest builds it
+            if (EnsureNative(category)) AddCategory(category.Native);
+            RegisterPending();
+        }
+
+        private static void AddCustomCategories()
+        {
+            foreach (var c in FruitInventory.CustomCategories)
+                if (EnsureNative(c)) AddCategory(c.Native);
+        }
+
+        private static bool EnsureNative(FruitCategory c)
+        {
+            if (c.Native != null) return true;
+            try
+            {
+                var icon = ScriptableObject.CreateInstance<SerializedIconData>();
+                icon.m_sprite  = c.Icon != null ? c.Icon : FruitIcons.Placeholder();
+                icon.m_offset  = Vector2.zero;
+                icon.m_scale   = Vector2.one;
+                icon.m_color   = Color.white;
+                icon.name      = c.Name + " Category Icon";
+                icon.hideFlags = HideFlags.HideAndDontSave;
+
+                var descriptor = ScriptableObject.CreateInstance<SerializedObjectDescriptorWithIcon>();
+                descriptor.m_objectName  = c.Name;
+                descriptor.m_description = c.Description ?? "";
+                descriptor.m_iconData    = icon;
+                descriptor.name          = c.Name + " Category Descriptor";
+                descriptor.hideFlags     = HideFlags.HideAndDontSave;
+
+                var native = ScriptableObject.CreateInstance<SerializedGodInventoryCategoryData>();
+                native.m_descriptor = descriptor;
+                native.m_id         = "FruitLib." + FruitInventory.Canonical(c.Name);
+                native.name         = c.Name + "Category";
+                native.hideFlags    = HideFlags.HideAndDontSave;
+
+                c.Native = native;
+                FruitLog.Info($"[FruitInventory] built {c}");
+                return true;
+            }
+            catch (Exception e)
+            {
+                MelonLogger.Warning($"[FruitInventory] building {c} failed: {e.Message}. Its items go to Etc.");
+                return false;
+            }
+        }
+
+        /// <summary>Appends every custom category missing from the layout, once each.</summary>
+        private static void InjectIntoLayout(SerializedGodInventoryLayout layout)
+        {
+            if (layout == null || FruitInventory.CustomCategories.Count == 0) return;
+            try
+            {
+                var cats = layout.m_categories;
+                var add = new List<SerializedGodInventoryCategoryData>();
+                foreach (var c in FruitInventory.CustomCategories)
+                {
+                    if (!EnsureNative(c)) continue;
+                    bool present = false;
+                    if (cats != null) foreach (var x in cats) if (x != null && x.Pointer == c.Native.Pointer) { present = true; break; }
+                    if (!present) add.Add(c.Native);
+                    c.InLayout = true;
+                }
+                if (add.Count == 0) return;
+
+                int have = cats?.Length ?? 0;
+                var grown = new Il2CppReferenceArray<SerializedGodInventoryCategoryData>(have + add.Count);
+                for (int i = 0; i < have; i++) grown[i] = cats[i];
+                for (int i = 0; i < add.Count; i++) grown[have + i] = add[i];
+                layout.m_categories = grown;
+                FruitLog.Info($"[FruitInventory] layout now has {grown.Length} categories ({add.Count} from mods).");
+            }
+            catch (Exception e)
+            {
+                MelonLogger.Warning($"[FruitInventory] adding mod categories to the layout failed: {e.Message}");
+                foreach (var c in FruitInventory.CustomCategories) c.InLayout = false;
+            }
+        }
+
+        /// <summary>
+        /// Makes the window's category strip at least <paramref name="needed"/> squares long,
+        /// cloning its last square the way TerminalItemsPlateView.Awake wires the authored ones
+        /// (index, click forwarded into the plate's CategoryClickedEvent). False if it could
+        /// not, so the caller can keep the window drawable.
+        /// </summary>
+        internal static bool FitCategoryStrip(TerminalItemsPlateView plate, int needed)
+        {
+            var squares = plate.m_categorySquares;
+            int have = squares?.Length ?? 0;
+            if (have >= needed) return true;
+            if (have == 0) return false;
+
+            try
+            {
+                var last = squares[have - 1];
+                var lastRt = last.GetComponent<RectTransform>();
+                var prevRt = have >= 2 ? squares[have - 2].GetComponent<RectTransform>() : null;
+                Vector2 step = prevRt != null ? lastRt.anchoredPosition - prevRt.anchoredPosition
+                                              : new Vector2(lastRt.rect.width, 0f);
+
+                var grown = new Il2CppReferenceArray<TerminalCategorySquareView>(needed);
+                for (int i = 0; i < have; i++) grown[i] = squares[i];
+
+                var forward = plate.CategoryClickedEvent;
+                for (int i = have; i < needed; i++)
+                {
+                    var square = FruitMenuClone.Make(last, last.transform.parent, "FruitLib Category " + i);
+                    square.GetComponent<RectTransform>().anchoredPosition = lastRt.anchoredPosition + step * (i - have + 1);
+                    square.gameObject.SetActive(true);   // Awake: its click now raises its ClickedEvent
+                    square.TakeIndex(i);
+                    square.ClickedEvent.Subscribe((Il2CppSystem.Action<int>)(Action<int>)(index => forward.Invoke(index)), plate.DestroyBag);
+                    grown[i] = square;
+                }
+
+                plate.m_categorySquares = grown;
+                FruitLog.Info($"[FruitInventory] category strip grown from {have} to {needed} squares.");
+                return true;
+            }
+            catch (Exception e)
+            {
+                MelonLogger.Warning($"[FruitInventory] growing the category strip failed: {e.Message}. " +
+                                    "Mod categories will be missing from the window this time.");
+                return false;
+            }
         }
 
         private static void LogCategories(string source)
@@ -713,6 +856,38 @@ namespace FruitLib
             try { FruitInventoryNative.OnLayout(__instance); }
             catch (Exception e) { MelonLogger.Warning($"[FruitInventory] layout hook failed: {e}"); }
         }
+    }
+
+    /// <summary>
+    /// The window draws one square per category and throws if the authored strip is shorter
+    /// (ThrowIfPastTheStrip). Grow it first; if that fails, let the draw go ahead without the
+    /// throw - it only lights the squares it has - so a mod shelf can never cost the window.
+    /// </summary>
+    [HarmonyPatch(typeof(TerminalItemsPlateView), nameof(TerminalItemsPlateView.DrawCategories))]
+    internal static class FruitInventory_DrawCategoriesPatch
+    {
+        internal static bool Drawing;
+        internal static bool Tolerate;
+
+        static void Prefix(TerminalItemsPlateView __instance, Il2CppSystem.Collections.Generic.IReadOnlyList<IIconData> icons)
+        {
+            Drawing = true;
+            Tolerate = false;
+            try
+            {
+                int needed = icons?.Cast<Il2CppSystem.Collections.Generic.IReadOnlyCollection<IIconData>>().Count ?? 0;
+                if (!FruitInventoryNative.FitCategoryStrip(__instance, needed)) Tolerate = true;
+            }
+            catch (Exception e) { Tolerate = true; MelonLogger.Warning($"[FruitInventory] category strip check failed: {e.Message}"); }
+        }
+
+        static void Finalizer() { Drawing = false; Tolerate = false; }
+    }
+
+    [HarmonyPatch(typeof(TerminalItemsPlateView), nameof(TerminalItemsPlateView.ThrowIfPastTheStrip))]
+    internal static class FruitInventory_StripGuardPatch
+    {
+        static bool Prefix() => !(FruitInventory_DrawCategoriesPatch.Drawing && FruitInventory_DrawCategoriesPatch.Tolerate);
     }
 
     [HarmonyPatch(typeof(GAToolbarGIIItemsHandler), nameof(GAToolbarGIIItemsHandler.AddItem))]

@@ -158,6 +158,27 @@ namespace FruitLib
     }
 
     /// <summary>
+    /// A shelf of a mod's own in the inventory window, added after the game's four. Made with
+    /// <see cref="FruitInventory.AddCategory"/>; items join it by putting its name in
+    /// <see cref="FruitItem.Category"/>.
+    /// </summary>
+    public class FruitCategory
+    {
+        public string Name;
+        public string Description = "";
+
+        /// <summary>The square's icon in the window's category strip. A grey disc if null.</summary>
+        public Sprite Icon;
+
+        /// <summary>True once the category is in the window's layout.</summary>
+        public bool InLayout { get; internal set; }
+
+        internal SerializedGodInventoryCategoryData Native;
+
+        public override string ToString() => $"category '{Name}'";
+    }
+
+    /// <summary>
     /// Custom items in the release build's inventory.
     ///
     /// <code>
@@ -223,6 +244,41 @@ namespace FruitLib
         {
             foreach (var item in _items) if (item.Id == id) return item;
             return null;
+        }
+
+        private static readonly List<FruitCategory> _customCategories = new List<FruitCategory>();
+
+        /// <summary>The shelves mods added, in the order they were added.</summary>
+        public static IReadOnlyList<FruitCategory> CustomCategories => _customCategories;
+
+        /// <summary>
+        /// A shelf of your own, after the game's four:
+        /// <code>
+        /// FruitInventory.AddCategory("Bombs Away", icon);
+        /// FruitInventory.AddItem(new FruitItem { Category = "Bombs Away", ... });
+        /// </code>
+        /// Call from OnInitializeMelon, before adding its items. A name that is already a shelf
+        /// (the game's or another mod's) returns that one, so mods can share a shelf by name.
+        /// If the window cannot show it, its items fall back to Etc with a warning.
+        /// </summary>
+        public static FruitCategory AddCategory(string name, Sprite icon = null, string description = null)
+        {
+            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("A category needs a name.", nameof(name));
+
+            string key = Canonical(name);
+            foreach (var c in _customCategories)
+                if (Canonical(c.Name) == key) return c;
+            if (key == "weapon" || key == "tool" || key == "prop" || key == "etc")
+            {
+                MelonLogger.Warning($"[FruitInventory] '{name}' is one of the game's own shelves; nothing to add.");
+                return null;
+            }
+
+            var category = new FruitCategory { Name = name.Trim(), Icon = icon, Description = description ?? "" };
+            _customCategories.Add(category);
+            FruitLog.Info($"[FruitInventory] queued {category}");
+            FruitInventoryNative.OnCategoryAdded(category);
+            return category;
         }
 
         private static FruitItem Add(string id, string name, string category, Sprite icon,

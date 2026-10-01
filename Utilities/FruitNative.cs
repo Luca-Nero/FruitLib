@@ -57,5 +57,36 @@ namespace FruitLib
 
         public static float GetBlendShapeWeight(SkinnedMeshRenderer smr, int index)
             => ICall(ref _getBlendShape, "UnityEngine.SkinnedMeshRenderer::GetBlendShapeWeight_Injected")(Self(smr), index);
+
+        // ImageConversion.LoadImage_Injected(IntPtr tex, ref ManagedSpanWrapper data, bool markNonReadable),
+        // per MelonLoader's regenerated LoadImage_InjectedDelegate on Release.
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct SpanWrapper
+        {
+            public IntPtr Begin;
+            public int Length;
+        }
+
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.U1)]
+        private delegate bool LoadImageFn(IntPtr tex, ref SpanWrapper data,
+            [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.U1)] bool markNonReadable);
+        private static LoadImageFn _loadImage;
+
+        /// <summary>
+        /// ImageConversion.LoadImage: decodes PNG/JPG bytes into <paramref name="tex"/>, resizing it.
+        /// The regenerated wrapper throws "Method not found" (GetPinnableReference) on Release.
+        /// </summary>
+        public static bool LoadImage(Texture2D tex, byte[] data, bool markNonReadable = false)
+        {
+            if (data == null || data.Length == 0) return false;
+            var fn = ICall(ref _loadImage, "UnityEngine.ImageConversion::LoadImage_Injected");
+            var pin = System.Runtime.InteropServices.GCHandle.Alloc(data, System.Runtime.InteropServices.GCHandleType.Pinned);
+            try
+            {
+                var span = new SpanWrapper { Begin = pin.AddrOfPinnedObject(), Length = data.Length };
+                return fn(Self(tex), ref span, markNonReadable);
+            }
+            finally { pin.Free(); }
+        }
     }
 }

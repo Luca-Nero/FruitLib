@@ -113,7 +113,7 @@ toolbar keeps its old name and icon until it is replaced.
 
 `FruitIcons.Load(assembly, "Icons/X.png")` loads a PNG embedded in your mod (mark it as
 `EmbeddedResource` in your csproj). Matching is by suffix. `FruitIcons.Load(bytes)` takes
-raw PNG bytes. `FruitIcons.Solid(Color)` draws a disc for prototyping. An item without an
+raw PNG bytes (decoded through `FruitNative.LoadImage`: before 5.5.1 both threw "Method not found" on Release). `FruitIcons.Solid(Color)` draws a disc for prototyping. An item without an
 icon gets a grey disc: the game's icon drawer throws on a missing sprite, so it is never
 left empty.
 

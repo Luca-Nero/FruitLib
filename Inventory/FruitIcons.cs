@@ -92,10 +92,11 @@ namespace FruitLib
             try
             {
                 // Size does not matter here; LoadImage replaces the texture with the PNG's
-                // own dimensions and format.
+                // own dimensions and format. Through the icall: ImageConversion.LoadImage's
+                // regenerated wrapper throws "Method not found" on Release (see FruitNative).
                 tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
 
-                if (!ImageConversion.LoadImage(tex, png))
+                if (!FruitNative.LoadImage(tex, png))
                 {
                     MelonLogger.Warning($"[FruitIcons] '{name}' is not a readable PNG.");
                     UnityEngine.Object.Destroy(tex);
