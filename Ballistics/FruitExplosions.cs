@@ -45,6 +45,13 @@ namespace FruitLib
         private const float JetArcSpeed = 300f;
         /// <summary>Anything with no dimension over this (metres) is too small to shield from a blast.</summary>
         private const float MinCoverSize = 1f;
+        /// <summary>Organ injury is skipped on a limb at this many times the disruption pressure:
+        /// the disruption bursts (sev 1: radius 9, both sides) take its core anyway.</summary>
+        private const float OrganSkipDisruption = 10f;
+        /// <summary>Targeted fragments: how much of a limb's bounding box is limb, seen from outside.</summary>
+        private const float LimbFill = 0.6f;
+        /// <summary>Folded hits make a walk at most this many times a single fragment's power.</summary>
+        private const float MaxFold = 4f;
 
         /// <summary>
         /// One detonation's state. Its own object, not statics: a listener may set off another
@@ -80,7 +87,16 @@ namespace FruitLib
             /// <summary>The parts that run: the spec's features less the command's.</summary>
             public ExplosionFeatures F;
             public bool Has(ExplosionFeatures f) => (F & f) != 0;
+            /// <summary>The casing's long axis, for the side-spray belt.</summary>
+            public Vector3 Axis;
+            public ExplosionStats Stats;
+            /// <summary>Limbs the blast wave is blowing apart (<see cref="OrganSkipDisruption"/>):
+            /// targeted fragments give them one walk at most.</summary>
+            public readonly HashSet<IntPtr> Disrupted = new HashSet<IntPtr>();
         }
+
+        private static long Now() => System.Diagnostics.Stopwatch.GetTimestamp();
+        private static float Ms(long since) => (Now() - since) * 1000f / System.Diagnostics.Stopwatch.Frequency;
 
         internal static void Detonate(ExplosionSpec s, BallisticsCommand cmd, bool cosmetic)
         {
@@ -101,10 +117,13 @@ namespace FruitLib
                 ? Mathf.Lerp(1f, Mathf.Clamp01(s.MinQuality), FruitPerfMon.PressureLevel)
                 : 1f;
 
+            long t0 = Now();
             var b = new Blast
             {
                 S = s, Cmd = cmd, Cosmetic = cosmetic, Origin = origin, Shot = shot, Rng = rng,
                 F = s.Features & ~cmd.Disabled,
+                Axis = cmd.Axis.sqrMagnitude > 0f ? cmd.Axis.normalized : forward,
+                Stats = new ExplosionStats { Spec = s },
             };
             if (s.ChargeKgTNT > 0f)
             {
@@ -116,6 +135,7 @@ namespace FruitLib
 
             int budget = Mathf.Max(1, Mathf.RoundToInt(s.MaxWounds * quality));
             if (!cosmetic && b.Has(ExplosionFeatures.Overpressure)) budget = Overpressure(b, forward, quality, budget);
+            b.Stats.BlastMs = Ms(t0);
 
             bool hasGround = Physics.Raycast(origin, Vector3.down, out RaycastHit ground, 200f, s.LayerMask, QueryTriggerInteraction.Ignore);
             FruitBallistics.RaiseExploded(new ExplosionInfo
@@ -134,12 +154,17 @@ namespace FruitLib
             b.SD = s.FragSectionalDensity * Mathf.Max(0f, s.FragPenetrationScale) * Mathf.Max(0f, FruitLibConfig.PenetrationScale);
             b.Trace = FruitBallistics.WantsFragments;
 
+            long tf = Now();
             Fragments(b, forward, quality);
+            b.Stats.FragmentMs = Ms(tf);
 
             // Last, so no wound is measured against a body that has already been thrown.
             if (!cosmetic)
                 foreach (var kv in b.Impulses.Values)
                     if (kv.rb != null) kv.rb.linearVelocity += kv.dv;
+
+            b.Stats.TotalMs = Ms(t0);
+            FruitBallistics.LastExplosion = b.Stats;
         }
 
         // ── Shockwave ────────────────────────────────────────────────────────────
@@ -178,7 +203,7 @@ namespace FruitLib
         {
             var s = b.S;
             Vector3 origin = b.Origin;
-            float range = Mathf.Min(FruitBlast.RangeFor(b.W, 3f), 40f);   // past ~3 kPa nothing moves
+            float range = Mathf.Min(FruitBlast.RangeFor(b.W, 3f), Mathf.Max(1f, s.MaxPushRange));   // past ~3 kPa nothing moves
             float scale = Mathf.Max(0f, s.BlastPushScale);
             if (scale <= 0f) return;
 
@@ -306,7 +331,7 @@ namespace FruitLib
             float duration = FruitBlastInjury.DurationFactor(w);
             // Out to where the lowest threshold stops mattering (reflected ≥ 2x incident).
             float lowest = Mathf.Min(p.LungKPa, Mathf.Min(p.StomachKPa, p.SurfaceKPa)) * duration * 0.5f;
-            float range = Mathf.Min(FruitBlast.RangeFor(w, lowest * 0.8f), 60f);
+            float range = Mathf.Min(FruitBlast.RangeFor(w, lowest * 0.8f), Mathf.Max(1f, s.MaxInjuryRange));
 
             int cap = Mathf.Min(budget, Mathf.Max(1, Mathf.CeilToInt(budget * Mathf.Clamp01(s.OverpressureBudgetShare))));
             int used = 0;
@@ -335,8 +360,23 @@ namespace FruitLib
                 float kPa = FruitBlast.ReflectedKPa(FruitBlast.IncidentKPa(dist, w) * cone * cover);
                 RaiseBlast(b, centre, true, cover, occluder, mat, kPa);
 
+                bool disrupted = kPa * s.DamageScale >= p.DisruptionKPa * duration * OrganSkipDisruption;
+                if (disrupted) b.Disrupted.Add(limb.Pointer);
                 if (b.Has(ExplosionFeatures.OrganInjury))
-                    used += FruitBlastInjury.Organs(limb, kPa * s.DamageScale, duration, p, toLimb, b.Shot, b.Rng, cap - used);
+                {
+                    // At ten times the disruption pressure the limb is blown apart below, by two
+                    // bursts of 9+ voxels from both sides that reach its core, so bruising its organs
+                    // first is work nobody sees. Each organ is a signal over hundreds of voxels.
+                    if (disrupted) b.Stats.OrgansSkipped++;
+                    else
+                    {
+                        long to = Now();
+                        int hurt = FruitBlastInjury.Organs(limb, kPa * s.DamageScale, duration, p, toLimb, b.Shot, b.Rng, cap - used);
+                        b.Stats.OrganMs += Ms(to);
+                        b.Stats.Organs += hurt;
+                        used += hurt;
+                    }
+                }
                 if (kPa * s.DamageScale >= p.SurfaceKPa * duration)
                     surface.Add((limb, centre, toLimb, kPa * s.DamageScale));
             }
@@ -395,7 +435,8 @@ namespace FruitLib
             return budget - used;
         }
 
-        /// <summary>On or against something solid: within 0.35 m of any non-body collider.</summary>
+        /// <summary>On or against something solid: within 0.35 m of any non-body collider; or,
+        /// with <see cref="ExplosionSpec.SurfaceBurstScaledHeight"/>, that low over the ground.</summary>
         private static bool SurfaceBurst(ExplosionSpec s, Vector3 origin)
         {
             foreach (var c in Physics.OverlapSphere(origin, 0.35f, s.LayerMask, QueryTriggerInteraction.Ignore))
@@ -403,6 +444,17 @@ namespace FruitLib
                 if (c == null || FruitWounds.LimbOf(c) != null) continue;
                 var rb = c.attachedRigidbody;
                 if (rb != null && !rb.isKinematic && c.bounds.size.sqrMagnitude < 0.25f) continue;   // the charge itself, or a pebble
+                return true;
+            }
+            if (s.SurfaceBurstScaledHeight <= 0f) return false;
+            float h = s.SurfaceBurstScaledHeight * Mathf.Pow(Mathf.Max(1e-4f, s.ChargeKgTNT), 1f / 3f);
+            var hits = Physics.RaycastAll(origin, Vector3.down, h, s.LayerMask, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < hits.Length; i++)
+            {
+                var c = hits[i].collider;
+                if (c == null || FruitWounds.LimbOf(c) != null) continue;
+                var rb = c.attachedRigidbody;
+                if (rb != null && !rb.isKinematic) continue;   // only the ground and what's built on it
                 return true;
             }
             return false;
@@ -499,6 +551,13 @@ namespace FruitLib
             public bool         Spall;
             /// <summary>A piece of bone: throws no bone of its own.</summary>
             public bool         Bone;
+            /// <summary>A targeted fragment's limb: until it ricochets, it only counts if this is
+            /// the first limb it meets (any other limb in the way has its own share). Cleared once
+            /// it reaches it.</summary>
+            public IntPtr       Target;
+            /// <summary>An untargeted scenery ray beside targeted fragments: it goes through bodies
+            /// without wounding or pushing them, so no hit is counted twice.</summary>
+            public bool         World;
         }
 
         /// <summary>
@@ -580,12 +639,44 @@ namespace FruitLib
             // fragments down identical lines.
             Quaternion jitter = Quaternion.AngleAxis((float)b.Rng.NextDouble() * 360f, forward);
 
+            // Targeted fragments first: they are the ones that wound. The rays below then only
+            // dress the scenery, going through bodies without touching them.
+            bool targeted = s.FragTargeted > 0 && b.Has(ExplosionFeatures.Fragments);
+            if (targeted && !s.IsFullSphere)
+            {
+                targeted = false;
+                if (_warnedCone.Add(s.Id ?? "")) MelonLoader.MelonLogger.Warning($"{Tag} '{s.Id}': targeted fragments need a full sphere; flying {rays} rays instead");
+            }
+            int next = 0;
+            if (targeted) Targeted(b, quality, ref next);
+
+            // The belt, if any: that share of the rays spread evenly through the band round the
+            // plane square to the axis, the rest over the whole sphere, the pattern spun round the axis.
+            bool belt = s.IsFullSphere && s.FragBeltDeg > 0f;
+            float beltSin = belt ? BeltSin(s) : 1f;
+            int beltRays = belt ? Mathf.RoundToInt(rays * Mathf.Clamp01(s.FragBeltShare)) : 0;
+            Quaternion toAxis = belt
+                ? Quaternion.FromToRotation(Vector3.up, b.Axis) * Quaternion.AngleAxis((float)b.Rng.NextDouble() * 360f, Vector3.up)
+                : Quaternion.identity;
+
             var plain = PlainShard(b);
+            plain.World = targeted;
+            b.Stats.Rays = rays;
             for (int r = 0; r < rays; r++)
             {
                 float t = rays > 1 ? r / (float)(rays - 1) : 0.5f;
                 Vector3 dir;
-                if (s.IsFullSphere)
+                if (belt)
+                {
+                    bool inBelt = r < beltRays;
+                    int i = inBelt ? r : r - beltRays, n = inBelt ? beltRays : rays - beltRays;
+                    float u = n > 1 ? i / (float)(n - 1) : 0.5f;
+                    float y  = inBelt ? Mathf.Lerp(-beltSin, beltSin, u) : Mathf.Lerp(-1f, 1f, u);
+                    float rx = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y));
+                    float a  = i * golden;
+                    dir = toAxis * new Vector3(rx * Mathf.Cos(a), y, rx * Mathf.Sin(a));
+                }
+                else if (s.IsFullSphere)
                 {
                     float y  = Mathf.Lerp(-1f, 1f, t);
                     float rx = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y));
@@ -603,21 +694,23 @@ namespace FruitLib
 
                 bool withDebris = debris < maxDebris && r % debrisEvery == 0;
                 if (withDebris) debris++;
-                Fly(b, r, b.Origin + dir * 0.04f, dir, withDebris, plain);
+                Fly(b, next++, b.Origin + dir * 0.04f, dir, withDebris, plain);
             }
-            int next = rays;
 
             // The jet: its own rays, spread evenly over a narrow cone round the axis, so a
-            // shaped charge always punches where it points however the pattern is turned.
-            int jetRays = s.JetRays > 0 && !s.IsFullSphere && b.Has(ExplosionFeatures.Jet) ? s.JetRays : 0;
+            // shaped charge always punches where it points however the pattern is turned. A
+            // full-sphere spec may carry one too (5.10.0: a cluster bomblet's fragmenting case
+            // round a shaped charge), aimed down the detonation's forward all the same.
+            int jetRays = s.JetRays > 0 && b.Has(ExplosionFeatures.Jet) ? s.JetRays : 0;
             float jetHalf = Mathf.Clamp(s.JetConeDeg * 0.5f, 0f, 45f) * Mathf.Deg2Rad;
+            Quaternion jetRot = Quaternion.LookRotation(forward);
             b.SpallQuality = quality;
             for (int j = 0; j < jetRays; j++)
             {
                 float t  = jetRays > 1 ? j / (float)(jetRays - 1) : 0f;
                 float az = j * golden;
                 float th = Mathf.Sqrt(t) * jetHalf;
-                Vector3 dir = (jitter * (coneRot * new Vector3(Mathf.Sin(th) * Mathf.Cos(az), Mathf.Sin(th) * Mathf.Sin(az), Mathf.Cos(th)))).normalized;
+                Vector3 dir = (jitter * (jetRot * new Vector3(Mathf.Sin(th) * Mathf.Cos(az), Mathf.Sin(th) * Mathf.Sin(az), Mathf.Cos(th)))).normalized;
                 Fly(b, next++, b.Origin + dir * 0.04f, dir, withDebris: false, JetShard(b));
             }
 
@@ -635,6 +728,124 @@ namespace FruitLib
                 Fly(b, next++, at + dir * (FragRadius + 0.01f), dir, withDebris: false, BoneShard(b, power));
             }
             b.Bones.Clear();
+        }
+
+        private static readonly HashSet<string> _warnedCone = new HashSet<string>();
+
+        /// <summary>Sine of the belt's half-thickness: a direction is in the band when |dir·axis| is under it.</summary>
+        private static float BeltSin(ExplosionSpec s) => Mathf.Sin(Mathf.Clamp(s.FragBeltDeg * 0.5f, 0.5f, 90f) * Mathf.Deg2Rad);
+
+        /// <summary>The share of all fragments per steradian towards <paramref name="dir"/>
+        /// (it integrates to 1 over the sphere): even, or the belt plus nose and tail spray.</summary>
+        private static float Density(Blast b, Vector3 dir)
+        {
+            var s = b.S;
+            const float sphere = 4f * Mathf.PI;
+            if (s.FragBeltDeg <= 0f) return 1f / sphere;
+            float sinH = BeltSin(s);
+            float share = Mathf.Clamp01(s.FragBeltShare);
+            float d = (1f - share) / sphere;
+            // The band round the plane square to the axis covers 4π·sin(h) steradians.
+            if (Mathf.Abs(Vector3.Dot(dir, b.Axis)) <= sinH) d += share / (sphere * sinH);
+            return d;
+        }
+
+        /// <summary>
+        /// Targeted fragments (<see cref="ExplosionSpec.FragTargeted"/>). For every limb in reach:
+        /// the solid angle it fills seen from the charge (its bounding box projected along the
+        /// line to it, times <see cref="LimbFill"/>, over r²), times the share of fragments per
+        /// steradian that way, times the case's count, is how many fragments the real case would
+        /// put into it. That many (the fraction by a random draw) are aimed at points on it and
+        /// flown as any fragment is. Past <see cref="ExplosionSpec.MaxWalksPerLimb"/> the rest
+        /// push and fold their power into the walks made.
+        /// </summary>
+        private static void Targeted(Blast b, float quality, ref int next)
+        {
+            var s = b.S;
+            float range = s.FragTargetRange > 0f
+                ? s.FragTargetRange
+                : Mathf.Min(200f, Mathf.Log(20f) / Mathf.Max(0.001f, s.FragPowerFalloff));
+            range = Mathf.Min(range, s.FragSpeed * s.FragMaxTime);
+            // Under frame pressure the walks per limb come down, not the coverage.
+            int cap = s.MaxWalksPerLimb > 0 ? Mathf.Max(1, Mathf.RoundToInt(s.MaxWalksPerLimb * quality)) : int.MaxValue;
+            float gy = Physics.gravity.y;
+            var plain = PlainShard(b);
+
+            var seen = new HashSet<IntPtr>();
+            var limbs = new List<(LimbEffectorReceiver limb, Collider col)>();
+            foreach (var col in Physics.OverlapSphere(b.Origin, range, s.LayerMask, QueryTriggerInteraction.Ignore))
+            {
+                var limb = FruitWounds.LimbOf(col);
+                if (limb == null || !seen.Add(limb.Pointer)) continue;
+                limbs.Add((limb, col));
+            }
+            b.Stats.TargetLimbs = limbs.Count;
+
+            foreach (var (limb, col) in limbs)
+            {
+                if (col == null) continue;
+                Bounds bb = col.bounds;
+                Vector3 to = bb.center - b.Origin;
+                float dist = to.magnitude;
+                Vector3 dir = dist > 1e-4f ? to / dist : Vector3.up;
+                float r = Mathf.Max(0.3f, dist);
+                Vector3 sz = bb.size;
+                float area = (Mathf.Abs(dir.x) * sz.y * sz.z + Mathf.Abs(dir.y) * sz.x * sz.z + Mathf.Abs(dir.z) * sz.x * sz.y) * LimbFill;
+                float expected = s.FragTargeted * Density(b, dir) * Mathf.Min(area / (r * r), 2f * Mathf.PI);
+                b.Stats.Expected += expected;
+
+                int hits = Mathf.FloorToInt(expected);
+                if (b.Rng.NextDouble() < expected - hits) hits++;
+                if (hits <= 0) continue;
+
+                // One being blown apart by the blast gets one walk; the rest only push.
+                int walks = Mathf.Min(hits, b.Disrupted.Contains(limb.Pointer) ? 1 : cap);
+                int extra = hits - walks;
+                var k = plain;
+                k.Target = limb.Pointer;
+                if (extra > 0)
+                {
+                    k.Power = Mathf.Max(1, Mathf.RoundToInt(k.Power * Mathf.Min(MaxFold, hits / (float)walks)));
+                    b.Stats.Folded += extra;
+                    if (!b.Cosmetic && s.FragImpulse > 0f && b.Has(ExplosionFeatures.FragmentPush))
+                    {
+                        var rb = FruitWounds.BodyOf(col);
+                        float arrive = Mathf.Exp(-0.5f * s.FragPowerFalloff * dist);   // speed left on arrival, as in Fly
+                        if (rb != null && !rb.isKinematic) AddImpulse(b, rb, dir * (s.FragImpulse * arrive * extra));
+                    }
+                }
+
+                for (int i = 0; i < walks; i++)
+                {
+                    // A point on the limb: somewhere in its box, pulled onto the collider.
+                    Vector3 pick = bb.center + Vector3.Scale(bb.extents, new Vector3(Signed(b), Signed(b), Signed(b)) * 0.8f);
+                    Vector3 aim;
+                    try { aim = col.ClosestPoint(pick); } catch { aim = bb.center; }
+                    if (!Aim(b.Origin, aim, s.FragSpeed, gy, s.FragMaxTime, out Vector3 launch)) continue;
+                    b.Stats.Aimed++;
+                    Fly(b, next++, b.Origin + launch * 0.04f, launch, withDebris: false, k);
+                }
+            }
+        }
+
+        private static float Signed(Blast b) => (float)b.Rng.NextDouble() * 2f - 1f;
+
+        /// <summary>The launch direction whose arc at <paramref name="speed"/> passes through
+        /// <paramref name="to"/>: the flat solution, if it gets there within <paramref name="maxTime"/>.</summary>
+        private static bool Aim(Vector3 from, Vector3 to, float speed, float gy, float maxTime, out Vector3 dir)
+        {
+            Vector3 d = to - from;
+            Vector3 flat = new Vector3(d.x, 0f, d.z);
+            float x = flat.magnitude, y = d.y, g = -gy, v2 = speed * speed;
+            dir = d.sqrMagnitude > 1e-8f ? d.normalized : Vector3.up;
+            if (x < 1e-3f || g <= 0f) return true;
+            float disc = v2 * v2 - g * (g * x * x + 2f * y * v2);
+            if (disc < 0f) return false;
+            float tan = (v2 - Mathf.Sqrt(disc)) / (g * x);
+            float cos = 1f / Mathf.Sqrt(1f + tan * tan);
+            if (x / (speed * cos) > maxTime) return false;
+            dir = (flat / x * cos + Vector3.up * (tan * cos)).normalized;
+            return true;
         }
 
         /// <summary>
@@ -713,12 +924,12 @@ namespace FruitLib
                 // The sweep starts a few centimetres out, and a sphere cast ignores anything it
                 // starts inside - so a charge lying on a floor would send half its fragments
                 // straight through it. Check that first stretch with a plain ray from the charge.
-                if (leg == 0 && StartBlocked(b, p0, dir, out hit))
+                if (leg == 0 && StartBlocked(b, p0, dir, k.World, out hit))
                 {
                     didHit = true;
                     hitTime = 0f;
                 }
-                else didHit = SweepArc(b, p0, arcVel, gy, flight, out hit, out hitTime);
+                else didHit = SweepArc(b, p0, arcVel, gy, flight, k.World, out hit, out hitTime);
 
                 if (withDebris && leg == 0)
                     FruitBallistics.RaiseDebris(s, p0, arcVel, didHit ? hitTime : flight);
@@ -764,6 +975,13 @@ namespace FruitLib
                 }
 
                 var limb = FruitWounds.LimbOf(hit.collider);
+                if (limb != null && k.Target != IntPtr.Zero)
+                {
+                    // A targeted fragment meeting another limb first: that limb's own share
+                    // already covers this direction, so this one isn't counted twice.
+                    if (limb.Pointer != k.Target) { b.Stats.Dropped++; return; }
+                    k.Target = IntPtr.Zero;
+                }
                 bool goesOn = limb != null
                     ? HitLimb(b, ref k, limb, hit, travel, speedIn, ref walkedBody, ref trace, out p0, out dir, out speed)
                     : HitSurface(b, ref k, hit, travel, speedIn, ref bounces, ref trace, out p0, out dir, out speed);
@@ -821,8 +1039,11 @@ namespace FruitLib
                 return true;
             }
 
+            long tw = Now();
             var res = FruitWounds.Channel(limb, rb, hit.point, hit.normal, dir, power, k.Power,
                                           k.Wound, b.Shot, b.Rng, firstBody: !walkedBody, cosmetic: false);
+            b.Stats.WalkMs += Ms(tw);
+            if (res.Touched) b.Stats.Walks++;
             if (rb != null) b.Passed.Add(rb.Pointer);
 
             if (!res.Touched)
@@ -917,7 +1138,8 @@ namespace FruitLib
                 && bounces < s.FragMaxBounces && chance > 0f && b.Rng.NextDouble() < chance)
             {
                 bounces++;
-                float keep = Mathf.Sqrt(Mathf.Clamp01(1f - s.FragRicochetEnergyLoss * m.RicochetLossScale));
+                k.Target = IntPtr.Zero;   // a new direction: whatever it meets now is its own
+                float keep =Mathf.Sqrt(Mathf.Clamp01(1f - s.FragRicochetEnergyLoss * m.RicochetLossScale));
                 nextSpeed = speedIn * keep;
                 nextDir   = FruitProjectiles.KeepOff(
                     FruitProjectiles.Deflect(b.Rng, m.Bounce(dir, hit.normal).normalized, s.FragRicochetScatter), hit.normal);
@@ -994,7 +1216,7 @@ namespace FruitLib
         /// Sweeps the arc in straight segments. Bodies the fragment has already been through
         /// are looked past: the sweep steps over them and carries on down the same segment.
         /// </summary>
-        private static bool SweepArc(Blast b, Vector3 p0, Vector3 vel, float gy, float flight,
+        private static bool SweepArc(Blast b, Vector3 p0, Vector3 vel, float gy, float flight, bool skipLimbs,
                                      out RaycastHit hit, out float hitTime)
         {
             var s = b.S;
@@ -1020,7 +1242,7 @@ namespace FruitLib
                     {
                         if (!Physics.SphereCast(from, FragRadius, sdir, out hit, len - done, s.LayerMask, QueryTriggerInteraction.Ignore))
                             break;
-                        if (!Passed(b, hit.collider))
+                        if (!Skip(b, hit.collider, skipLimbs))
                         {
                             hitTime = prevT + (ft - prevT) * Mathf.Clamp01((done + hit.distance) / len);
                             return true;
@@ -1039,12 +1261,17 @@ namespace FruitLib
 
         /// <summary>Something solid between the charge and <paramref name="p0"/>, plus the sweep's
         /// own radius past it - what the sweep itself would start inside.</summary>
-        private static bool StartBlocked(Blast b, Vector3 p0, Vector3 dir, out RaycastHit hit)
+        private static bool StartBlocked(Blast b, Vector3 p0, Vector3 dir, bool skipLimbs, out RaycastHit hit)
         {
             float len = Vector3.Distance(b.Origin, p0) + FragRadius;
             return Physics.Raycast(b.Origin, dir, out hit, len, b.S.LayerMask, QueryTriggerInteraction.Ignore)
-                   && !Passed(b, hit.collider);
+                   && !Skip(b, hit.collider, skipLimbs);
         }
+
+        /// <summary>Looked past by the sweep: a body this fragment has been through, or any limb
+        /// for a scenery ray (<see cref="Shard.World"/>).</summary>
+        private static bool Skip(Blast b, Collider c, bool skipLimbs)
+            => Passed(b, c) || (skipLimbs && FruitWounds.LimbOf(c) != null);
 
         private static bool Passed(Blast b, Collider c)
         {

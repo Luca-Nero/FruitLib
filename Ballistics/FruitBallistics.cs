@@ -25,6 +25,32 @@ namespace FruitLib
         /// <summary>Explosions only: parts of the spec's <see cref="ExplosionSpec.Features"/> left
         /// out of this one detonation. None (the default) runs the spec as it is.</summary>
         public ExplosionFeatures Disabled;
+        /// <summary>Explosions only: the casing's long axis, for a side-spray belt
+        /// (<see cref="ExplosionSpec.FragBeltDeg"/>). Zero = <see cref="Direction"/>.</summary>
+        public Vector3 Axis;
+    }
+
+    /// <summary>
+    /// Where one detonation's time went (5.8.0), filled in as it runs and readable from
+    /// <see cref="FruitBallistics.LastExplosion"/> right after the spawn call returns.
+    /// </summary>
+    public struct ExplosionStats
+    {
+        public ExplosionSpec Spec;
+        /// <summary>Wall-clock milliseconds: everything, the blast (push, injuries, organs), the
+        /// organ injuries alone, the fragments (tracing and walks), the wound walks alone.</summary>
+        public float TotalMs, BlastMs, OrganMs, FragmentMs, WalkMs;
+        /// <summary>Organ injuries applied, and skipped on limbs already past twice the disruption pressure.</summary>
+        public int Organs, OrgansSkipped;
+        /// <summary>Wound walks by fragments (all kinds: fragments, jet, spall, bone).</summary>
+        public int Walks;
+        /// <summary>Targeted fragments: limbs in reach, expected hits over them, fragments aimed,
+        /// those dropped because another limb was in the way first (that limb's share covers
+        /// them), and hits past <see cref="ExplosionSpec.MaxWalksPerLimb"/> folded into the walks.</summary>
+        public int TargetLimbs, Aimed, Dropped, Folded;
+        public float Expected;
+        /// <summary>Untargeted rays flown (the scenery rays, or the whole field when targeting is off).</summary>
+        public int Rays;
     }
 
     /// <summary>
@@ -388,12 +414,25 @@ namespace FruitLib
         /// <c>SpawnExplosion(id, at, fwd, 0, ExplosionFeatures.All &amp; ~ExplosionFeatures.WallPenetration)</c>.
         /// </summary>
         public static void SpawnExplosion(string specId, Vector3 origin, Vector3 forward, int owner, ExplosionFeatures features)
+            => SpawnExplosion(specId, origin, forward, Vector3.zero, owner, features);
+
+        /// <summary>
+        /// As above, with the casing's long axis for a side-spray belt
+        /// (<see cref="ExplosionSpec.FragBeltDeg"/>): a bomb's flight direction, while
+        /// <paramref name="forward"/> stays what effects are aimed by. Zero = forward.
+        /// </summary>
+        public static void SpawnExplosion(string specId, Vector3 origin, Vector3 forward, Vector3 axis, int owner, ExplosionFeatures features)
             => Request(new BallisticsCommand
             {
                 Kind = BallisticsCommandKind.Explosion, SpecId = specId,
                 Origin = origin, Direction = forward.sqrMagnitude > 0f ? forward.normalized : Vector3.up,
+                Axis = axis.sqrMagnitude > 0f ? axis.normalized : Vector3.zero,
                 Seed = NextSeed(), Owner = owner, Disabled = ExplosionFeatures.All & ~features,
             });
+
+        /// <summary>The most recent detonation's timings and counts (<see cref="ExplosionStats"/>),
+        /// complete once its spawn call has returned.</summary>
+        public static ExplosionStats LastExplosion { get; internal set; }
 
         private static object Request(BallisticsCommand cmd)
         {

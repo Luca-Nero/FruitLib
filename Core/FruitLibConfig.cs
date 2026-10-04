@@ -154,6 +154,9 @@ namespace FruitLib
         [MenuLabel("Effects cull speed"), MenuRange(0, 2)]
         public static float EjectaCullSpeed = 0.4f;
 
+        [MenuLabel("Most rounds in flight"), MenuRange(64, 16384)]
+        public static int MaxLiveRounds = 4096;
+
         public static string IniPath => FruitPaths.Config("FruitLibConfig.ini", typeof(FruitLibConfig).Assembly);
 
         private static readonly Dictionary<string, string> Help = new Dictionary<string, string>
@@ -196,6 +199,7 @@ namespace FruitLib
             ["BloodAtlasRows"]     = "rows in the game's Pixelblood texture atlas",
             ["EjectaTargetFps"]    = "below this frame rate the oldest chunks and splats are removed early",
             ["EjectaCullSpeed"]    = "how aggressively, per frame of shortfall",
+            ["MaxLiveRounds"]      = "most FruitLib rounds in flight at once, every mod's together; past it the oldest is ended. A flechette rocket alone throws over a thousand (5.9.0; was a fixed 512)",
             ["BallisticsProbe"]    ="logs the game's native bullet model: calibre constants once per scene, then power spent, channel and exit tear for every native shot that hits a body. For building the shared projectile API; noisy otherwise",
             ["BallisticsProbeKey"] = "while BallisticsProbe is on: walks the voxels under the crosshair and logs what each would absorb, without damaging anything. With Shift held it also sends the game's own cavitation and exit tear down that path - destructive (None to disable the key)",
 #if FRUITLIB_DEVTOOLS

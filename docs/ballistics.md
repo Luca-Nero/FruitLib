@@ -62,6 +62,8 @@ Everything on the spec is a public field; tweak after creating it. The ones wort
 
 `spec.Clone()` copies one, e.g. to make a subsonic variant.
 
+Rounds in flight are capped, every mod's together, at `MaxLiveRounds` in `FruitLibConfig.ini` (4096; a fixed 512 before 5.9.0). Firing past it ends the oldest round. A flechette rocket throws over a thousand darts at once, which is why the cap went up; a mod that fires that many in one go can set `Velocity` on each round after spawning it (its power follows the speed), so one spec covers darts thrown at different speeds.
+
 ### WoundProfile
 
 Maps onto the game's own bullet constants, in voxel steps (a human voxel is ~23 mm):
@@ -234,7 +236,9 @@ FruitBallistics.SpawnExplosion("MyMod.Grenade", position, forward);
 The physics and wounds of BombsAway's detonation: a blast push, an overpressure shell that
 wounds what's close, and fragments that fly real arcs and wound through the native model with
 power falling off over distance. `MaxWounds` caps the wounds per detonation, and
-`AdaptiveQuality` scales fragment counts down under [frame pressure](perfmon.md).
+`AdaptiveQuality` scales fragment counts down under [frame pressure](perfmon.md). Big cased
+charges can aim their fragments at the limbs in reach instead of flying them blind
+([targeted fragments](#targeted-fragments-and-the-side-spray-belt-580)).
 
 ### Choosing what an explosion does (5.5.0)
 
@@ -297,12 +301,13 @@ far a 2 g fragment at 2700 gets in, straight on: concrete 1 cm, brick 2 cm, stee
 | `FragRicochetEnergyLoss`, `FragRicochetScatter` | Energy lost to a ricochet (0.6) and random deflection in degrees (10) |
 | `FragPowerFalloff` | Power kept per metre of flight, as exp(-x·d) |
 | `FragImpulse` | Push on a body a fragment hits, scaled by the velocity it actually lost there: a fragment that goes through pushes less than one that stops |
-| `JetRays`, `JetConeDeg`, `JetPenetration` | A shaped charge's jet (HEAT), cones only. `JetRays` extra fragments (default 0 = none) fly flat down a `JetConeDeg` cone (3°) round the forward direction. Each goes through `JetPenetration` metres of wall (0.8) at no cost, spread over every wall it meets, and never ricochets while any is left. Past that it penetrates like any fragment. Up to 8 legs. `FragmentTrace.Jet` marks them |
+| `JetRays`, `JetConeDeg`, `JetPenetration` | A shaped charge's jet (HEAT). Since 5.10.0 a full-sphere spec may carry one too (a cluster bomblet: a fragmenting case, targeted fragments and a belt, round a shaped charge); it is always aimed down the detonation's forward. `JetRays` extra fragments (default 0 = none) fly flat down a `JetConeDeg` cone (3°) round the forward direction. Each goes through `JetPenetration` metres of wall (0.8) at no cost, spread over every wall it meets, and never ricochets while any is left. Past that it penetrates like any fragment. Up to 8 legs. `FragmentTrace.Jet` marks them |
 | `JetPower`, `JetWound` | What a jet ray does in a body: its own wound power (30000, two rifle rounds; 0 = `FragPower`) and profile (a crushed core, a big cavity, through bone) |
 | `JetSpallCount`, `JetSpallConeDeg`, `JetSpallPower`, `JetSpallMassGrams`, `JetSpallCraterScale` | Behind-armour spall (scabbing), what kills behind cover. The back of each wall the jet goes through (once per wall) sheds `JetSpallCount` chunks (60) × the material's `SurfaceMaterial.Spall`: concrete 1, brick 1.1, glass 1.2, steel 0.6, wood 0.5, drywall 0.3, soil and water 0. The chunks come off a ragged patch round the exit, whose radius is the hole plus ~0.8× the wall's thickness, times `JetSpallCraterScale`. Chunks from the middle fly fast along the jet; chunks from the rim are slower and splay out to the 60° cone. Sizes are skewed small, averaging `JetSpallMassGrams` (3 g), and power (2500) scales with size and with the power the jet still had. `FragmentTrace.Spall` marks them |
 | `JetMaxWounds` | Wound budget for the jet and its spall (120), kept apart from `MaxWounds`. They are traced last and would otherwise get only what the fragment field left |
 | `BoneFragments`, `BoneFragmentPower`, `BoneFragmentConeDeg` | Secondary fragments of bone. Anything that perforates bone throws up to this many pieces (4) out of the exit wound, in a cone (50°), with power (900) scaled by how hard the hit was. They come out of `SecondaryMaxWounds`, as do the jet and spall |
-| `ChargeKgTNT`, `SurfaceBurstFactor`, `Injury` | Physical overpressure (5.4). The charge in kg of TNT; above 0 it replaces the old radius model. `FruitBlast` works out the blast wave's reflected peak pressure at each limb's nearest point (Hopkinson-Cranz scaling, the Mills fit to Kingery-Bulmash), after cover and the charge's cone. A charge on a surface counts `SurfaceBurstFactor` (1.8) times over. What that pressure does follows `Injury`, a `BlastInjuryProfile`: organ thresholds in kPa (lung 150, stomach 250, brain 450, heart 500, liver 700) bruise the organ's own voxels, and tear it past twice the threshold. Visible damage on the side facing the charge starts at `SurfaceKPa` (1200); past `DisruptionKPa` (6000, contact range) the limb comes apart from inside. Thresholds rise for small charges, whose short blast the body tolerates better. Organ damage goes through the game's own pain and cognition. With the probe on, each organ injury is logged with its durability before and after. With a charge the shockwave push is physical too: the blast wave's reflected impulse times each body's frontal area, divided by its mass, scaled by `BlastPushScale` (1). `BlastForce`, `BlastUpward` and `BlastRadius` then no longer apply. Organs are looked up in the background, one per frame, once any spec with a charge is registered, so the first blast near a ragdoll doesn't hitch |
+| `ChargeKgTNT`, `SurfaceBurstFactor`, `Injury` | Physical overpressure (5.4). The charge in kg of TNT; above 0 it replaces the old radius model. `FruitBlast` works out the blast wave's reflected peak pressure at each limb's nearest point (Hopkinson-Cranz scaling, the Mills fit to Kingery-Bulmash), after cover and the charge's cone. A charge on a surface counts `SurfaceBurstFactor` (1.8) times over. "On a surface" is within 0.35 m of something solid; with `SurfaceBurstScaledHeight` above 0 (5.10.0, off by default) a burst that many m/kg^⅓ over the ground counts too, since for a big charge a few metres up is ground level (0.15: about 3 m for 11 t of TNT). What that pressure does follows `Injury`, a `BlastInjuryProfile`: organ thresholds in kPa (lung 150, stomach 250, brain 450, heart 500, liver 700) bruise the organ's own voxels, and tear it past twice the threshold. Visible damage on the side facing the charge starts at `SurfaceKPa` (1200); past `DisruptionKPa` (6000, contact range) the limb comes apart from inside. Thresholds rise for small charges, whose short blast the body tolerates better. Organ damage goes through the game's own pain and cognition. With the probe on, each organ injury is logged with its durability before and after. With a charge the shockwave push is physical too: the blast wave's reflected impulse times each body's frontal area, divided by its mass, scaled by `BlastPushScale` (1). `BlastForce`, `BlastUpward` and `BlastRadius` then no longer apply. Organs are looked up in the background, one per frame, once any spec with a charge is registered, so the first blast near a ragdoll doesn't hitch |
+| `MaxPushRange`, `MaxInjuryRange` | With a charge, how far out the blast wave is swept for bodies to push (40 m) and limbs to injure (60 m), metres (5.7.0). The push reaches out to about 3 kPa, which for a 2000 lb bomb is about 270 m: raise these per spec for big charges, keep them at the arena that matters |
 | `OverpressureBudgetShare` | Most of `MaxWounds` the overpressure may use (0.4), spread point by point over every limb in range, so a crowd can't use up the whole budget before a single fragment cuts |
 
 The player's `WallPenetration` and `PenetrationScale` settings ([below](#player-settings)) apply
@@ -311,6 +316,54 @@ to fragments as they do to rounds; with walls off, a fragment only ricochets or 
 Fragments do not raise `SurfaceHit`, whose handlers expect a `Projectile`, and `BeforeSurfaceHit`
 does not steer them. Use `FragmentTraced` ([below](#events-where-your-visuals-go)) to see where
 they went.
+
+### Targeted fragments and the side-spray belt (5.8.0)
+
+A plain fragment field is a set of evenly spread rays. Even spreading still leaves gaps: at 2,000
+rays neighbouring rays are about 0.8 m apart at 20 m and 2 m apart at 50 m, so a body there is
+often missed outright, and every ray that does land costs a wound walk (about 1 ms each). Big
+cased charges (bombs) need thousands of real fragments, and flying them all blind is both patchy
+and slow.
+
+With `FragTargeted` above 0 (full-sphere specs only), fragments are aimed instead. Every limb
+within reach gets the share of `FragTargeted` real fragments that the case would put into it:
+the area its bounding box shows the charge (× 0.6, for the limb inside its box) over 4πr², shaped
+by the belt below. The fraction is settled by a random draw, so a limb expecting 0.3 hits is hit
+three times in ten. That many fragments are aimed at points on the limb, along the flat arc that
+reaches it at `FragSpeed`, and flown with the usual physics: walls, cover, ricochets and
+pass-through all still apply. Until it ricochets, a fragment only counts on the first limb it
+meets. If something else is in the way it is dropped, because that limb's own share already
+covers the direction. Coverage no longer depends on a ray count, and the cost follows the real
+number of hits.
+
+`FragCount` then sets the untargeted **scenery rays**: they hit walls and props, throw debris and
+draw in debug views, but go through bodies without wounding or pushing them.
+
+| Field | What it does |
+|---|---|
+| `FragTargeted` | The case's real fragment count. 0 = off (plain rays, as before) |
+| `FragTargetRange` | How far out limbs get their share, metres. 0 = where fragments are down to 5 % of their power (from `FragPowerFalloff`), at most 200, and never past `FragSpeed × FragMaxTime` |
+| `MaxWalksPerLimb` | Most wound walks one limb gets from one detonation (0 = no limit), any explosion. Near a big charge a limb can draw dozens of hits. Past the cap the extra hits still push, and add their power to the walks it gets (up to 4× each). A limb the blast is already blowing apart (ten times its disruption pressure) gets one targeted walk at most. Under [frame pressure](perfmon.md) `AdaptiveQuality` lowers this cap, not the coverage |
+| `FragBeltDeg`, `FragBeltShare` | A side-spray belt. A cased bomb throws most of its case out square to its long axis. Above 0, `FragBeltShare` (0.8) of the fragments leave within a band this many degrees thick (in total) round the plane square to the axis; the rest are spread over the whole sphere (nose and tail spray). Applies to targeted fragments and plain rays alike. Full-sphere specs only. The axis comes with the detonation (below) |
+
+The axis is the casing's long axis, passed separately from `forward` so that effects can stay
+aimed by the surface normal:
+
+```csharp
+FruitBallistics.SpawnExplosion("MyMod.Bomb", at, groundNormal, bombVelocity, owner: 0, ExplosionFeatures.All);
+```
+
+It travels in `BallisticsCommand.Axis` (zero = `forward`). A bomb coming in steeply lays its belt
+nearly flat across its path and tilts it along the path, so its lethal area is wider across than
+along, as a real one's is (the Mk 82's is about 80 × 30 m).
+
+#### Where the time went: `FruitBallistics.LastExplosion`
+
+Every detonation fills an `ExplosionStats`, readable right after the spawn call returns: total,
+blast, organ, fragment and wound-walk milliseconds, organ injuries applied and skipped, walks, and
+for targeted fragments the limbs in reach, expected hits, fragments aimed, dropped and folded,
+plus scenery rays. Organ injury is skipped on a limb at ten times its disruption pressure, where
+the disruption bursts take its core anyway (`OrgansSkipped`).
 
 ### Blast cover
 

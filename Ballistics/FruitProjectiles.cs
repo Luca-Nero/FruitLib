@@ -23,7 +23,8 @@ namespace FruitLib
     /// </summary>
     internal static class FruitProjectiles
     {
-        private const int MaxRounds = 512;
+        /// <summary>Rounds in flight at once (<see cref="FruitLibConfig.MaxLiveRounds"/>, 5.9.0; was a fixed 512).</summary>
+        private static int MaxRounds => Mathf.Max(64, FruitLibConfig.MaxLiveRounds);
 
         /// <summary>Ejecta chunks sit on Ignore Raycast; rounds should not hit them.</summary>
         private const int HitMask = ~(1 << 2);
@@ -79,12 +80,12 @@ namespace FruitLib
                 var r = _rounds[i];
                 try
                 {
-                    if (!Step(r, dt)) End(_rounds.IndexOf(r));
+                    if (!Step(r, dt)) End(IndexOf(r, i));
                 }
                 catch (Exception e)
                 {
                     MelonLogger.Warning($"[FruitBallistics] round {r.Spec?.Id} failed and was removed: {e.Message}");
-                    End(_rounds.IndexOf(r));
+                    End(IndexOf(r, i));
                 }
             }
         }
@@ -434,6 +435,14 @@ namespace FruitLib
             => Vector3.Dot(dir, normal) < 0.02f
                 ? (Vector3.ProjectOnPlane(dir, normal).normalized + normal * 0.05f).normalized
                 : dir;
+
+        /// <summary>
+        /// Where <paramref name="r"/> is now: almost always still at <paramref name="hint"/>, its
+        /// index when the step began (a listener may have ended or fired rounds since). A search
+        /// from the front for each of a thousand darts ending in one frame is what this avoids.
+        /// </summary>
+        private static int IndexOf(Projectile r, int hint)
+            => hint >= 0 && hint < _rounds.Count && _rounds[hint] == r ? hint : _rounds.IndexOf(r);
 
         private static void End(int index)
         {

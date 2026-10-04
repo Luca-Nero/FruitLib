@@ -341,10 +341,25 @@ namespace FruitLib
         /// <summary>On or against a surface the charge's wave is thrown back off it: this many times
         /// the charge (1.8 is the usual figure for a burst on the ground).</summary>
         public float SurfaceBurstFactor = 1.8f;
+        /// <summary>
+        /// A burst this low over the ground also counts as a surface burst, as a scaled height,
+        /// m/kg^⅓ (5.10.0). For a big charge a few metres up is ground level: the wave off the
+        /// ground merges with the direct one at once. 0.15 makes it ~3 m for 11 t of TNT and
+        /// under a metre for 200 kg. 0 = only on or against something (within 0.35 m), as before.
+        /// </summary>
+        public float SurfaceBurstScaledHeight = 0f;
         /// <summary>With a charge, the shockwave push is the blast wave's impulse over each body's
         /// frontal area and mass (<see cref="BlastForce"/> and <see cref="BlastRadius"/> no longer
         /// apply); this scales it. 1 = physical.</summary>
         public float BlastPushScale = 1f;
+        /// <summary>With a charge, the farthest the blast wave pushes anything, metres. The push
+        /// reaches out to ~3 kPa, which for a big bomb is hundreds of metres (a 2000 lb bomb's
+        /// ~270 m); this keeps the sweep for bodies to the arena that matters. Raise it for big
+        /// charges (5.7.0).</summary>
+        public float MaxPushRange = 40f;
+        /// <summary>With a charge, the farthest the blast wave is checked for injuries, metres
+        /// (the lowest injury threshold sets the reach below this; 5.7.0).</summary>
+        public float MaxInjuryRange = 60f;
         /// <summary>Pressure thresholds for each kind of injury. <see cref="DamageScale"/> scales the
         /// pressure the body is judged at.</summary>
         public BlastInjuryProfile Injury = new BlastInjuryProfile();
@@ -380,6 +395,38 @@ namespace FruitLib
         public float FragRicochetEnergyLoss = 0.6f;
         /// <summary>Random deflection off a ricochet, degrees. Fragments are not round.</summary>
         public float FragRicochetScatter = 10f;
+
+        /// <summary>
+        /// Targeted fragments (5.8.0, full-sphere specs only): the case's real fragment count.
+        /// Above 0, fragments are no longer flown blind. Every limb in reach gets its expected
+        /// share of this many, count x (its area seen from the charge) / (4π r²) shaped by the
+        /// belt below, rounded with a random draw, and that many are aimed at it and flown
+        /// with the usual physics: walls, cover, ricochets and pass-through all still apply.
+        /// A fragment only counts on the first limb it meets (until it ricochets), so one
+        /// standing behind another isn't hit twice. Coverage stops depending on a ray count,
+        /// and the cost follows the hits. <see cref="FragCount"/> then becomes the untargeted
+        /// rays for the scenery (walls, props, debris, the debug draw), which go through
+        /// bodies without wounding them. 0 = off: <see cref="FragCount"/> rays as before.
+        /// </summary>
+        public int   FragTargeted = 0;
+        /// <summary>Targeted fragments: how far out limbs get their share, metres. 0 = where the
+        /// fragments are down to 5 % of their power (from <see cref="FragPowerFalloff"/>), at most 200.</summary>
+        public float FragTargetRange = 0f;
+        /// <summary>
+        /// Most wound walks one limb gets from one detonation; 0 = no limit. Near the charge a limb
+        /// can draw dozens of hits, and every walk costs. Past this many the extra hits still push,
+        /// and add their power to the walks it does get (up to 4x each).
+        /// </summary>
+        public int   MaxWalksPerLimb = 0;
+        /// <summary>
+        /// A side-spray belt (5.8.0): a cased bomb throws most of its case out square to its axis.
+        /// Above 0, <see cref="FragBeltShare"/> of the fragments leave within a band this many
+        /// degrees thick (in total) round the plane square to the axis given at detonation, the
+        /// rest over the whole sphere. Full-sphere specs only. 0 = an even sphere.
+        /// </summary>
+        public float FragBeltDeg = 0f;
+        /// <summary>Share of the fragments in the belt, 0..1; the rest are nose and tail spray.</summary>
+        public float FragBeltShare = 0.8f;
 
         // Shaped-charge jet (HEAT). Off at 0 rays.
         /// <summary>Extra fragments fired straight down <see cref="JetConeDeg"/> around the forward
