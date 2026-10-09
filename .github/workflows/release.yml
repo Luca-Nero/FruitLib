@@ -17,6 +17,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: main
+          fetch-depth: 0
 
       - name: Checkout ModRefs
         uses: actions/checkout@v4
@@ -44,8 +45,35 @@ jobs:
           mkdir release
           cp bin/Release/*/*.dll release/
 
+      - name: Generate Changelog
+        shell: pwsh
+        working-directory: main
+        run: |
+          $current = "${{ github.ref_name }}"
+          $previous = git tag --sort=-version:refname |
+            $previous = git tag --merged $current --sort=-version:refname |
+          Where-Object {
+            $_ -match '^v\d+\.\d+\.\d+$' -and
+            [version]($_ -replace '^v', '') -lt [version]($current -replace '^v', '')
+          } |
+          Select-Object -First 1
+
+          if ($previous) {
+            $commits = git log "$previous..$current" --pretty=format:"- %s"
+          } else {
+            $commits = git log $current --pretty=format:"- %s"
+          }
+
+          $notes = @(
+            "## Changes in $current"
+            ""
+            $commits
+          )
+
+          $notes | Set-Content release-notes.md
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: main/release/*.dll
-          generate_release_notes: true
+          body_path: main/release-notes.md
