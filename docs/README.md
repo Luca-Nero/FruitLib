@@ -9,22 +9,25 @@ models, shaders and decals through Unity AssetBundles.
 FruitLib is itself a MelonMod. Your mod references it at build time and expects
 it in the `Mods` folder at runtime.
 
-**Current version: 5.10.1**. Starting a new mod? Copy the files in [`Templates/`](../Templates/README.md).
+**Current version: 5.10.2**. Starting a new mod? Copy the files in [`Templates/`](../Templates/README.md).
 
 ## Guides
 
 | Guide | What it covers |
 |---|---|
-| [Config & menu](config-and-menu.md) | Config classes, the in-game settings tab, ini files, input gating |
+| [Config & menu](config-and-menu.md) | Config classes, the in-game settings page, ini files, input gating |
 | [HUD](hud.md) | On-screen readouts, stacked and positioned for you |
-| [Performance monitor](perfmon.md) | A per-mod debug overlay: counters, timers and live values (5.0) |
-| [Inventory](inventory.md) | Custom items in the inventory window, by category |
+| [Performance monitor](perfmon.md) | A per-mod debug overlay: counters, timers and live values |
+| [Inventory](inventory.md) | Custom items in the inventory window, on the game's shelves or your own |
 | [Sound](sound.md) | The game's own sound effects, and its interface sounds |
-| [Ballistics](ballistics.md) | Projectiles and explosions through the game's wound model, multiplayer-ready (3.1.0). Fragments that ricochet and penetrate, and blast cover (5.4.0). Per-part explosion switches (5.5.0). Per-spec blast reach for big bombs (5.7.0). Targeted fragments, side-spray belt, walk cap per limb, timings per detonation (5.8.0). Live-round cap as a setting (5.9.0). Jets on full-sphere specs, low air bursts as surface bursts (5.10.0) |
-| [AssetBundles](BUNDLES.md) | Custom models, shaders, animation and decals built in the Unity editor (3.2.0) |
-| [World menu](world-menu.md) | Know when the player used the terminal's World > SCENE resets, and add buttons of your own to that page (5.5.0) |
+| [Ballistics](ballistics.md) | Projectiles and explosions through the game's wound model, multiplayer-ready: surface penetration and ricochet, physical blast overpressure and cover, fragments, shaped-charge jets |
+| [AssetBundles](BUNDLES.md) | Custom models, shaders, animation and decals built in the Unity editor |
+| [World menu](world-menu.md) | Know when the player used the terminal's World > SCENE resets, and add buttons of your own to that page |
 | [Utilities](utilities.md) | `FruitLog`, `FruitPaths`, `FruitScene`, `FruitForces`, `FruitUpdateCheck` |
 | [Meshes](meshes.md) | The older `*_mesh.json` loader (schema in [`MESH_FORMAT.md`](MESH_FORMAT.md)). Prefer bundles for new work |
+
+Each guide notes the version that added a feature, so you can pick the minimum
+FruitLib your mod needs.
 
 ## Setup
 
@@ -43,16 +46,26 @@ you need.
 
 ## Requiring a version
 
-Call something a user's older FruitLib doesn't have and they get a
-`MissingMethodException` at startup accurate, and useless to them.
-`FruitVersion.Require` turns that into a log line naming your mod, the version it
-needs and the version present:
+Call something a user's older FruitLib doesn't have, or start without FruitLib at
+all, and they get a `MissingMethodException` or `TypeLoadException` at startup:
+accurate, and useless to them. Copy [`Templates/FruitGate.cs`](../Templates/FruitGate.cs)
+into your mod (change only the namespace) and check before anything touches FruitLib:
 
 ```csharp
+[assembly: MelonOptionalDependencies("FruitLib")]
+
+private bool _active;
+
 public override void OnInitializeMelon()
 {
-    if (!FruitVersion.Require("MyMod", 1, 2)) return;
-    Init();
+    _active = FruitGate.Check("MyMod", 5, 5, 0);   // the oldest FruitLib you build against
+    if (_active) Init();
+}
+
+public override void OnLateInitializeMelon()
+{
+    if (_active) return;
+    try { Unregister(FruitGate.FailureReason, silent: true); } catch { }
 }
 
 [MethodImpl(MethodImplOptions.NoInlining)]
@@ -63,31 +76,23 @@ private void Init()
 }
 ```
 
+If FruitLib is missing or too old, the log names your mod, the version it needs and
+what it found, and your mod unregisters instead of crashing.
+
 **The split into two methods is load-bearing, not style.** A method's member
-references are resolved when the JIT compiles it, so a `Require` call sitting in
-the same method as the API it guards never runs the whole method fails to
-compile first, and you get the raw exception anyway. `[MethodImpl(NoInlining)]`
-stops the JIT folding `Init` back in and recreating the problem.
+references are resolved when the JIT compiles it, so a check sitting in the same
+method as the API it guards never runs: the whole method fails to compile first, and
+you get the raw exception anyway. `[MethodImpl(NoInlining)]` stops the JIT folding
+`Init` back in and recreating the problem. The same goes for every other method that
+touches FruitLib and runs before the gate has passed (an `OnUpdate` body, say): give
+it its own `NoInlining` method, as `Templates/Core.cs` does. `FruitGate` itself reads
+the version by reflection and references no FruitLib type, which is why it works
+against any install.
 
-Also available: `FruitVersion.Current`, `.Major`, `.Minor`, `.Patch`, and
-`AtLeast(major, minor, patch)` if you'd rather degrade a feature than bail out.
-
-### The gap this doesn't close
-
-`Require` is itself a FruitLib API, so it can't protect against a FruitLib older
-than 1.2.0, on 1.1.0 the guard call is the thing that throws. It covers 1.2.0
-and up.
-
-To be robust against *any* installed version, ask MelonLoader instead and touch
-no FruitLib type at all:
-
-```csharp
-var fl = MelonBase.FindMelon("FruitLib", "Luca_Nero");
-if (fl == null) { LoggerInstance.Error("FruitLib is not installed."); return; }
-// fl.Info.Version is the version string, e.g. "1.2.0"
-```
-
-Worth the extra few lines only if you expect users on much older installs.
+Once the gate has passed, `FruitVersion.Current`, `.Major`, `.Minor`, `.Patch` and
+`AtLeast(major, minor, patch)` are safe to use if you'd rather degrade a feature than
+bail out. `FruitVersion.Require` still compiles but is `[Obsolete]`: it is itself a
+FruitLib call, so it can't report a FruitLib that isn't there.
 
 ## A minimal mod
 
@@ -111,13 +116,13 @@ namespace MyMod
             ConfigLoader.Load();                    // your own ini reader, see the config guide
             FruitMenu.Register("MyMod", ConfigLoader.IniPath, typeof(Config), ConfigLoader.Write);
             _hud = FruitHud.Register("MyMod", BuildHud);
-            FruitPerfMon.RegisterCounter("MyMod Things", () => _things.Count);
+            FruitPerfMon.For("MyMod").Counter("Things", () => _things.Count);
         }
 
         public override void OnUpdate()
         {
-            // Skip input while the menu is open, or keys pressed in it fire game actions
-            if (FruitMenu.IsInputSuppressed) return;
+            // Skip input while paused or in a menu, or keys pressed there fire game actions
+            if (FruitMenu.BlocksGameplayInput) return;
             if (Input.GetKeyDown(Config.DoThingKey)) DoThing();
         }
 
@@ -127,9 +132,9 @@ namespace MyMod
 }
 ```
 
-Shown without a version guard for brevity. Wrap the body as described in
-[Requiring a version](#requiring-a-version) before shipping to anyone whose
-FruitLib you don't control.
+Shown without the version gate for brevity. Wrap it as described in
+[Requiring a version](#requiring-a-version), or start from `Templates/Core.cs`,
+which already is, before shipping to anyone whose FruitLib you don't control.
 
 Registration order between mods doesn't matter, every `Register` call is just a
 list append, so it's safe whether FruitLib's own `OnInitializeMelon` has run yet
@@ -177,12 +182,17 @@ Avoid these in your own defaults (all rebindable by the player):
 |---|---|---|
 | F8 | Hide / show all mod HUD panels | on |
 | F11 | Performance overlay; Shift: next view, Ctrl: reset peaks | on |
-| F6 / F7 / F10 | Ballistics / menu / bundle diagnostics | only when their `*Probe` setting is on |
+| F6 / F7 / F10 | Ballistics / menu / bundle diagnostics (F10 also with Shift and Ctrl) | only when their `*Probe` setting is on |
 
 ## Conventions worth matching
 
-- **Gate on `FruitMenu.IsInputSuppressed`, not `IsOpen`**. The former also covers
-  the frame the menu closes on.
+- **Gate on `FruitMenu.BlocksGameplayInput`, not `IsOpen`**. It also covers the
+  pause screen, the game's own menus (terminal, context menus), and the frame any
+  of them closes on.
+- **Don't call `PatchAll`**. MelonLoader already applies every `[HarmonyPatch]` in
+  your assembly; calling it again installs each hook twice.
+- **Routine log lines go through [`FruitLog.Info`](utilities.md#fruitlog)**, so they
+  stay quiet unless the player turned on *Verbose log*.
 - **Don't implement `OnGUI`**. Use [`FruitHud`](hud.md) so your readout stacks
   with everyone else's instead of fighting for a corner.
 - **Keep per-frame callbacks cheap**. HUD builders and PerfMon counter getters

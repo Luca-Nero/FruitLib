@@ -110,8 +110,9 @@ click-to-type numeric entry. Nothing is unreachable by being left off the native
 page.
 
 That panel is also the fallback if the native menu cannot be built at all. If a
-game update moves the pause menu out from under FruitLib, the MODS button opens
-the panel directly and your settings keep working.
+game update moves the pause menu out from under FruitLib, a **Mod Settings**
+button is drawn in the top-left corner while paused, it opens the panel, and your
+settings keep working.
 
 ## Action buttons
 
@@ -193,7 +194,7 @@ While the menu is open, the game is still running and still reading input. Gate
 your own key handling:
 
 ```csharp
-if (!FruitMenu.IsInputSuppressed)
+if (!FruitMenu.BlocksGameplayInput)
 {
     if (Input.GetKeyDown(Config.DoThingKey)) DoThing();
 }
@@ -204,10 +205,11 @@ if (!FruitMenu.IsInputSuppressed)
 | `FruitMenu.IsOpen` | The menu is showing |
 | `FruitMenu.JustClosed` | True for exactly one frame after it closes |
 | `FruitMenu.GameMenuOpen` | One of the game's own menus is open: the terminal (items / world), a context menu (5.5.0) |
-| `FruitMenu.IsInputSuppressed` | Any of the above, or a game menu closed this frame or the last — so **use this one**. Since 5.5.0 it covers the game's menus too, so clicking in the terminal no longer reaches a mod's held item |
+| `FruitMenu.IsInputSuppressed` | Any of the above, or a game menu closed this frame or the last. Since 5.5.0 it covers the game's menus too, so clicking in the terminal no longer reaches a mod's held item |
 | `FruitMenu.IsGamePaused` | The game's pause menu is up, ours or not |
-| `FruitMenu.BlocksGameplayInput` | Paused, or in or just out of the mod menu |
+| `FruitMenu.BlocksGameplayInput` | `IsGamePaused` or `IsInputSuppressed`, so **use this one** for gameplay keys (the template does) |
 
+Use `IsInputSuppressed` only for a key that should still work on the pause screen.
 `JustClosed` exists because the keypress that dismisses the menu would otherwise
 fire a game action on the same frame. Checking only `IsOpen` reintroduces that
 bug.

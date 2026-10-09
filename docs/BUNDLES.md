@@ -3,8 +3,8 @@
 `FruitLib.FruitBundle` loads Unity AssetBundles: real prefabs with textures, colliders and
 rigidbodies, built in the Unity editor. It replaces the `*_mesh.json` path for anything new.
 
-Added in **3.2.0**; gate with `FruitVersion.Require("MyMod", 3, 2)`. Never used Unity? Start
-with the [editor walkthrough](EDITOR_WALKTHROUGH.md).
+Added in **3.2.0**; gate with `FruitGate.Check("MyMod", 3, 2, 0)` (see
+[Requiring a version](README.md#requiring-a-version)).
 
 Why this works although `dump.cs` shows `AssetBundle.LoadFromFile` stripped: UnityPlayer.dll
 still registers the native loaders, and `AssetBundleNative` calls them directly.
@@ -112,7 +112,7 @@ and restart the game without rebuilding the mod.
 | `FruitNative.SetInteger`, `SetController` | Animator methods the game stripped |
 | `FruitNative.SetBlendShapeWeight` / `GetBlendShapeWeight` | Blend shapes, likewise |
 | `FruitNative.LoadImage(tex, bytes)` | `ImageConversion.LoadImage`, whose wrapper throws on Release (5.5.1) |
-| `FruitDecals.Ensure()` / `Place(...)` | Decals (see below) |
+| `FruitDecals.Ensure()` / `Place(...)` | Decals (see below); `Active` / `LastError` say whether the feature is up, and why not |
 
 Loading the same bundle twice returns the already-open one rather than failing, as a
 second Unity load would.
@@ -198,8 +198,8 @@ if (Physics.Raycast(ray, out var hit))
 ```
 
 Decal materials come from bundles (the game has no decal shader): create one in Unity with
-**Create → Material**, shader **Shader Graphs/Decal**, assign *Base Map* (step by step in the
-[walkthrough](EDITOR_WALKTHROUGH.md#6-a-decal-material-user_decals)). FruitBundleBuilder adds
+**Create → Material**, shader **Shader Graphs/Decal**, assign *Base Map*, give it an AssetBundle
+name and build. FruitBundleBuilder adds
 a Screen Space Decal feature to the Unity project's renderers before every build (or use
 **FruitLib → Enable Decals In Project**). Without it, Unity strips the `DecalScreenSpaceProjector`
 pass from the material and nothing draws.

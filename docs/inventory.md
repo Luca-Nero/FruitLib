@@ -40,9 +40,26 @@ later.
 
 Names are matched loosely: case, spaces, punctuation and a trailing "Category" are
 ignored. So `"Weapons"`, `"weapon"` and `"WeaponCategory"` all find the same shelf. A
-string that names a category a future build adds works without a FruitLib update. An
-unknown name is filed under Etc, and the log names the categories that do exist.
+string that names a category a future build adds works without a FruitLib update, and so
+does the name of a mod's own shelf ([below](#a-shelf-of-your-own)). An unknown name is
+filed under Etc, and the log names the categories that do exist.
 `FruitInventory.Categories` lists them at runtime.
+
+### A shelf of your own
+
+```csharp
+FruitInventory.AddCategory("Bombs Away", FruitIcons.Load(asm, "Icons/Category.png"), "Explosives and launchers.");
+FruitInventory.AddItem(new FruitItem { Id = "BombsAway:C4", Name = "C4", Category = "Bombs Away" });
+```
+
+`AddCategory(name, icon, description)` adds a shelf after the game's four, with its own
+square in the window's category strip (a grey disc if `icon` is null). Call it from
+`OnInitializeMelon`, before adding its items; items join it by putting its name in
+`Category`, matched loosely like the game's. Adding a name that is already a mod's shelf
+returns that shelf, so mods can share one. The game's own four can't be added again:
+that logs a warning and returns null. `FruitInventory.CustomCategories` lists the mod
+shelves, and `FruitCategory.InLayout` says whether one made it into the window. If it
+can't be built, its items fall back to Etc with a warning.
 
 ### Full control
 
@@ -140,7 +157,10 @@ For whoever has to fix this after a game update. The bodies are in
   therefore only ever uses the game's own category assets. It harvests them from the native
   items at boot, then swaps to the layout's own list in a prefix on
   `RefuseLayoutThatCannotBeDrawn`, correcting any registered item there before the check
-  runs.
+  runs. A mod shelf is a category asset of the game's own type, built at runtime and
+  appended to the layout's `m_categories` in that same prefix, so it is accepted by
+  reference like the native four. The window draws one square per category from an
+  authored strip and throws past its end, so FruitLib grows the strip to match.
 - **Prefab names.** `PrefabID.Validate` rejects `_`. FruitLib registers under
   `FruitLib` + the id's letters and digits, then writes the display name into the
   descriptor and into the data's snapshot.
@@ -172,7 +192,7 @@ when something breaks.
   native weapon. It is a held object with your callbacks. Use FruitBallistics for shooting.
 - **No shelf position control.** Items the game gives a manual shelf priority come first,
   then the rest by name. FruitLib items are in the second group.
-- **Items cannot be removed** once registered, only renamed.
+- **Items and shelves cannot be removed** once registered; items can only be renamed.
 
 ## Migrating from FruitToolbar
 

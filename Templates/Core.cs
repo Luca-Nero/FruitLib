@@ -25,7 +25,7 @@ namespace MyMod
         public const string Version = "1.0.0";
 
         // The oldest FruitLib this mod is built against.
-        private const int LibMajor = 5, LibMinor = 2, LibPatch = 0;
+        private const int LibMajor = 5, LibMinor = 5, LibPatch = 0;   // 5.5.0: CaptureDefaults
         private bool _active;
 
         private static ModPerf _perf;

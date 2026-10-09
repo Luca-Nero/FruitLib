@@ -25,7 +25,7 @@ Useful members of `UISFXType`:
 | `WindowOpenClose` | A window appearing or going away |
 | `HintButtonClick` | Hint prompts |
 
-FruitLib already plays these for its own menu and for toolbar slot changes — you
+FruitLib already plays these for its own menu and its World menu buttons, so you
 do not need to play them for anything FruitLib draws.
 
 ## Gameplay sounds
