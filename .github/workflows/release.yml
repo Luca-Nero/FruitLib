@@ -44,7 +44,7 @@ jobs:
         run: |
           mkdir release
           cp bin/Release/*/*.dll release/
-          
+
       - name: Generate Changelog
         shell: pwsh
         working-directory: main
@@ -70,8 +70,7 @@ jobs:
             ""
             $commits
           )
-
-    $notes | Set-Content release-notes.md
+          $notes | Set-Content release-notes.md
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
