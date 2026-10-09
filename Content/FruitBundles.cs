@@ -30,10 +30,21 @@ namespace FruitLib
         private static readonly Dictionary<string, FruitBundle> _open =
             new Dictionary<string, FruitBundle>(StringComparer.OrdinalIgnoreCase);
 
+        // Async loads started and not yet read back, by path. The native request outlives the
+        // coroutine that started it: a coroutine stopped mid-load (MelonCoroutines.Stop never
+        // disposes it) leaves its request here, and the next load of that file - async or not -
+        // takes it over instead of starting a second load Unity would refuse as already loaded.
+        private static readonly Dictionary<string, IntPtr> _pending =
+            new Dictionary<string, IntPtr>(StringComparer.OrdinalIgnoreCase);
+
         /// <summary>Loads a bundle file from disk. Null (with a warning) if it fails.</summary>
         public static FruitBundle FromFile(string path)
         {
             if (_open.TryGetValue(path, out var open) && open.Bundle != null) return open;
+
+            // Reading the bundle of an unfinished request completes it there and then.
+            if (_pending.TryGetValue(path, out IntPtr op)) return FinishAsync(path, op);
+
             if (!File.Exists(path)) { MelonLogger.Warning($"[FruitBundle] No bundle at '{path}'."); return null; }
 
             AssetBundle ab;
@@ -95,19 +106,50 @@ namespace FruitLib
         public static IEnumerator FromFileAsync(string path, Action<FruitBundle> done)
         {
             if (_open.TryGetValue(path, out var open) && open.Bundle != null) { done?.Invoke(open); yield break; }
-            if (!File.Exists(path)) { MelonLogger.Warning($"[FruitBundle] No bundle at '{path}'."); done?.Invoke(null); yield break; }
 
-            IntPtr op;
-            try { op = AssetBundleNative.BeginLoadFromFileAsync(path); }
-            catch (Exception e) { MelonLogger.Warning($"[FruitBundle] LoadFromFileAsync threw for '{path}': {e.Message}"); done?.Invoke(null); yield break; }
-            if (op == IntPtr.Zero) { done?.Invoke(null); yield break; }
+            // A load of this file already under way - still running, or abandoned: wait on it.
+            if (!_pending.TryGetValue(path, out IntPtr op))
+            {
+                if (!File.Exists(path)) { MelonLogger.Warning($"[FruitBundle] No bundle at '{path}'."); done?.Invoke(null); yield break; }
 
-            while (!AssetBundleNative.IsDone(op)) yield return null;
+                try { op = AssetBundleNative.BeginLoadFromFileAsync(path); }
+                catch (Exception e) { MelonLogger.Warning($"[FruitBundle] LoadFromFileAsync threw for '{path}': {e.Message}"); done?.Invoke(null); yield break; }
+                if (op == IntPtr.Zero) { done?.Invoke(null); yield break; }
+                _pending[path] = op;
+            }
+
+            FruitBundle result;
+            try
+            {
+                // Another waiter on the same request may read it back first; then it is gone
+                // from _pending and must not be polled again.
+                while (IsPending(path, op) && !AssetBundleNative.IsDone(op)) yield return null;
+            }
+            finally
+            {
+                // Also on Dispose part-way through: the request is read back and destroyed, and
+                // the bundle registered, rather than left native and unaccounted for.
+                result = FinishAsync(path, op);
+            }
+            done?.Invoke(result);
+        }
+
+        private static bool IsPending(string path, IntPtr op) => _pending.TryGetValue(path, out var p) && p == op;
+
+        /// <summary>
+        /// Reads a request back exactly once, destroys it and registers the bundle. A waiter that
+        /// finds it already read gets whatever that produced.
+        /// </summary>
+        private static FruitBundle FinishAsync(string path, IntPtr op)
+        {
+            if (!IsPending(path, op))
+                return _open.TryGetValue(path, out var open) && open.Bundle != null ? open : null;
+            _pending.Remove(path);
 
             AssetBundle ab = null;
             try { ab = AssetBundleNative.EndLoadFromFileAsync(op); }
             catch (Exception e) { MelonLogger.Warning($"[FruitBundle] async result threw for '{path}': {e.Message}"); }
-            done?.Invoke(Register(path, Path.GetFileName(path), ab));
+            return Register(path, Path.GetFileName(path), ab);
         }
 
         private static FruitBundle Register(string key, string name, AssetBundle ab)

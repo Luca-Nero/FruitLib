@@ -29,6 +29,7 @@ namespace FruitLib
             for (int i = 0; i < _panels.Count; i++)
             {
                 if (_panels[i].Name != name) continue;
+                FruitHudNative.Forget(_panels[i]);
                 _panels[i] = handle;
                 Sort();
                 return handle;
@@ -45,6 +46,7 @@ namespace FruitLib
             for (int i = 0; i < _panels.Count; i++)
             {
                 if (_panels[i].Name != name) continue;
+                FruitHudNative.Forget(_panels[i]);
                 _panels.RemoveAt(i);
                 return;
             }

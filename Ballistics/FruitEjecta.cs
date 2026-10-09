@@ -112,70 +112,74 @@ namespace FruitLib
             var node = _chunks.AddLast(handle);
             IgnoreChunkCollisions();
 
-            // A beat before the collider comes on, so it does not collide with the body it
-            // is leaving; and then never with that body at all.
-            yield return new WaitForSeconds(0.1f);
-            if (go == null || handle.Evict) { Finish(node, go, mat); yield break; }
-            if (box != null)
+            // Finish runs however the chunk ends - a throw from any frame included - or the
+            // node stays queued and the layer cell stays flipped for the rest of the session.
+            try
             {
-                box.enabled = true;
-                if (ownBody != null) foreach (var c in ownBody) if (c != null) Physics.IgnoreCollision(box, c);
-            }
-
-            bool stuck = false;
-            Rigidbody host = null;
-            Vector3 local = Vector3.zero;
-            float t = 0f;
-
-            while (t < 2f && go != null && !stuck && !handle.Evict)
-            {
-                t += Time.deltaTime;
-                Vector3 v = rb.linearVelocity;
-                float speed = v.magnitude;
-
-                if (speed > 2f)
+                // A beat before the collider comes on, so it does not collide with the body it
+                // is leaving; and then never with that body at all.
+                yield return new WaitForSeconds(0.1f);
+                if (go == null || handle.Evict) yield break;
+                if (box != null)
                 {
-                    if (Physics.Raycast(go.transform.position, v / speed, out RaycastHit hit, speed * Time.deltaTime + 0.02f)
-                        && hit.collider.gameObject != go)
+                    box.enabled = true;
+                    if (ownBody != null) foreach (var c in ownBody) if (c != null) Physics.IgnoreCollision(box, c);
+                }
+
+                bool stuck = false;
+                Rigidbody host = null;
+                Vector3 local = Vector3.zero;
+                float t = 0f;
+
+                while (t < 2f && go != null && !stuck && !handle.Evict)
+                {
+                    t += Time.deltaTime;
+                    Vector3 v = rb.linearVelocity;
+                    float speed = v.magnitude;
+
+                    if (speed > 2f)
                     {
-                        rb.linearVelocity = Vector3.zero;
-                        rb.angularVelocity = Vector3.zero;
-                        rb.isKinematic = true;
-
-                        Decals(hit.point, hit.normal, hit.collider.transform);
-
-                        if (FruitWounds.IsLimb(hit.collider.gameObject))
+                        if (Physics.Raycast(go.transform.position, v / speed, out RaycastHit hit, speed * Time.deltaTime + 0.02f)
+                            && hit.collider.gameObject != go)
                         {
-                            var limbRb = hit.collider.GetComponentInParent<Rigidbody>();
-                            if (limbRb != null)
+                            rb.linearVelocity = Vector3.zero;
+                            rb.angularVelocity = Vector3.zero;
+                            rb.isKinematic = true;
+
+                            Decals(hit.point, hit.normal, hit.collider.transform);
+
+                            if (FruitWounds.IsLimb(hit.collider.gameObject))
                             {
-                                stuck = true;
-                                host = limbRb;
-                                local = host.transform.InverseTransformPoint(hit.point);
-                                if (box != null) box.enabled = false;
+                                var limbRb = hit.collider.GetComponentInParent<Rigidbody>();
+                                if (limbRb != null)
+                                {
+                                    stuck = true;
+                                    host = limbRb;
+                                    local = host.transform.InverseTransformPoint(hit.point);
+                                    if (box != null) box.enabled = false;
+                                }
                             }
                         }
                     }
+                    else if (speed < 0.05f) { rb.isKinematic = true; break; }
+
+                    yield return null;
                 }
-                else if (speed < 0.05f) { rb.isKinematic = true; break; }
 
-                yield return null;
+                if (go == null || handle.Evict) yield break;
+                if (!rb.isKinematic) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; rb.isKinematic = true; }
+
+                Vector3 full = go.transform.localScale;
+                float life = FruitLibConfig.EjectaLifetime, fade = life * 0.65f, e = 0f;
+                while (e < life && go != null && !handle.Evict)
+                {
+                    e += Time.deltaTime;
+                    if (stuck && host != null) go.transform.position = host.transform.TransformPoint(local);
+                    if (e > fade) go.transform.localScale = Vector3.Lerp(full, Vector3.zero, (e - fade) / (life - fade));
+                    yield return null;
+                }
             }
-
-            if (go == null || handle.Evict) { Finish(node, go, mat); yield break; }
-            if (!rb.isKinematic) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; rb.isKinematic = true; }
-
-            Vector3 full = go.transform.localScale;
-            float life = FruitLibConfig.EjectaLifetime, fade = life * 0.65f, e = 0f;
-            while (e < life && go != null && !handle.Evict)
-            {
-                e += Time.deltaTime;
-                if (stuck && host != null) go.transform.position = host.transform.TransformPoint(local);
-                if (e > fade) go.transform.localScale = Vector3.Lerp(full, Vector3.zero, (e - fade) / (life - fade));
-                yield return null;
-            }
-
-            Finish(node, go, mat);
+            finally { Finish(node, go, mat); }
         }
 
         /// <summary>
@@ -419,28 +423,35 @@ namespace FruitLib
         {
             var handle = new Handle();
             var node = _decals.AddLast(handle);
+            GameObject go = null;
 
-            var go = new GameObject("FruitLib_BloodDecal");
-            go.transform.position = point + normal * 0.001f;
-            go.transform.rotation = Quaternion.FromToRotation(Vector3.forward, normal) * Quaternion.Euler(0f, 0f, rotZ);
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = _material;
-            mr.receiveShadows = false;
-            if (surface != null) go.transform.SetParent(surface, true);
-
-            Vector3 full = go.transform.localScale;
-            float life = FruitLibConfig.BloodDecalLifetime, fade = life * 0.7f, t = 0f;
-            while (t < life && go != null && !handle.Evict)
+            // Same as a chunk: a throw must not strand the node in the eviction queue.
+            try
             {
-                t += Time.deltaTime;
-                if (t > fade) go.transform.localScale = Vector3.Lerp(full, Vector3.zero, (t - fade) / (life - fade));
-                yield return null;
-            }
+                go = new GameObject("FruitLib_BloodDecal");
+                go.transform.position = point + normal * 0.001f;
+                go.transform.rotation = Quaternion.FromToRotation(Vector3.forward, normal) * Quaternion.Euler(0f, 0f, rotZ);
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var mr = go.AddComponent<MeshRenderer>();
+                mr.sharedMaterial = _material;
+                mr.receiveShadows = false;
+                if (surface != null) go.transform.SetParent(surface, true);
 
-            if (node.List != null) node.List.Remove(node);
-            if (mesh != null) Object.Destroy(mesh);
-            if (go != null) Object.Destroy(go);
+                Vector3 full = go.transform.localScale;
+                float life = FruitLibConfig.BloodDecalLifetime, fade = life * 0.7f, t = 0f;
+                while (t < life && go != null && !handle.Evict)
+                {
+                    t += Time.deltaTime;
+                    if (t > fade) go.transform.localScale = Vector3.Lerp(full, Vector3.zero, (t - fade) / (life - fade));
+                    yield return null;
+                }
+            }
+            finally
+            {
+                if (node.List != null) node.List.Remove(node);
+                if (mesh != null) Object.Destroy(mesh);
+                if (go != null) Object.Destroy(go);
+            }
         }
     }
 }

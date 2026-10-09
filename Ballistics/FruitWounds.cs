@@ -64,10 +64,13 @@ namespace FruitLib
 
         internal static void ResetForScene()
         {
-            _limbByCollider.Clear();
+            ForgetLimbs();
             _spreadResolved = false;
             _nextSpreadLookup = 0f;
         }
+
+        /// <summary>The collider-to-limb cache only: the map was reset in place, the scene stays.</summary>
+        internal static void ForgetLimbs() => _limbByCollider.Clear();
 
         internal static LimbEffectorReceiver LimbOf(Collider c)
         {

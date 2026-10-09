@@ -86,16 +86,21 @@ namespace FruitLib
 
         private sealed class Pins
         {
-            public GodInventoryItem           Item;
-            public readonly Dictionary<IntPtr, IntPtr> Handles = new Dictionary<IntPtr, IntPtr>();
+            public GodInventoryItem Item;
+            // One pin per field: what the field held when it was pinned, and the handle on it.
+            public readonly Dictionary<string, (IntPtr obj, IntPtr handle)> Slots =
+                new Dictionary<string, (IntPtr, IntPtr)>();
         }
 
         private static readonly Dictionary<IntPtr, Pins> _pins = new Dictionary<IntPtr, Pins>();
 
         /// <summary>
         /// Strong handles on everything the item's fields point at right now. Cheap to call
-        /// again: already-pinned objects are skipped, and a field the game has since replaced
-        /// (a delegate combined with a new subscriber is a new object) gets its new value pinned.
+        /// again: a field still holding what it held last time is skipped, and a field the game
+        /// has since replaced (a delegate combined with a new subscriber is a new object) has its
+        /// new value pinned and the old one let go - the item no longer references it, so it is
+        /// no longer ours to keep alive. Pinning by object instead held every delegate the item
+        /// had ever had, one more per equip, until the item was destroyed.
         /// </summary>
         internal static void Pin(GodInventoryItem item, string when)
         {
@@ -107,17 +112,17 @@ namespace FruitLib
                     _pins[item.Pointer] = pins = new Pins { Item = item };
 
                 int added = 0;
-                added += Hold(pins, Safe(() => item._Features_k__BackingField?.Pointer));
-                added += Hold(pins, Safe(() => item.OnEarlyEnableEvent?.Pointer));
-                added += Hold(pins, Safe(() => item.OnLateEnableEvent?.Pointer));
-                added += Hold(pins, Safe(() => item.OnEarlyDisableEvent?.Pointer));
-                added += Hold(pins, Safe(() => item.OnLateDisableEvent?.Pointer));
-                added += Hold(pins, Safe(() => item.OnBeforeDestroyEvent?.Pointer));
-                added += Hold(pins, Safe(() => item.m_coreServicesProvider?.Pointer));
-                added += Hold(pins, Safe(() => item.m_destroyBag?.Pointer));
-                added += Hold(pins, Safe(() => item.m_prefabID?.Pointer));
+                added += Hold(pins, "Features",           Safe(() => item._Features_k__BackingField?.Pointer));
+                added += Hold(pins, "OnEarlyEnable",      Safe(() => item.OnEarlyEnableEvent?.Pointer));
+                added += Hold(pins, "OnLateEnable",       Safe(() => item.OnLateEnableEvent?.Pointer));
+                added += Hold(pins, "OnEarlyDisable",     Safe(() => item.OnEarlyDisableEvent?.Pointer));
+                added += Hold(pins, "OnLateDisable",      Safe(() => item.OnLateDisableEvent?.Pointer));
+                added += Hold(pins, "OnBeforeDestroy",    Safe(() => item.OnBeforeDestroyEvent?.Pointer));
+                added += Hold(pins, "CoreServices",       Safe(() => item.m_coreServicesProvider?.Pointer));
+                added += Hold(pins, "DestroyBag",         Safe(() => item.m_destroyBag?.Pointer));
+                added += Hold(pins, "PrefabId",           Safe(() => item.m_prefabID?.Pointer));
 
-                if (added > 0) FruitTrace.Mark($"GC: pinned {added} new object(s) off @{item.Pointer.ToInt64():X} ({when}), {pins.Handles.Count} held");
+                if (added > 0) FruitTrace.Mark($"GC: pinned {added} new object(s) off @{item.Pointer.ToInt64():X} ({when}), {pins.Slots.Count} held");
             }
             catch (Exception e) { FruitTrace.Mark($"GC: pinning failed ({when}): {e.Message}"); }
         }
@@ -128,11 +133,17 @@ namespace FruitLib
             catch { return IntPtr.Zero; }
         }
 
-        private static int Hold(Pins pins, IntPtr obj)
+        private static int Hold(Pins pins, string slot, IntPtr obj)
         {
-            if (obj == IntPtr.Zero || pins.Handles.ContainsKey(obj)) return 0;
-            pins.Handles[obj] = IL2CPP.il2cpp_gchandle_new(obj, false);
-            return 1;
+            bool had = pins.Slots.TryGetValue(slot, out var old);
+            if (had && old.obj == obj) return 0;
+
+            // Pin the new value before letting go of the old, so nothing is ever unheld.
+            if (obj != IntPtr.Zero) pins.Slots[slot] = (obj, IL2CPP.il2cpp_gchandle_new(obj, false));
+            else pins.Slots.Remove(slot);
+
+            if (had) { try { IL2CPP.il2cpp_gchandle_free(old.handle); } catch { } }
+            return obj != IntPtr.Zero ? 1 : 0;
         }
 
         /// <summary>Lets go of everything pinned for items that no longer exist.</summary>
@@ -142,9 +153,9 @@ namespace FruitLib
             foreach (var kv in _pins)
             {
                 if (kv.Value.Item != null) continue;   // destroyed compares equal to null
-                foreach (var handle in kv.Value.Handles.Values)
+                foreach (var pin in kv.Value.Slots.Values)
                 {
-                    try { IL2CPP.il2cpp_gchandle_free(handle); } catch { }
+                    try { IL2CPP.il2cpp_gchandle_free(pin.handle); } catch { }
                 }
                 (dead ??= new List<IntPtr>()).Add(kv.Key);
             }

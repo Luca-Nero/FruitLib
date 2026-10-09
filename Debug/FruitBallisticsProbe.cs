@@ -656,11 +656,17 @@ namespace FruitLib
             {
                 int before = EnabledCount(mesh, path, DryRunVoxels);
 
+                bool ok1, ok2;
+                string r1, r2;
                 var handler = Signals(path, 0, DryRunVoxels);
-                bool ok1 = limb.TryGetFeedback(handler, out IReadOnlyIndexEffectorFeedbacksHandler fb1);
-                string r1 = Describe(fb1);
-                bool ok2 = limb.TryGetFeedback(handler, out IReadOnlyIndexEffectorFeedbacksHandler fb2);
-                string r2 = Describe(fb2);
+                try
+                {
+                    ok1 = limb.TryGetFeedback(handler, out IReadOnlyIndexEffectorFeedbacksHandler fb1);
+                    try { r1 = Describe(fb1); } finally { Release(fb1); }
+                    ok2 = limb.TryGetFeedback(handler, out IReadOnlyIndexEffectorFeedbacksHandler fb2);
+                    try { r2 = Describe(fb2); } finally { Release(fb2); }
+                }
+                finally { handler.Dispose(); }
 
                 int after = EnabledCount(mesh, path, DryRunVoxels);
 
@@ -690,16 +696,35 @@ namespace FruitLib
                     sampled++;
 
                     var handler = Signals(path, i, 1);
-                    if (!limb.TryGetFeedback(handler, out IReadOnlyIndexEffectorFeedbacksHandler fb) || fb == null)
-                    { line.Append($"{i}:- "); continue; }
+                    try
+                    {
+                        if (!limb.TryGetFeedback(handler, out IReadOnlyIndexEffectorFeedbacksHandler fb) || fb == null)
+                        { line.Append($"{i}:- "); continue; }
 
-                    line.Append($"{i}:{fb.TotalAbsorbedInfluence:0.#}/{fb.TotalProgressesChange:0.###}" +
-                                $"#{Quantise(path[i].Color):X6} ");
+                        try
+                        {
+                            line.Append($"{i}:{fb.TotalAbsorbedInfluence:0.#}/{fb.TotalProgressesChange:0.###}" +
+                                        $"#{Quantise(path[i].Color):X6} ");
+                        }
+                        finally { Release(fb); }
+                    }
+                    finally { handler.Dispose(); }
                 }
                 sb.AppendLine($"  resistance, one voxel at a time (step:absorbed/progress#colour), {sampled} sampled:");
                 sb.AppendLine("    " + line);
             }
             catch (Exception e) { sb.AppendLine($"  resistance profile threw: {e}"); }
+        }
+
+        /// <summary>
+        /// Both sides of a TryGetFeedback hold NativeLists: the caller disposes the signals
+        /// handler it built and the feedback handler it was handed, as FruitWounds.Price does.
+        /// Left alone they leaked up to ~100 pairs per aim test.
+        /// </summary>
+        private static void Release(IReadOnlyIndexEffectorFeedbacksHandler fb)
+        {
+            if (fb == null) return;
+            try { fb.TryCast<IndexEffectorFeedbacksHandler>()?.Dispose(); } catch { }
         }
 
         private static string Describe(IReadOnlyIndexEffectorFeedbacksHandler fb)

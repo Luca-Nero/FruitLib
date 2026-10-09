@@ -28,6 +28,7 @@ namespace FruitLib
             // intermittent memory-protection crashes started exactly there.
 
             FruitHud.Init();
+            FruitWorldMenu.MapReset += FruitBallistics.OnMapReset;
             FruitPerfMon.RegisterPanel();
             FruitUpdateCheck.RegisterPanel();
             FruitUpdateCheck.Register("FruitLib", FruitVersion.Current, "Luca-Nero", "FruitLib");

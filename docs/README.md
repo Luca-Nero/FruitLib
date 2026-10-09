@@ -9,7 +9,7 @@ models, shaders and decals through Unity AssetBundles.
 FruitLib is itself a MelonMod. Your mod references it at build time and expects
 it in the `Mods` folder at runtime.
 
-**Current version: 5.10.0**. Starting a new mod? Copy the files in [`Templates/`](../Templates/README.md).
+**Current version: 5.10.1**. Starting a new mod? Copy the files in [`Templates/`](../Templates/README.md).
 
 ## Guides
 

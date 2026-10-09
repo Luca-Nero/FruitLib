@@ -228,6 +228,18 @@ namespace FruitLib
             public bool Used;
         }
 
+        /// <summary>
+        /// Drops a handle's view when its panel is replaced or unregistered. Without this the
+        /// canvas objects outlive the panel, switched off every frame, and the dictionary keeps
+        /// the handle - and with it the mod's build callback - alive for the session.
+        /// </summary>
+        internal static void Forget(HudHandle h)
+        {
+            if (h == null || !_byHandle.TryGetValue(h, out var v)) return;
+            _byHandle.Remove(h);
+            try { if (v.Root != null) Object.Destroy(v.Root); } catch { }
+        }
+
         private static View ViewFor(HudHandle h)
         {
             if (_byHandle.TryGetValue(h, out var v) && v.Root != null) return v;

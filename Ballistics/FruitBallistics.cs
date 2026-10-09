@@ -486,11 +486,39 @@ namespace FruitLib
                         try { h(); } catch (Exception e) { Report(h, e); }
             }
             FruitEjecta.Tick();
+
+            // After FruitWorldMenu.MapReset: the game destroys the map's objects at the end of
+            // the reset frame, so the caches are let go of on the frame after, once lookups can
+            // no longer refill them with things about to die.
+            if (_mapResetFrame >= 0 && Time.frameCount > _mapResetFrame)
+            {
+                _mapResetFrame = -1;
+                ForgetWorld();
+            }
+
             FruitBlastInjury.Tick();
+        }
+
+        private static int _mapResetFrame = -1;
+
+        /// <summary>
+        /// RESET MAP / RESET ALL rebuild the map in place, without a scene load, so nothing in
+        /// <see cref="ResetForScene"/> runs. The caches keyed by collider id or native address
+        /// would otherwise keep the old map's limbs, surfaces and organs - and an organ keyed by
+        /// raw address could hand its voxels to a new organ that lands at the freed address.
+        /// </summary>
+        internal static void OnMapReset() => _mapResetFrame = Time.frameCount;
+
+        private static void ForgetWorld()
+        {
+            FruitWounds.ForgetLimbs();
+            FruitSurfaces.ResetForScene();
+            FruitBlastInjury.ResetForScene();
         }
 
         internal static void ResetForScene()
         {
+            _mapResetFrame = -1;
             FruitProjectiles.Clear();
             FruitWounds.ResetForScene();
             FruitEjecta.ResetForScene();

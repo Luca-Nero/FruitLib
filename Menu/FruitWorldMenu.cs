@@ -105,7 +105,6 @@ namespace FruitLib
         {
             public string                Id;
             public ContextMenuActionButton Clone;
-            public UnityAction           Listener;   // held so il2cpp's copy is not collected
             public bool                  Drawn;
             public string                DrawnLabel;
         }
@@ -113,9 +112,22 @@ namespace FruitLib
         // Registration order is display order, so a list rather than a dictionary.
         private static readonly List<Def>   _defs  = new List<Def>();
         private static readonly List<Built> _built = new List<Built>();
-        // Every listener ever wired, kept for as long as a button might still call it: a button
-        // taken back by name has lost its Built entry, but not its listener.
-        private static readonly List<UnityAction> _listeners = new List<UnityAction>();
+        // Every listener wired, held so il2cpp's copy is not collected, for as long as its button
+        // lives: a button taken back by name has lost its Built entry, but not its listener. Keyed
+        // by the button so the list lets go of them once the game destroys it (scene load, or
+        // RemoveButton) instead of growing by one per button per scene.
+        private sealed class Wired
+        {
+            public ContextMenuActionButton Clone;
+            public UnityAction           Listener;
+        }
+        private static readonly List<Wired> _listeners = new List<Wired>();
+
+        private static void PruneListeners()
+        {
+            for (int i = _listeners.Count - 1; i >= 0; i--)
+                if (_listeners[i].Clone == null) _listeners.RemoveAt(i);
+        }
 
         private static Def Find(string id)
         {
@@ -151,6 +163,7 @@ namespace FruitLib
             _rowParent  = null;
             _built.Clear();
             _noPrototypeReported = false;
+            PruneListeners();
         }
 
         /// <summary>Called from AddButton / RemoveButton: bring the live page, if there is one, up to date.</summary>
@@ -306,13 +319,14 @@ namespace FruitLib
                 Action handler = () => OnClicked(id);
                 var listener = (UnityAction)handler;
                 button.onClick.AddListener(listener);
-                _listeners.Add(listener);
+                PruneListeners();
+                _listeners.Add(new Wired { Clone = clone, Listener = listener });
 
                 // Awake runs here, provider in hand. If the SCENE group is switched off right now
                 // it runs when the group next comes on - Draw() waits for that.
                 clone.gameObject.SetActive(true);
 
-                _built.Add(new Built { Id = id, Clone = clone, Listener = listener });
+                _built.Add(new Built { Id = id, Clone = clone });
             }
             catch (Exception e) { MelonLogger.Warning($"[FruitWorldMenu] building '{def.Id}' failed: {e.Message}"); }
         }
