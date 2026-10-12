@@ -20,6 +20,7 @@
   <!-- Templates/ is source for other mods to copy, not part of FruitLib. -->
   <ItemGroup>
     <Compile Remove="Templates/**" />
+    <Compile Remove="Tests/**" />
     <None Remove="Templates/**" />
   </ItemGroup>
 

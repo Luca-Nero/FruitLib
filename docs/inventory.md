@@ -117,6 +117,18 @@ if any row lacks a key or a value, or if a key appears twice (a free row repeati
 caliber, fire mode or size counts). FruitLib checks for this first and drops only the
 offending row, with a warning.
 
+### Placing
+
+```csharp
+flare.Placeable(flarePropModel, mass: 0.3f);   // the spawn-mode key puts it down, like a native gun
+crate.Placeable(cratePrefab, 12f); crate.Prop.PlaceOnClick = true;   // hologram while held, like a native prop
+```
+
+Since 5.28.0. The player puts the item down with the game's own placement: the same key,
+hologram and "can't place here" sound as the native items. What lands is a FruitLib prop
+(`FruitProps`): it has a rigidbody, it is listed in `FruitItems`, and it has the game's
+right-click menu. Options and the details are in [items.md](items.md#putting-an-inventory-item-down-spawn-mode).
+
 ### Changing name or icon later
 
 ```csharp
@@ -178,6 +190,14 @@ For whoever has to fix this after a game update. The bodies are in
   instances to items. Postfixes on `GAToolbarSelectedItemProcessor.OnItemSelect` /
   `OnItemDeselect` drive `OnSelected` / `OnDeselected`. Selection by number key, scroll
   wheel or click all go through there.
+- **Placement.** `FruitSpawnMode` gives each toolbar instance of a placeable item what
+  `SpawnableGodInventoryItem.OnAwake` gives a native one. It asks the scene's
+  `ISpawnPlacementFactory` (resolved from Zenject) for a session and a `SpawnModeFeature` or
+  `PropPlacementFeature`, round an injected `FruitSpawnHost` (the game's `ISpawnModeHost` /
+  `IPlacementHost`), and adds the feature to `Features`. The host's methods carry the
+  interfaces' own names: the injector matches interface slots by name. Its interfaces are
+  registered through reflection, because naming `RegisterTypeOptions` from this
+  netstandard2.1 project is CS1705. Bodies: Ghidra group `spawn-mode`.
 - **Ordering.** The game can deliver the new item's select before the old one's deselect.
   Since 5.0 FruitLib puts the old FruitLib item down first, so `OnDeselected` of the
   previous item always runs before `OnSelected` of the next. Mods don't need swap guards.
@@ -188,8 +208,9 @@ when something breaks.
 
 ## Limits
 
-- **No native behaviour beyond holding.** A FruitLib item does not spawn a prop or fire a
-  native weapon. It is a held object with your callbacks. Use FruitBallistics for shooting.
+- **No native behaviour beyond holding and placing.** A FruitLib item does not fire a native
+  weapon. It is a held object with your callbacks. Use FruitBallistics for shooting. Since
+  5.28.0 it can be put down as a prop with the game's spawn mode: see [Placing](#placing).
 - **No shelf position control.** Items the game gives a manual shelf priority come first,
   then the rest by name. FruitLib items are in the second group.
 - **Items and shelves cannot be removed** once registered; items can only be renamed.
@@ -209,3 +230,21 @@ slots to, and driving the old slot system breaks the game. Port like this:
 | `NativeBaseOverride`, `PreferredOrder`, `AutoCentreSlotRow`, `SlotRowOffset` | gone: the player chooses slots in the inventory window |
 
 The item isn't on the toolbar until the player sends it there from the inventory window.
+
+## What the player is holding
+
+`FruitInventory.HeldName` (since 5.13.0) names whatever the player has in hand, from the game or
+any mod: "Viper 17", "Cutter", "Grenade". Since 5.17.0 two more properties say what it is:
+
+- `HeldKind`: `None`, `Hand` (the game's Cursor), `Tool`, `Spawner` (human spawner, props) or
+  `Weapon` (the game's guns, mod items on the Weapon shelf).
+- `HeldDangerous`: whether a person would fear it. True for the game's guns and the Cutter, for
+  mod items on the Weapon shelf, and for any item with `Dangerous = true`.
+
+Set `FruitItem.Dangerous` when your item lives on its own shelf, or when the shelf gets it
+wrong: a grenade on a custom shelf is dangerous, binoculars on the Weapon shelf are not. Left
+null, it follows the shelf. To stay loadable on a FruitLib older than 5.17.0, set it by name:
+
+```csharp
+typeof(FruitItem).GetField("Dangerous")?.SetValue(item, (bool?)true);
+```

@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using MelonLoader;
 
 namespace FruitLib
 {
     public static class FruitVersion
     {
-        internal const string VersionConst = "5.10.2";
+        internal const string VersionConst = "5.35.2";
 
         public static string Current => VersionConst;
 

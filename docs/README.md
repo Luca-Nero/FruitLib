@@ -9,7 +9,7 @@ models, shaders and decals through Unity AssetBundles.
 FruitLib is itself a MelonMod. Your mod references it at build time and expects
 it in the `Mods` folder at runtime.
 
-**Current version: 5.10.2**. Starting a new mod? Copy the files in [`Templates/`](../Templates/README.md).
+**Current version: 5.29.1**. Starting a new mod? Copy the files in [`Templates/`](../Templates/README.md).
 
 ## Guides
 
@@ -22,7 +22,13 @@ it in the `Mods` folder at runtime.
 | [Sound](sound.md) | The game's own sound effects, and its interface sounds |
 | [Ballistics](ballistics.md) | Projectiles and explosions through the game's wound model, multiplayer-ready: surface penetration and ricochet, physical blast overpressure and cover, fragments, shaped-charge jets |
 | [AssetBundles](BUNDLES.md) | Custom models, shaders, animation and decals built in the Unity editor |
+| [Maps](maps.md) | A map of your own in the main menu, built on top of one of the game's |
 | [World menu](world-menu.md) | Know when the player used the terminal's World > SCENE resets, and add buttons of your own to that page |
+| [World events & bodies](events.md) | What happened where and near whom (FruitEvents), and every humanoid's vitals, behaviour, posture and limbs (FruitBodies) |
+| [Sight](sight.md) | What a body can see: line of sight, the place around it, named things, and pictures from its eyes |
+| [Pathing](nav.md) | A runtime navmesh, paths that keep off walls, cover, and bodies that walk them without bumping along every wall |
+| [Items and hands](items.md) | Things bodies pick up, carry, throw, use and hand over, and the game's own right-click menu for mod props |
+| [Poses](poses.md) | Bodies that crouch, kneel or hold a pose of your own, apart from the game's idea of their stance |
 | [Utilities](utilities.md) | `FruitLog`, `FruitPaths`, `FruitScene`, `FruitForces`, `FruitUpdateCheck` |
 | [Meshes](meshes.md) | The older `*_mesh.json` loader (schema in [`MESH_FORMAT.md`](MESH_FORMAT.md)). Prefer bundles for new work |
 

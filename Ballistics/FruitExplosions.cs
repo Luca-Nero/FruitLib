@@ -141,7 +141,7 @@ namespace FruitLib
             FruitBallistics.RaiseExploded(new ExplosionInfo
             {
                 Spec = s, Origin = origin, Forward = forward,
-                HasGround = hasGround, Ground = ground, Cosmetic = cosmetic, Owner = cmd.Owner, Features = b.F,
+                HasGround = hasGround, Ground = ground, Cosmetic = cosmetic, Owner = cmd.Owner, Instigator = cmd.Instigator, Features = b.F,
             });
 
             b.GroundY = hasGround ? ground.point.y : origin.y - 50f;
@@ -490,7 +490,7 @@ namespace FruitLib
             if (FruitBallistics.WantsBlast)
                 FruitBallistics.RaiseBlast(new BlastTrace
                 {
-                    Spec = b.S, Owner = b.Cmd.Owner, Origin = b.Origin, Target = target, Overpressure = overpressure,
+                    Spec = b.S, Owner = b.Cmd.Owner, Instigator = b.Cmd.Instigator, Origin = b.Origin, Target = target, Overpressure = overpressure,
                     Transmission = transmission, Occluder = occluder, OccluderMaterial = occluderMat, PeakKPa = peakKPa,
                 });
         }
@@ -936,7 +936,7 @@ namespace FruitLib
 
                 var trace = new FragmentTrace
                 {
-                    Spec = s, Owner = b.Cmd.Owner, Cosmetic = b.Cosmetic, Fragment = fragment, Leg = leg, Jet = k.Jet, Spall = k.Spall, Bone = k.Bone,
+                    Spec = s, Owner = b.Cmd.Owner, Instigator = b.Cmd.Instigator, Cosmetic = b.Cosmetic, Fragment = fragment, Leg = leg, Jet = k.Jet, Spall = k.Spall, Bone = k.Bone,
                     Start = p0, ArcVelocity = arcVel, Time = didHit ? hitTime : flight,
                     End = didHit ? hit.point : Arc(p0, arcVel, gy, flight), EndedBy = FragmentEnd.Spent,
                 };
@@ -1063,6 +1063,7 @@ namespace FruitLib
             {
                 Limb = limb.gameObject, Entry = hit.point, Exit = res.Exit, Direction = dir,
                 PowerIn = power, PowerOut = res.PowerOut, Exited = res.Exited, Steps = res.Steps,
+                Instigator = b.Cmd.Instigator,
             });
 
             // Through bone and out: some of it comes along.

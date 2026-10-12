@@ -108,7 +108,8 @@ namespace FruitLib
 
         private static Il2CppSystem.Object _roundSource;
         private static Il2CppSystem.Object _blastSource;
-        private static int _blasts;
+        private static Il2CppSystem.Object _strikeSource;
+        private static int _blasts, _strikes;
 
         internal static EffectorHit RoundHit(int roundId)
         {
@@ -120,6 +121,13 @@ namespace FruitLib
         {
             if (_blastSource == null) _blastSource = new Il2CppSystem.Object();
             return new EffectorHit(_blastSource, ++_blasts);
+        }
+
+        /// <summary>One body's blow on another (FruitBodyControl.Strike): a hit of its own.</summary>
+        internal static EffectorHit NextStrikeHit()
+        {
+            if (_strikeSource == null) _strikeSource = new Il2CppSystem.Object();
+            return new EffectorHit(_strikeSource, ++_strikes);
         }
 
         // ── Shapes ───────────────────────────────────────────────────────────────

@@ -47,6 +47,13 @@ namespace FruitLib
         /// </summary>
         public string Category = nameof(FruitItemCategory.Etc);
 
+        /// <summary>
+        /// Whether a person would be afraid of the player holding this: a gun, a grenade, a
+        /// blade. Null (the default) means yes for the Weapon shelf and no for every other.
+        /// Read through <see cref="FruitInventory.HeldDangerous"/>. Since 5.17.0.
+        /// </summary>
+        public bool? Dangerous;
+
         // ── The card ──────────────────────────────────────────────────────────────
         //
         // The inventory window shows a card for the hovered item: its name, then key/value
@@ -92,6 +99,30 @@ namespace FruitLib
         /// the player's hand. Keep its local transform where you want it relative to the hand.
         /// </summary>
         public GameObject Model;
+
+        /// <summary>
+        /// Set to let the player put the item down in the world as a loose prop, with the game's
+        /// own placement: the spawn-mode key and hologram of the native guns, or, with
+        /// <see cref="FruitItemProp.PlaceOnClick"/>, the always-on hologram of the native props.
+        /// See <see cref="Placeable"/>. Since 5.28.0.
+        /// </summary>
+        public FruitItemProp Prop;
+
+        /// <summary>True while the player is in spawn mode with this item. Since 5.28.0.</summary>
+        public bool InSpawnMode { get; internal set; }
+
+        /// <summary>
+        /// Make the item placeable as a prop (see <see cref="Prop"/>). <paramref name="model"/> is
+        /// what is put down; null uses <see cref="Model"/>. Since 5.28.0.
+        /// </summary>
+        public FruitItem Placeable(GameObject model = null, float mass = 1f, FruitAffords affords = FruitAffords.None)
+        {
+            Prop ??= new FruitItemProp();
+            Prop.Model   = model;
+            Prop.Mass    = mass;
+            Prop.Affords = affords;
+            return this;
+        }
 
         /// <summary>The item came into the player's hand. <see cref="Held"/> is set.</summary>
         public Action<FruitItem> OnSelected;
@@ -158,6 +189,90 @@ namespace FruitLib
     }
 
     /// <summary>
+    /// How a <see cref="FruitItem"/> is put down in the world. The placed thing is made with
+    /// <see cref="FruitProps.Spawn(GameObject, Vector3, Quaternion, string, float, FruitAffords, string, string, IEnumerable{FruitMenuEntry})"/>:
+    /// a rigidbody, colliders, listed in <see cref="FruitItems"/>, with the game's right-click
+    /// menu. Since 5.28.0. See docs/items.md.
+    /// </summary>
+    public sealed class FruitItemProp
+    {
+        /// <summary>What is put down, and what the hologram shows. Null uses the item's <see cref="FruitItem.Model"/>.
+        /// Its root lands where the hologram's root stood.</summary>
+        public GameObject Model;
+
+        /// <summary>
+        /// Makes <see cref="Model"/> when it is first needed: when the item first reaches the
+        /// toolbar, or is first put down. For a model that needs the loaded game (shaders, an
+        /// asset bundle). Keep what it returns alive and inactive; returning null means "not yet",
+        /// and it is asked again at the next selection. Since 5.29.0.
+        /// </summary>
+        public Func<GameObject> MakeModel;
+
+        /// <summary>The prop's name in the world and its menu title. Null uses the item's name.</summary>
+        public string Name;
+
+        /// <summary>Rigidbody mass, kg.</summary>
+        public float Mass = 1f;
+
+        /// <summary>What bodies may do with it (<see cref="FruitItems"/>). None works it out from mass and shape.</summary>
+        public FruitAffords Affords = FruitAffords.None;
+
+        /// <summary>The right-click menu's category: "props" or "weapons".</summary>
+        public string MenuCategory = "props";
+
+        /// <summary>The prop's right-click menu lines, asked once per placed prop. Delete is always added.</summary>
+        public Func<FruitWorldItem, IEnumerable<FruitMenuEntry>> Menu;
+
+        /// <summary>
+        /// What the placed prop does when used, as <see cref="FruitWorldItem.OnUse"/>. The player
+        /// uses it by pointing at it and pressing the game's interaction key, as with a placed
+        /// gun (<see cref="FruitPropUse"/>); the user and target are then null. A body holding it
+        /// uses it through <see cref="FruitBodyControl.Use"/>. Null: no use. Since 5.29.0.
+        /// </summary>
+        public Func<FruitBody, FruitWorldItem, FruitBody, Vector3?, bool> OnUse;
+
+        /// <summary>Every frame while the player holds the interaction key on the prop, with the
+        /// seconds since the press (an automatic gun's trigger). Since 5.29.0.</summary>
+        public Action<FruitWorldItem, float> OnUseHeld;
+
+        /// <summary>The player let go of the interaction key. Since 5.29.0.</summary>
+        public Action<FruitWorldItem> OnUseReleased;
+
+        /// <summary>The use in a few words, for NPC prompts: "pull the pin". Since 5.29.0.</summary>
+        public string UseVerb = "";
+
+        /// <summary>How a body handles the placed prop when told to use it, as
+        /// <see cref="FruitWorldItem.Handling"/> (<see cref="FruitHandling"/>: ArmAndThrow,
+        /// AimAndFire, PlaceAndArm, PlaceAndDetonate). Null: the default. Since 5.30.0.</summary>
+        public FruitUseStep[] Handling;
+
+        /// <summary>As <see cref="FruitWorldItem.HandlingPause"/> and <see cref="FruitWorldItem.RetreatDistance"/>. Since 5.30.0.</summary>
+        public float HandlingPause = 0.35f, RetreatDistance = 10f;
+
+        /// <summary>Just after a prop is put down: the item, and the prop in the world.</summary>
+        public Action<FruitItem, FruitWorldItem> OnPlaced;
+
+        /// <summary>The player entered (true) or left (false) spawn mode with the item.</summary>
+        public Action<FruitItem, bool> OnSpawnMode;
+
+        /// <summary>The hologram's starting turn about the vertical, degrees.</summary>
+        public float ModelTurn;
+
+        /// <summary>
+        /// False (default): like the game's guns. The item works in the hand as usual, and the
+        /// spawn-mode key brings up the hologram; a left click places, and the item's own mouse
+        /// callbacks pause while the mode is on.
+        /// True: like the game's props. The hologram shows whenever the item is held, a left
+        /// click places and the wheel moves it nearer or further in free placement, so
+        /// <see cref="FruitItem.OnPrimary"/> and <see cref="FruitItem.OnScroll"/> never fire.
+        /// </summary>
+        public bool PlaceOnClick;
+
+        /// <summary>Set when the game's placement could not be built for this item; it stays hand-only.</summary>
+        public bool Broken { get; internal set; }
+    }
+
+    /// <summary>
     /// A shelf of a mod's own in the inventory window, added after the game's four. Made with
     /// <see cref="FruitInventory.AddCategory"/>; items join it by putting its name in
     /// <see cref="FruitItem.Category"/>.
@@ -193,6 +308,21 @@ namespace FruitLib
     /// player's hand as a real item. Adding later works too; the item appears the next time
     /// the window draws.
     /// </summary>
+    /// <summary>What kind of thing the player has in hand. Since 5.17.0.</summary>
+    public enum FruitHeldKind
+    {
+        /// <summary>Nothing selected.</summary>
+        None,
+        /// <summary>The game's Cursor: the bare hand that grabs, pins and inspects.</summary>
+        Hand,
+        /// <summary>A tool: the Cutter, a mod's tool, anything that is not one of the others.</summary>
+        Tool,
+        /// <summary>Something that places things: the human spawner, props.</summary>
+        Spawner,
+        /// <summary>A gun or other weapon.</summary>
+        Weapon,
+    }
+
     public static class FruitInventory
     {
         private static readonly List<FruitItem> _items = new List<FruitItem>();
@@ -373,6 +503,105 @@ namespace FruitLib
             return null;
         }
 
+        // ── Whatever the player holds, the game's items included ──
+
+        private static IntPtr _heldPtr;
+
+        /// <summary>
+        /// What the player has in hand, any item (the game's own and every mod's), in plain words:
+        /// "Glock 17", "Cutter", "frag grenade"... Empty while nothing is selected. A FruitLib item
+        /// gives its own name; a game item its prefab name, split into words.
+        /// </summary>
+        /// <remarks>Since 5.13.0.</remarks>
+        public static string HeldName { get; private set; } = "";
+
+        /// <summary>What kind of thing <see cref="HeldName"/> is. Since 5.17.0.</summary>
+        public static FruitHeldKind HeldKind { get; private set; }
+
+        /// <summary>
+        /// Whether the player holds something a person would fear: the game's guns and Cutter, a
+        /// mod item on the Weapon shelf, or one marked <see cref="FruitItem.Dangerous"/>. The bare
+        /// hand, spawners and harmless tools are not. Since 5.17.0.
+        /// </summary>
+        public static bool HeldDangerous { get; private set; }
+
+        internal static void NoteHeld(Il2CppPlayer.Appearances.God.InventoryItems.GodInventoryItem instance)
+        {
+            if (instance == null) return;
+            _heldPtr = instance.Pointer;
+            var mine = FruitInventoryNative.ItemFor(instance);
+            if (mine != null)
+            {
+                HeldName = mine.Name;
+                bool weapon = Shelf(mine) == nameof(FruitItemCategory.Weapon);
+                HeldKind = weapon ? FruitHeldKind.Weapon : FruitHeldKind.Tool;
+                HeldDangerous = mine.Dangerous ?? weapon;
+                return;
+            }
+            string raw;
+            try { raw = instance.gameObject.name; } catch { raw = ""; }
+            HeldName = Prettify(raw);
+            HeldKind = KindOf(instance, out bool dangerous);
+            HeldDangerous = dangerous;
+        }
+
+        internal static void NoteDropped(Il2CppPlayer.Appearances.God.InventoryItems.GodInventoryItem instance)
+        {
+            if (instance != null && instance.Pointer == _heldPtr)
+            {
+                _heldPtr = IntPtr.Zero;
+                HeldName = "";
+                HeldKind = FruitHeldKind.None;
+                HeldDangerous = false;
+            }
+        }
+
+        private static string Shelf(FruitItem item)
+        {
+            string c = string.IsNullOrEmpty(item.ResolvedCategory) ? item.Category : item.ResolvedCategory;
+            return c != null && c.StartsWith("Weapon", StringComparison.OrdinalIgnoreCase) ? nameof(FruitItemCategory.Weapon) : c ?? "";
+        }
+
+        /// <summary>A game item by its class: CursorGodInventoryItem, CutterGodInventoryItem,
+        /// HumanSpawnerGII and PropGodInventoryItem (SpawnableGodInventoryItem), and the guns,
+        /// which all derive from WeaponGodInventoryItem&lt;T&gt; (Release dump.cs).</summary>
+        private static FruitHeldKind KindOf(Il2CppPlayer.Appearances.God.InventoryItems.GodInventoryItem instance, out bool dangerous)
+        {
+            dangerous = false;
+            try
+            {
+                for (var t = instance.GetIl2CppType(); t != null; t = t.BaseType)
+                {
+                    string n = t.Name ?? "";
+                    if (n.StartsWith("WeaponGodInventoryItem", StringComparison.Ordinal)) { dangerous = true; return FruitHeldKind.Weapon; }
+                    if (n.StartsWith("Cutter", StringComparison.Ordinal)) { dangerous = true; return FruitHeldKind.Tool; }
+                    if (n.StartsWith("Cursor", StringComparison.Ordinal)) return FruitHeldKind.Hand;
+                    if (n.StartsWith("SpawnableGodInventoryItem", StringComparison.Ordinal)) return FruitHeldKind.Spawner;
+                    if (n == "GodInventoryItem" || n == "Object") break;
+                }
+            }
+            catch (Exception e) { FruitLog.Info($"[FruitInventory] could not tell what kind of item is held: {e.Message}"); }
+            return FruitHeldKind.Tool;
+        }
+
+        /// <summary>"Glock17GodInventoryItem(Clone)_3" -> "Glock 17".</summary>
+        internal static string Prettify(string raw)
+        {
+            if (string.IsNullOrEmpty(raw)) return "";
+            int cut = raw.IndexOfAny(new[] { '(', '_' });
+            if (cut > 0) raw = raw.Substring(0, cut);
+            foreach (var tail in new[] { "GodInventoryItem", "GII", "Item" })
+                if (raw.EndsWith(tail, StringComparison.Ordinal) && raw.Length > tail.Length) { raw = raw.Substring(0, raw.Length - tail.Length); break; }
+            var sb = new System.Text.StringBuilder(raw.Length + 4);
+            for (int i = 0; i < raw.Length; i++)
+            {
+                char c = raw[i];
+                if (i > 0 && (char.IsUpper(c) && !char.IsUpper(raw[i - 1]) || char.IsDigit(c) && !char.IsDigit(raw[i - 1]))) sb.Append(' ');
+                sb.Append(c);
+            }
+            return sb.ToString().Trim();
+        }
+
         internal static void Selected(FruitItem item, GameObject held, IntPtr instance, int slot)
         {
             if (item.Holding && item.HeldInstance == instance) return;
@@ -446,6 +675,7 @@ namespace FruitLib
         {
             FruitSfx.Reset();
             FruitInventoryNative.PruneDeadInstances();
+            FruitSpawnMode.ResetForScene();
         }
     }
 }

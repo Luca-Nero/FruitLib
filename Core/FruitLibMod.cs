@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using Il2CppPresenters.Pause;
@@ -29,6 +29,9 @@ namespace FruitLib
 
             FruitHud.Init();
             FruitWorldMenu.MapReset += FruitBallistics.OnMapReset;
+            FruitWorldMenu.MapReset += OnWorldReset;
+            FruitWorldEvents.Init();
+            FruitEventLog.Init();
             FruitPerfMon.RegisterPanel();
             FruitUpdateCheck.RegisterPanel();
             FruitUpdateCheck.Register("FruitLib", FruitVersion.Current, "Luca-Nero", "FruitLib");
@@ -67,6 +70,17 @@ namespace FruitLib
             Safely("FruitMenu",    PauseTick);
             Safely("FruitBallistics",      FruitBallistics.Tick);
             Safely("FruitBallisticsProbe", FruitBallisticsProbe.Tick);
+            Safely("FruitBodies",          FruitBodies.Tick);
+            Safely("FruitItems",           FruitItems.Tick);
+            Safely("FruitWorldEvents",     FruitWorldEvents.Tick);
+            Safely("FruitEvents",          FruitEvents.Tick);
+            Safely("FruitEventLog",        FruitEventLog.Tick);
+            Safely("FruitSightProbe",      FruitSightProbe.Tick);
+            Safely("FruitNav",             FruitNav.Tick);
+            Safely("FruitNavDraw",         FruitNavDraw.Tick);
+            Safely("FruitNavProbe",        FruitNavProbe.Tick);
+            Safely("FruitHandsProbe",      FruitHandsProbe.Tick);
+            Safely("FruitGaitProbe",       FruitGaitProbe.Tick);
 #if FRUITLIB_DEVTOOLS
             Safely("FruitBundleProbe",     FruitBundleProbe.Tick);
 #endif
@@ -98,9 +112,50 @@ namespace FruitLib
             if (FruitMenu.JustClosed) FruitPreferencesBridge.Flush();
         }
 
-        public override void OnApplicationQuit() => Safely("FruitMenu", FruitPreferencesBridge.Flush);
+        public override void OnApplicationQuit()
+        {
+            Safely("FruitMenu", FruitPreferencesBridge.Flush);
+            Safely("FruitEventLog", FruitEventLog.Shutdown);
+        }
 
-        public override void OnGUI() { FruitMenu.Draw(); FruitHud.Draw(); }
+        // The terminal's RESET MAP / ALL deletes the bodies in place, with no scene load.
+        // The tracker's scan would drop them a second later anyway; this just stops
+        // half-gone bodies from raising events meanwhile.
+        private static void OnWorldReset()
+        {
+            Safely("FruitBodyControl", FruitBodyControl.ResetForScene);
+            Safely("FruitBodies", FruitBodies.ResetForScene);
+            Safely("FruitSight", FruitSight.ResetForScene);
+            Safely("FruitItems", FruitItems.ResetForScene);
+            Safely("FruitPropMenu", FruitPropMenu.ResetForScene);
+            Safely("FruitEvents", FruitEvents.ResetForScene);
+            Safely("FruitWorldEvents", FruitWorldEvents.ResetForScene);
+        }
+
+        public override void OnGUI() { FruitMenu.Draw(); FruitHud.Draw(); FruitTextInput.OnGui(); }
+
+        // After every Update (the game's DynamicYTargetRotation among them), before the next FixedUpdate.
+        public override void OnLateUpdate()
+        {
+            Safely("FruitBodyControl", FruitBodyControl.LateTick);
+            Safely("FruitHandsProbe late", FruitHandsProbe.LateTick);
+        }
+
+        // Physics rate: the step assist pushes limbs; held poses blend their bones.
+        public override void OnFixedUpdate()
+        {
+            Safely("FruitBodyControl steps", FruitBodyControl.FixedTick);
+            Safely("FruitPose", FruitPose.FixedTick);
+            Safely("FruitGaitProbe", FruitGaitProbe.FixedTick);
+        }
+
+        // Mod maps build here: after the host scene's Awake, before its Start, which is when
+        // the player and the first human are placed.
+        public override void OnSceneWasLoaded(int buildIndex, string sceneName)
+            => Safely("FruitMaps", () => FruitMaps.OnSceneLoaded(sceneName));
+
+        public override void OnSceneWasUnloaded(int buildIndex, string sceneName)
+            => Safely("FruitMaps", () => FruitMaps.OnSceneUnloaded(sceneName));
 
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
         {
@@ -114,6 +169,12 @@ namespace FruitLib
 #endif
             FruitBallistics.ResetForScene();
             FruitBallisticsProbe.ResetForScene();
+            FruitSightProbe.ResetForScene();
+            FruitNavProbe.ResetForScene();
+            FruitHandsProbe.ResetForScene();
+            FruitGaitProbe.ResetForScene();
+            FruitNavDraw.Clear();
+            FruitNav.ResetForScene();
 #if FRUITLIB_DEVTOOLS
             FruitBundleTests.ResetForScene();
 #endif
@@ -121,7 +182,13 @@ namespace FruitLib
             FruitMenuNative.ResetForScene();
             FruitWorldMenu.ResetForScene();
             FruitGameMenus.ResetForScene();
+            FruitTextInput.ResetForScene();
             FruitInventory.ResetForScene();
+            FruitBodyControl.ResetForScene();
+            FruitBodies.ResetForScene();
+            FruitSight.ResetForScene();
+            FruitEvents.ResetForScene();
+            FruitWorldEvents.ResetForScene();
         }
 
         // PauseView raises nothing itself - it is a dumb view that owns a ManagedEvent

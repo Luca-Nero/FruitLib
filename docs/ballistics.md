@@ -203,6 +203,16 @@ the spawn: `FruitBallistics.SpawnProjectile(id, origin, dir, owner)`, where 0 me
 not said (a networking mod puts peer ids there; it is `BallisticsCommand.Owner` on the wire).
 `SpawnExplosion` has the same overload, and `ExplosionInfo.Owner` carries it through.
 
+**Who to blame (5.34.0).** `Owner` is for networking. A different field says whose doing it is:
+`FruitBallistics.SpawnProjectile(id, origin, dir, owner, instigator)` and
+`SpawnExplosion(id, origin, forward, axis, owner, features, instigator)` take the
+`FruitBody.Id` of the body that fired the round or set off the charge (0, the default, is the
+player). It rides on `BallisticsCommand.Instigator` and comes back on `Projectile.Instigator`,
+`ExplosionInfo`, `WoundInfo`, `FragmentTrace` and `BlastTrace`, and FruitLib's own `Explosion`,
+`Wounded` and `NearMiss` events carry actor `body#<id>` instead of `player`. A mod that lets bodies
+use its explosives passes the user's id when the charge goes off; before 5.34.0 every blast was
+the player's, and a minds mod held the player responsible for a grenade a body threw.
+
 ## Steering a round
 
 `ProjectileStep` fires for every round, every frame, before it moves, with the frame's `dt`. Set

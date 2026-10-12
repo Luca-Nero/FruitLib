@@ -670,6 +670,9 @@ namespace FruitLib
             FruitInventoryGc.Pin(instance, "on toolbar");
             _live[instance.Pointer] = new Live { Item = item, Instance = instance, Slot = index };
             FruitLog.Info($"[FruitInventory] {item} put on toolbar slot {index}");
+
+            // Where a native item would get it: before its first activation.
+            if (item.Prop != null && !item.Prop.Broken) FruitSpawnMode.Attach(instance, item);
         }
 
         internal static void OnRemoving(GAToolbarGIIItemsHandler handler, int index)
@@ -684,6 +687,7 @@ namespace FruitLib
 
         internal static void Forget(GodInventoryItem instance)
         {
+            FruitSpawnMode.Forget(instance);
             if (!_live.TryGetValue(instance.Pointer, out var live)) return;
             _live.Remove(instance.Pointer);
 
@@ -692,12 +696,14 @@ namespace FruitLib
 
         internal static void OnSelect(GodInventoryItem instance)
         {
+            FruitInventory.NoteHeld(instance);
             var live = Find(instance);
             if (live != null) FruitInventory.Selected(live.Item, instance.gameObject, instance.Pointer, live.Slot);
         }
 
         internal static void OnDeselect(GodInventoryItem instance)
         {
+            FruitInventory.NoteDropped(instance);
             var live = Find(instance);
             if (live != null && live.Item.HeldInstance == instance.Pointer) FruitInventory.Deselected(live.Item);
         }
@@ -790,14 +796,27 @@ namespace FruitLib
             FruitInventoryNative.Forget(this);
         }
 
-        public override void OnLeftMouseButtonClick()             => Fire(i => i.OnPrimary,          nameof(FruitItem.OnPrimary));
+        public override void OnLeftMouseButtonClick()
+        {
+            if (FruitSpawnMode.Click(this)) return;   // a PlaceOnClick prop: the click places it
+            Fire(i => i.OnPrimary, nameof(FruitItem.OnPrimary));
+        }
+
         public override void OnLeftMouseButtonHold(float time)    => Fire(i => i.OnPrimaryHold, time, nameof(FruitItem.OnPrimaryHold));
         public override void OnLeftMouseButtonRelease()           => Fire(i => i.OnPrimaryRelease,   nameof(FruitItem.OnPrimaryRelease));
         public override void OnRightMouseButtonClick()            => Fire(i => i.OnSecondary,        nameof(FruitItem.OnSecondary));
         public override void OnRightMouseButtonHold(float time)   => Fire(i => i.OnSecondaryHold, time, nameof(FruitItem.OnSecondaryHold));
         public override void OnRightMouseButtonRelease()          => Fire(i => i.OnSecondaryRelease, nameof(FruitItem.OnSecondaryRelease));
         public override void OnMiddleMouseButtonClick()           => Fire(i => i.OnMiddle,           nameof(FruitItem.OnMiddle));
-        public override void OnMiddleMouseButtonScroll(float n)   => Fire(i => i.OnScroll, n,        nameof(FruitItem.OnScroll));
+        public override void OnMiddleMouseButtonScroll(float n)
+        {
+            if (FruitSpawnMode.Scroll(this, n)) return;
+            Fire(i => i.OnScroll, n, nameof(FruitItem.OnScroll));
+        }
+
+        /// <summary>The game's "can't do that" sound, as a native item plays it. For the placement host.</summary>
+        [HideFromIl2Cpp]
+        internal void InvalidAction() => PlayInvalidActionSound();
 
         [HideFromIl2Cpp]
         private void Fire(Func<FruitItem, Action<FruitItem>> pick, string what)

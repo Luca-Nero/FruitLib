@@ -94,9 +94,10 @@ namespace FruitLib
         /// <summary>
         /// A menu has the mouse and keyboard: the FruitLib menu, or one of the game's own (the
         /// terminal, a context menu), or one of them closed this frame or the last. Gate item
-        /// use and hotkeys on this. The game's menus count since 5.5.0.
+        /// use and hotkeys on this. The game's menus count since 5.5.0, an open FruitTextInput since 5.16.0.
         /// </summary>
-        public static bool IsInputSuppressed  => IsOpen || JustClosed || GameMenuOpen || FruitGameMenus.JustClosed;
+        public static bool IsInputSuppressed  => IsOpen || JustClosed || GameMenuOpen || FruitGameMenus.JustClosed
+                                              || FruitTextInput.Active || FruitTextInput.JustClosed;
 
         /// <summary>One of the game's own menus is open: the terminal (items / world), a context
         /// menu, anything the game's tools themselves stand down for (5.5.0).</summary>

@@ -138,3 +138,31 @@ FruitLib's own settings page (pause → **MODS** → **FruitLib**, and
 `UserData/FruitLibConfig.ini`) exposes corner, margins, gap
 between panels, font size, background alpha, native or IMGUI drawing, a master enable, and a toggle key
 (default **F8**) that hides all mod HUDs for the session. Your panel inherits all of it.
+
+## Text input
+
+`FruitTextInput` (since 5.16.0) is a one-line text box at the bottom of the screen, for
+when the player has to type something: a line to an NPC, a command, a name.
+
+```csharp
+if (Input.GetKeyDown(KeyCode.U) && !FruitMenu.IsInputSuppressed)
+    FruitTextInput.Open("MyMod", "Say:", (text, shift) => Say(text, loud: shift),
+                        onCancel: null, maxLength: 160);
+```
+
+- **Enter** submits the trimmed line (an empty line submits nothing). The callback also
+  gets whether Shift was held. **Esc** closes the box and calls `onCancel`.
+- Left/Right/Home/End move the caret, Backspace and Delete edit, Ctrl+Backspace deletes a word.
+- Characters come from IMGUI key events, so the keyboard layout and key repeat are the system's.
+- While the box is open, the game's controls stand still. FruitLib takes the game's own input
+  block (`ButtonsInputBlockService`, the same one the pause menu and the loading curtain take),
+  so the camera, the held tool and hotkeys such as slow motion stop. `FruitMenu.IsInputSuppressed`
+  is true while the box is open and for a frame after, so FruitLib-gated mod hotkeys stay quiet.
+  Esc does not also open the pause menu.
+- `Active`, `Owner`, `Text` and `JustClosed` tell you the state. `SetPrompt` changes the label
+  while the box is open. `Close()` closes it without calling either callback.
+- `HoldsGame` is false if the game's input block service hasn't been seen yet. In that case the
+  camera may move while the player types. FruitLib picks the service up from the game's own
+  calls to it, which happen as soon as a level has loaded.
+
+Only one mod can have the box at a time: `Open` returns false while another mod's box is open.

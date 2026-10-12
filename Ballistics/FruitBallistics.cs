@@ -22,6 +22,10 @@ namespace FruitLib
         /// <summary>Who fired it: 0 = this machine / not said. FruitNet puts peer ids here, and
         /// force fields and surface hooks can use it to leave a player's own rounds alone.</summary>
         public int     Owner;
+        /// <summary>The tracked body that set it off (<see cref="FruitBody.Id"/>), 0 = the player or
+        /// nobody said. Not the networking peer (that is <see cref="Owner"/>): this is who the
+        /// world's events blame - a grenade thrown by a body wounds in that body's name. Since 5.34.0.</summary>
+        public int     Instigator;
         /// <summary>Explosions only: parts of the spec's <see cref="ExplosionSpec.Features"/> left
         /// out of this one detonation. None (the default) runs the spec as it is.</summary>
         public ExplosionFeatures Disabled;
@@ -72,6 +76,8 @@ namespace FruitLib
         public bool           Alive    { get; internal set; }
         /// <summary>Who fired it, from <see cref="BallisticsCommand.Owner"/>.</summary>
         public int            Owner    { get; internal set; }
+        /// <summary>The body that fired it, from <see cref="BallisticsCommand.Instigator"/>; 0 = the player.</summary>
+        public int            Instigator { get; internal set; }
         /// <summary>Surfaces it has gone through.</summary>
         public int            Penetrations { get; internal set; }
         /// <summary>Knocked off its axis by something it passed through: more drag, and a wider
@@ -184,6 +190,8 @@ namespace FruitLib
         public bool       Exited;
         public int        Steps;
         public bool       Cosmetic;
+        /// <summary>The body whose round or explosion did it, from <see cref="BallisticsCommand.Instigator"/>; 0 = the player.</summary>
+        public int        Instigator;
     }
 
     public struct ExplosionInfo
@@ -195,6 +203,8 @@ namespace FruitLib
         public bool          Cosmetic;
         /// <summary>Who set it off, from <see cref="BallisticsCommand.Owner"/>.</summary>
         public int           Owner;
+        /// <summary>The body that set it off, from <see cref="BallisticsCommand.Instigator"/>; 0 = the player.</summary>
+        public int           Instigator;
         /// <summary>The parts that ran: the spec's <see cref="ExplosionSpec.Features"/> less
         /// whatever the call left out. Visuals can follow it (no fragments, no debris).</summary>
         public ExplosionFeatures Features;
@@ -234,6 +244,7 @@ namespace FruitLib
     {
         public ExplosionSpec Spec;
         public int        Owner;
+        public int        Instigator;
         public bool       Cosmetic;
         /// <summary>Which fragment of this detonation, and which leg of it (0 = from the charge).</summary>
         public int        Fragment, Leg;
@@ -268,6 +279,7 @@ namespace FruitLib
     {
         public ExplosionSpec Spec;
         public int       Owner;
+        public int       Instigator;
         public Vector3   Origin, Target;
         /// <summary>True for an overpressure (wound) check on a limb, false for the shockwave push on a body.</summary>
         public bool      Overpressure;
@@ -392,10 +404,18 @@ namespace FruitLib
 
         /// <summary>Fires a registered round on behalf of <paramref name="owner"/> (see <see cref="BallisticsCommand.Owner"/>).</summary>
         public static Projectile SpawnProjectile(string specId, Vector3 origin, Vector3 direction, int owner)
+            => SpawnProjectile(specId, origin, direction, owner, 0);
+
+        /// <summary>
+        /// Fires a registered round that a tracked body fired: every wound and near miss it causes
+        /// is published in that body's name, not the player's (<see cref="BallisticsCommand.Instigator"/>,
+        /// a <see cref="FruitBody.Id"/>; 0 = the player). Since 5.34.0.
+        /// </summary>
+        public static Projectile SpawnProjectile(string specId, Vector3 origin, Vector3 direction, int owner, int instigator)
             => Request(new BallisticsCommand
             {
                 Kind = BallisticsCommandKind.Projectile, SpecId = specId,
-                Origin = origin, Direction = direction.normalized, Seed = NextSeed(), Owner = owner,
+                Origin = origin, Direction = direction.normalized, Seed = NextSeed(), Owner = owner, Instigator = instigator,
             }) as Projectile;
 
         /// <summary>Detonates a registered explosive. <paramref name="forward"/> aims a cone;
@@ -422,12 +442,21 @@ namespace FruitLib
         /// <paramref name="forward"/> stays what effects are aimed by. Zero = forward.
         /// </summary>
         public static void SpawnExplosion(string specId, Vector3 origin, Vector3 forward, Vector3 axis, int owner, ExplosionFeatures features)
+            => SpawnExplosion(specId, origin, forward, axis, owner, features, 0);
+
+        /// <summary>
+        /// As above, for a charge a tracked body set off: the Explosion event and the wounds its
+        /// fragments and blast cause carry that body as their actor
+        /// (<see cref="BallisticsCommand.Instigator"/>, a <see cref="FruitBody.Id"/>; 0 = the
+        /// player). Since 5.34.0.
+        /// </summary>
+        public static void SpawnExplosion(string specId, Vector3 origin, Vector3 forward, Vector3 axis, int owner, ExplosionFeatures features, int instigator)
             => Request(new BallisticsCommand
             {
                 Kind = BallisticsCommandKind.Explosion, SpecId = specId,
                 Origin = origin, Direction = forward.sqrMagnitude > 0f ? forward.normalized : Vector3.up,
                 Axis = axis.sqrMagnitude > 0f ? axis.normalized : Vector3.zero,
-                Seed = NextSeed(), Owner = owner, Disabled = ExplosionFeatures.All & ~features,
+                Seed = NextSeed(), Owner = owner, Instigator = instigator, Disabled = ExplosionFeatures.All & ~features,
             });
 
         /// <summary>The most recent detonation's timings and counts (<see cref="ExplosionStats"/>),

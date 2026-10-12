@@ -54,6 +54,7 @@ namespace FruitLib
                 Alive       = true,
                 Cosmetic    = cosmetic,
                 Owner       = cmd.Owner,
+                Instigator  = cmd.Instigator,
                 MuzzlePower = spec.MuzzlePower,
                 Rng         = new System.Random(cmd.Seed),
             };
@@ -233,7 +234,7 @@ namespace FruitLib
             {
                 Projectile = r, Limb = limb.gameObject, Entry = hit.point, Exit = res.Exit,
                 Direction = dir, PowerIn = powerIn, PowerOut = res.PowerOut,
-                Exited = res.Exited, Steps = res.Steps, Cosmetic = r.Cosmetic,
+                Exited = res.Exited, Steps = res.Steps, Cosmetic = r.Cosmetic, Instigator = r.Instigator,
             });
             return flies;
         }
