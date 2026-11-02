@@ -62,6 +62,9 @@ namespace FruitLib
 
         private sealed class Swing
         {
+            public Action<bool> Finished;
+            public bool Hit;
+            public string TraceId = FruitInteractionTrace.NewId("strike");
             public FruitBody   Attacker, Victim;
             public FruitStrike Kind;
             public string      Source;
@@ -100,6 +103,14 @@ namespace FruitLib
             return true;
         }
 
+        /// <summary>Live surface of a body limb nearest an approaching actor/tool. Shared by
+        /// treatment, combat and other callers; a limb's centre is not necessarily reachable.</summary>
+        public static Vector3? SurfacePoint(FruitBody target, int limb, Vector3 from)
+        {
+            if (target == null || limb < 0 || limb >= target.Limbs.Length || !target.Limbs[limb].Present) return null;
+            return NearestCollider(target.Limbs[limb], from, out Vector3 point) != null ? point : target.Limbs[limb].LivePosition;
+        }
+
         /// <summary>
         /// Puts one of a body's hands at a world point through the game's own hand IK (the one its
         /// wound covering uses), flying there at <paramref name="speed"/> (the covering flies at 1).
@@ -129,15 +140,18 @@ namespace FruitLib
             return false;
         }
 
-        private static void StartSwing(FruitBody attacker, FruitBody victim, FruitStrike kind, string source, float strength)
+        private static void StartSwing(FruitBody attacker, FruitBody victim, FruitStrike kind, string source, float strength, Action<bool> finished = null, int selectedLimb = -1)
         {
             if (Swinging(attacker)) return;
             var s = new Swing
             {
                 Attacker = attacker, Victim = victim, Kind = kind, Source = source, Strength = strength,
-                StageAt = Time.time, Limb = PickLimb(victim, kind),
+                StageAt = Time.time, Limb = selectedLimb >= 0 ? selectedLimb : PickLimb(victim, kind),
+                Finished = finished,
             };
             _swings.Add(s);
+            FruitInteractionTrace.Write(s.TraceId, "windup", attacker, victim.Position, Reach,
+                detail: "target=#" + victim.Id + " kind=" + kind);
 
             try
             {
@@ -183,7 +197,7 @@ namespace FruitLib
             through = through.sqrMagnitude > 1e-4f ? through.normalized : fwd;
 
             if (s.Kind == FruitStrike.Punch)
-                s.MainPlaced |= Place(a, s.Main, s.Contact + through * 0.12f, PunchHandSpeed);
+                s.MainPlaced |= Place(a, s.Main, s.Contact + through * (0.12f - (Holding(a)?.ToolReach ?? 0f)), PunchHandSpeed);
             else
             {
                 Vector3 at = s.Contact + through * 0.1f + Vector3.up * 0.04f;
@@ -197,13 +211,21 @@ namespace FruitLib
             float now = Time.time;
             for (int i = _swings.Count - 1; i >= 0; i--)
             {
+                if (i >= _swings.Count) continue; // A result callback may cancel other swings.
                 var s = _swings[i];
                 bool done;
                 try { done = Advance(s, now); }
                 catch (Exception e) { FruitBodies.ReportOnce("strike", e); done = true; }
+                if (s.Hit && s.Finished != null)
+                {
+                    var finished = s.Finished; s.Finished = null;
+                    try { finished(true); } catch (Exception e) { FruitBodies.ReportOnce("strike completion", e); }
+                }
                 if (!done) continue;
                 LetGo(s);
-                _swings.RemoveAt(i);
+                int current = _swings.IndexOf(s);
+                if (current >= 0) _swings.RemoveAt(current);
+                try { s.Finished?.Invoke(s.Hit); } catch (Exception e) { FruitBodies.ReportOnce("strike completion", e); }
             }
         }
 
@@ -264,11 +286,43 @@ namespace FruitLib
             string actor = FruitEvents.BodyActor(a.Id);
             string noun = s.Kind == FruitStrike.Punch ? "punch" : "shove";
             float reach = Distance(a, v);
-            if (reach > Reach + 0.35f || s.Limb < 0 || !v.Limbs[s.Limb].Present)
+            FruitInteractionTrace.Write(s.TraceId, "impact-check", a, s.Contact, Reach,
+                s.MainHand == LeftHand, "target=#" + v.Id + " limb=" + s.Limb + " centre-reach=" + reach);
+            if (s.Limb < 0 || !v.Limbs[s.Limb].Present)
             {
                 FruitEvents.Publish(s.Source, "SwungAt", $"{a.Name} swung at {v.Name} and missed",
                                     v.HasPosition ? v.Position : (Vector3?)null, radius: 8f, body: v.Id, magnitude: 0.5f,
                                     detail: $"reach={reach:0.00}", actor: actor, cause: noun);
+                return;
+            }
+
+            var impactHand = a.Limbs[s.MainHand];
+            bool impactPlaced = s.MainPlaced;
+            float toolReach = s.Kind == FruitStrike.Punch ? Holding(a)?.ToolReach ?? 0f : 0f;
+            var targetLimb = v.Limbs[s.Limb];
+            if (NearestCollider(targetLimb, impactHand.Present ? impactHand.LivePosition : a.Position, out Vector3 actualPoint) == null)
+                actualPoint = targetLimb.LivePosition;
+            if (s.Kind == FruitStrike.Shove && s.OffPlaced)
+            {
+                var offHand = a.Limbs[s.OffHand];
+                if (offHand.Present)
+                {
+                    if (NearestCollider(targetLimb, offHand.LivePosition, out Vector3 offPoint) == null) offPoint = targetLimb.LivePosition;
+                    if (!impactHand.Present || Vector3.Distance(offHand.LivePosition, offPoint) < Vector3.Distance(impactHand.LivePosition, actualPoint))
+                    { impactHand = offHand; actualPoint = offPoint; impactPlaced = s.OffPlaced; }
+                }
+            }
+            Vector3? workingTip = s.Kind == FruitStrike.Punch ? Holding(a)?.WorkingPoint?.Invoke() : null;
+            if (workingTip.HasValue && FruitInteractionPolicy.PointFinite(workingTip.Value) &&
+                NearestCollider(targetLimb, workingTip.Value, out Vector3 tipPoint) != null) actualPoint = tipPoint;
+            bool tipMissing = s.Kind == FruitStrike.Punch && Holding(a)?.WorkingPoint != null && !workingTip.HasValue;
+            if (!impactHand.Present || !impactPlaced || tipMissing ||
+                (workingTip.HasValue && (!FruitInteractionPolicy.PointFinite(workingTip.Value) || Vector3.Distance(workingTip.Value, actualPoint) > 0.18f)) ||
+                Vector3.Distance(impactHand.LivePosition, actualPoint) > 0.18f + toolReach ||
+                !InteractionLineClear(impactHand.LivePosition, actualPoint, Holding(a)))
+            {
+                FruitInteractionTrace.Write(s.TraceId, "missed", a, actualPoint, 0.18f + toolReach,
+                    s.MainHand == LeftHand, "no actual hand/tool contact");
                 return;
             }
 
@@ -323,6 +377,38 @@ namespace FruitLib
                                 magnitude: magnitude, limb: li,
                                 detail: $"impulse={impulse:0} mass={mass:0} reach={reach:0.00} hands={(s.MainPlaced || s.OffPlaced ? "ik" : "none")} flinch={(flinched ? "yes" : "no")}",
                                 actor: actor, cause: noun, direction: dir);
+            s.Hit = true;
+        }
+
+        private static bool StartAttackInteraction(FruitBody attacker, FruitBody victim, FruitStrike kind, float seconds,
+                                                  string source, float strength, bool run, Action<FruitInteraction> ended)
+        {
+            if (attacker == null || victim == null || attacker == victim) return false;
+            CancelInteraction(attacker);
+            int limb = PickLimb(victim, kind);
+            var item = Holding(attacker);
+            return Interact(attacker, new FruitInteractionSpec
+            {
+                Name = "strike", Source = source, Target = victim, Item = item, Reach = ArmReach, Run = run,
+                ToolReach = item?.ToolReach ?? 0f, RequireContact = false, ContactSeconds = 0f, Seconds = seconds,
+                AllowTargetDeathAfterApply = true,
+                ResolvePoint = () =>
+                {
+                    if (limb < 0 || !victim.Limbs[limb].Present) return null;
+                    Frame(attacker, victim, out Vector3 chest, out _, out _);
+                    return NearestCollider(victim.Limbs[limb], chest, out Vector3 p) != null ? p : victim.Limbs[limb].LivePosition;
+                },
+                Begin = op => StartSwing(attacker, victim, kind, source, Mathf.Max(0f, strength), hit =>
+                {
+                    if (hit) { op.Committed = true; op.Complete("strike connected"); }
+                    else op.Fail("strike missed or was interrupted");
+                }, limb),
+                Cancel = () =>
+                {
+                    for (int i = _swings.Count - 1; i >= 0; i--)
+                        if (_swings[i].Attacker == attacker) { LetGo(_swings[i]); _swings.RemoveAt(i); }
+                }
+            }, ended);
         }
 
         private static void Push(FruitLimb l, Vector3 impulse, Vector3 at)

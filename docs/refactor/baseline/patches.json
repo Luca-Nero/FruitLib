@@ -1,0 +1,644 @@
+[
+  {
+    "file": "Content/AssetBundleNative.cs",
+    "line": 46,
+    "patchClass": "(call)",
+    "target": "IL2CPP.ResolveICall\u003CT\u003E(\u0022UnityEngine.AssetBundle::\u0022 \u002B name)",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "Content/AssetBundleNative.cs",
+    "line": 94,
+    "patchClass": "(call)",
+    "target": "IL2CPP.ResolveICall\u003CT\u003E(fullName)",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "Core/FruitLibMod.cs",
+    "line": 197,
+    "patchClass": "FruitLibMod.Patch_PauseResume",
+    "target": "HarmonyPatch(typeof(PausePresenter), nameof(PausePresenter.RequestUnpause))",
+    "methods": [
+      "Prefix@201"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitBallisticsProbe.cs",
+    "line": 318,
+    "patchClass": "(call)",
+    "target": "Patch(harmony, typeof(Bullet), nameof(Bullet.OnCollisionEnter), nameof(HitPrefix), nameof(HitPostfix))",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitBallisticsProbe.cs",
+    "line": 319,
+    "patchClass": "(call)",
+    "target": "Patch(harmony, typeof(BodyWoundWalker), nameof(BodyWoundWalker.SendCavitation), null, nameof(CavitationPostfix))",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitBallisticsProbe.cs",
+    "line": 320,
+    "patchClass": "(call)",
+    "target": "Patch(harmony, typeof(BodyWoundWalker), nameof(BodyWoundWalker.SendExitTear), null, nameof(ExitTearPostfix))",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitBallisticsProbe.cs",
+    "line": 321,
+    "patchClass": "(call)",
+    "target": "Patch(harmony, typeof(Bullet), nameof(Bullet.HandleBodyExit), null, nameof(BodyExitPostfix))",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitBallisticsProbe.cs",
+    "line": 322,
+    "patchClass": "(call)",
+    "target": "Patch(harmony, typeof(Bullet), nameof(Bullet.HandlePowerExhausted), null, nameof(PowerExhaustedPostfix))",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitBallisticsProbe.cs",
+    "line": 332,
+    "patchClass": "(call)",
+    "target": "harmony.Patch(target, prefix: prefix == null ? null : new HarmonyMethod(typeof(FruitBallisticsProbe), prefix), postf",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitBundleTests.cs",
+    "line": 799,
+    "patchClass": "(call)",
+    "target": "IL2CPP.ResolveICall\u003CVfxResourcesFn\u003E(\u0022UnityEngine.VFX.VFXManager::get_runtimeResources_Injected\u0022)",
+    "methods": [],
+    "dev": true
+  },
+  {
+    "file": "Debug/FruitHandsProbe.cs",
+    "line": 413,
+    "patchClass": "(call)",
+    "target": "new HarmonyLib.Harmony(\u0022FruitLib.Debug.HandsProbe\u0022).Patch(target, postfix: new HarmonyMethod(typeof(FruitHandsProbe), nameof(CollisionPostfi",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitInventoryAudit.cs",
+    "line": 132,
+    "patchClass": "FruitInventoryTrace_Appear",
+    "target": "HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnAppearItem))",
+    "methods": [
+      "Prepare@135",
+      "Prefix@137",
+      "Postfix@138"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitInventoryAudit.cs",
+    "line": 141,
+    "patchClass": "FruitInventoryTrace_Select",
+    "target": "HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnItemSelect))",
+    "methods": [
+      "Prepare@144",
+      "Prefix@146"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitInventoryAudit.cs",
+    "line": 149,
+    "patchClass": "FruitInventoryTrace_Activate",
+    "target": "HarmonyPatch(typeof(GodInventoryItem), nameof(GodInventoryItem.ActivateLogic))",
+    "methods": [
+      "Prepare@152",
+      "Prefix@154",
+      "Postfix@161"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitInventoryAudit.cs",
+    "line": 164,
+    "patchClass": "FruitInventoryTrace_Provide",
+    "target": "HarmonyPatch(typeof(GodInventoryItemInputProvider), nameof(GodInventoryItemInputProvider.Provide))",
+    "methods": [
+      "Prepare@167",
+      "Prefix@169",
+      "Postfix@170"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitInventoryAudit.cs",
+    "line": 185,
+    "patchClass": "FruitInventoryTrace_Request",
+    "target": "HarmonyPatch(typeof(GAItemsSelectRequestsProcessor), nameof(GAItemsSelectRequestsProcessor.TrySelectRequest))",
+    "methods": [
+      "Prepare@188",
+      "Prefix@190",
+      "Postfix@197"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitInventoryAudit.cs",
+    "line": 200,
+    "patchClass": "FruitInventoryTrace_Deselect",
+    "target": "HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnItemDeselect))",
+    "methods": [
+      "Prepare@203",
+      "Prefix@205"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitInventoryAudit.cs",
+    "line": 208,
+    "patchClass": "FruitInventoryTrace_Deactivate",
+    "target": "HarmonyPatch(typeof(GodInventoryItem), nameof(GodInventoryItem.DeactivateLogic))",
+    "methods": [
+      "Prepare@211",
+      "Prefix@213",
+      "Postfix@214"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitInventoryAudit.cs",
+    "line": 217,
+    "patchClass": "FruitInventoryTrace_Disappear",
+    "target": "HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnDisappearItem))",
+    "methods": [
+      "Prepare@220",
+      "Prefix@222",
+      "Postfix@223"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Debug/FruitMenuProbe.cs",
+    "line": 421,
+    "patchClass": "FruitMenuProbe_DrawScreenPatch",
+    "target": "HarmonyPatch(typeof(PausePresenter), nameof(PausePresenter.DrawScreen))",
+    "methods": [
+      "Prepare@424",
+      "Postfix@426"
+    ],
+    "dev": true
+  },
+  {
+    "file": "Hud/FruitTextInput.cs",
+    "line": 305,
+    "patchClass": "FruitTextInput_AddBlockPatch",
+    "target": "HarmonyPatch(typeof(ButtonsInputBlockService), nameof(ButtonsInputBlockService.AddBlockRequest))",
+    "methods": [
+      "Postfix@308"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Hud/FruitTextInput.cs",
+    "line": 315,
+    "patchClass": "FruitTextInput_RemoveBlockPatch",
+    "target": "HarmonyPatch(typeof(ButtonsInputBlockService), nameof(ButtonsInputBlockService.RemoveBlockRequest))",
+    "methods": [
+      "Postfix@318"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Hud/FruitTextInput.cs",
+    "line": 325,
+    "patchClass": "FruitTextInput_BlockedPatch",
+    "target": "HarmonyPatch(typeof(ButtonsInputBlockService), nameof(ButtonsInputBlockService.Blocked), MethodType.Getter)",
+    "methods": [
+      "Postfix@328"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Hud/FruitTextInput.cs",
+    "line": 340,
+    "patchClass": "FruitTextInput_PausePatch",
+    "target": "HarmonyPatch(typeof(PauseService), nameof(PauseService.SetPause))",
+    "methods": [
+      "Prefix@343"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Inventory/FruitInventoryNative.cs",
+    "line": 846,
+    "patchClass": "FruitInventory_BootPatch",
+    "target": "HarmonyPatch(typeof(NativeGIIProps), nameof(NativeGIIProps.Register))",
+    "methods": [
+      "Postfix@849"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Inventory/FruitInventoryNative.cs",
+    "line": 870,
+    "patchClass": "FruitInventory_LayoutPatch",
+    "target": "HarmonyPatch(typeof(TerminalItemsService), nameof(TerminalItemsService.RefuseLayoutThatCannotBeDrawn))",
+    "methods": [
+      "Prefix@873"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Inventory/FruitInventoryNative.cs",
+    "line": 885,
+    "patchClass": "FruitInventory_DrawCategoriesPatch",
+    "target": "HarmonyPatch(typeof(TerminalItemsPlateView), nameof(TerminalItemsPlateView.DrawCategories))",
+    "methods": [
+      "Prefix@891",
+      "Finalizer@903"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Inventory/FruitInventoryNative.cs",
+    "line": 906,
+    "patchClass": "FruitInventory_StripGuardPatch",
+    "target": "HarmonyPatch(typeof(TerminalItemsPlateView), nameof(TerminalItemsPlateView.ThrowIfPastTheStrip))",
+    "methods": [
+      "Prefix@909"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Inventory/FruitInventoryNative.cs",
+    "line": 912,
+    "patchClass": "FruitInventory_AddItemPatch",
+    "target": "HarmonyPatch(typeof(GAToolbarGIIItemsHandler), nameof(GAToolbarGIIItemsHandler.AddItem))",
+    "methods": [
+      "Postfix@915"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Inventory/FruitInventoryNative.cs",
+    "line": 922,
+    "patchClass": "FruitInventory_RemoveItemPatch",
+    "target": "HarmonyPatch(typeof(GAToolbarGIIItemsHandler), nameof(GAToolbarGIIItemsHandler.RemoveItem))",
+    "methods": [
+      "Prefix@925"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Inventory/FruitInventoryNative.cs",
+    "line": 932,
+    "patchClass": "FruitInventory_SelectPatch",
+    "target": "HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnItemSelect))",
+    "methods": [
+      "Postfix@935"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Inventory/FruitInventoryNative.cs",
+    "line": 942,
+    "patchClass": "FruitInventory_DeselectPatch",
+    "target": "HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnItemDeselect))",
+    "methods": [
+      "Postfix@945"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Inventory/FruitInventoryNative.cs",
+    "line": 958,
+    "patchClass": "FruitInventory_PinOnAppear",
+    "target": "HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnAppearItem))",
+    "methods": [
+      "Prefix@961"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Inventory/FruitInventoryNative.cs",
+    "line": 964,
+    "patchClass": "FruitInventory_PinOnDisappear",
+    "target": "HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnDisappearItem))",
+    "methods": [
+      "Prefix@967"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Inventory/FruitInventoryNative.cs",
+    "line": 970,
+    "patchClass": "FruitInventory_PinOnDeselect",
+    "target": "HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnItemDeselect))",
+    "methods": [
+      "Prefix@973"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Inventory/FruitInventoryNative.cs",
+    "line": 580,
+    "patchClass": "(call)",
+    "target": "ClassInjector.RegisterTypeInIl2Cpp\u003CFruitHeldItem\u003E()",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "Inventory/FruitSpawnMode.cs",
+    "line": 611,
+    "patchClass": "FruitSpawnMode_SelectPatch",
+    "target": "HarmonyPatch(typeof(GAToolbarSelectedItemProcessor), nameof(GAToolbarSelectedItemProcessor.OnItemSelect))",
+    "methods": [
+      "Prefix@614"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Maps/FruitMaps.cs",
+    "line": 235,
+    "patchClass": "FruitMaps.Patch_Cards",
+    "target": "HarmonyPatch(typeof(MainMenuPresenter), \u0022Cards\u0022)",
+    "methods": [
+      "Postfix@238"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Maps/FruitMaps.cs",
+    "line": 268,
+    "patchClass": "FruitMaps.Patch_DrawMaps",
+    "target": "HarmonyPatch(typeof(MainMenuView), nameof(MainMenuView.DrawMaps))",
+    "methods": [
+      "Prefix@271"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Maps/FruitMaps.cs",
+    "line": 287,
+    "patchClass": "FruitMaps.Patch_MapSelectEnable",
+    "target": "HarmonyPatch(typeof(MapSelectView), nameof(MapSelectView.OnEnable))",
+    "methods": [
+      "Prefix@290"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Maps/FruitMaps.cs",
+    "line": 373,
+    "patchClass": "FruitMaps.Patch_SceneName",
+    "target": "HarmonyPatch(typeof(MapCatalogue), nameof(MapCatalogue.SceneName))",
+    "methods": [
+      "Prefix@376"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Maps/FruitMaps.cs",
+    "line": 384,
+    "patchClass": "FruitMaps.Patch_Info",
+    "target": "HarmonyPatch(typeof(MapCatalogue), nameof(MapCatalogue.Info))",
+    "methods": [
+      "Prefix@387"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Maps/FruitMaps.cs",
+    "line": 395,
+    "patchClass": "FruitMaps.Patch_Enter",
+    "target": "HarmonyPatch(typeof(SandboxState), nameof(SandboxState.Enter))",
+    "methods": [
+      "Prefix@398"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Menu/FruitGameMenus.cs",
+    "line": 45,
+    "patchClass": "FruitGameMenus_AddPatch",
+    "target": "HarmonyPatch(typeof(OpenMenus), nameof(OpenMenus.Add))",
+    "methods": [
+      "Postfix@48"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Menu/FruitGameMenus.cs",
+    "line": 56,
+    "patchClass": "FruitGameMenus_RemovePatch",
+    "target": "HarmonyPatch(typeof(OpenMenus), nameof(OpenMenus.Remove))",
+    "methods": [
+      "Postfix@59"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Menu/FruitMenuNative.cs",
+    "line": 182,
+    "patchClass": "FruitMenu_BackNavigationPatch",
+    "target": "HarmonyPatch(typeof(PausePresenter), nameof(PausePresenter.Services_UI_IPauseBackNavigation_TryStepBack))",
+    "methods": [
+      "Prefix@196"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Menu/FruitWorldMenu.cs",
+    "line": 447,
+    "patchClass": "FruitWorldMenu_RunSceneRowPatch",
+    "target": "HarmonyPatch(typeof(TerminalWorldService), nameof(TerminalWorldService.RunSceneRow))",
+    "methods": [
+      "Postfix@450"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Menu/FruitWorldMenu.cs",
+    "line": 467,
+    "patchClass": "FruitWorldMenu_ShowCategoryPatch",
+    "target": "HarmonyPatch(typeof(TerminalWorldPlateView), nameof(TerminalWorldPlateView.ShowCategory))",
+    "methods": [
+      "Postfix@470"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Menu/FruitWorldMenu.cs",
+    "line": 482,
+    "patchClass": "FruitWorldMenu_PresenterEnablePatch",
+    "target": "HarmonyPatch(typeof(TerminalWorldPresenter), nameof(TerminalWorldPresenter.OnEnable))",
+    "methods": [
+      "Postfix@485"
+    ],
+    "dev": false
+  },
+  {
+    "file": "Utilities/FruitNative.cs",
+    "line": 29,
+    "patchClass": "(call)",
+    "target": "IL2CPP.ResolveICall\u003CT\u003E(name)",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "World/FruitBodies.Sample.cs",
+    "line": 497,
+    "patchClass": "FruitBodies.Patch_PainSpike",
+    "target": "HarmonyPatch(typeof(CreaturePainPerception), nameof(CreaturePainPerception.ReceivePainSpike))",
+    "methods": [
+      "Postfix@500"
+    ],
+    "dev": false
+  },
+  {
+    "file": "World/FruitBodyControl.Stability.cs",
+    "line": 172,
+    "patchClass": "FruitBodyControl.WalkMuscleSync",
+    "target": "HarmonyPatch(typeof(DefaultMuscleForce), nameof(DefaultMuscleForce.SyncJointDriveWithMuscleForceValue))",
+    "methods": [
+      "Prefix@175",
+      "Postfix@176"
+    ],
+    "dev": false
+  },
+  {
+    "file": "World/FruitBodyControl.Stability.cs",
+    "line": 178,
+    "patchClass": "FruitBodyControl.WalkPelvisSync",
+    "target": "HarmonyPatch(typeof(PelvisMuscleForce), nameof(PelvisMuscleForce.SyncJointDriveWithBalanceValue))",
+    "methods": [
+      "Prefix@181",
+      "Postfix@182"
+    ],
+    "dev": false
+  },
+  {
+    "file": "World/FruitBodyControl.Stability.cs",
+    "line": 184,
+    "patchClass": "FruitBodyControl.WalkFootFriction",
+    "target": "HarmonyPatch(typeof(FootFrictionControl), nameof(FootFrictionControl.ApplyMaterial))",
+    "methods": [
+      "Prefix@187"
+    ],
+    "dev": false
+  },
+  {
+    "file": "World/FruitNavNative.cs",
+    "line": 145,
+    "patchClass": "(call)",
+    "target": "IL2CPP.ResolveICall\u003CT\u003E(name)",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "World/FruitNavNative.cs",
+    "line": 169,
+    "patchClass": "(call)",
+    "target": "IL2CPP.il2cpp_resolve_icall(name)",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "World/FruitPose.Native.cs",
+    "line": 16,
+    "patchClass": "FruitPoseNative.Patch_UpdateBalance",
+    "target": "HarmonyPatch(typeof(MoveStateDynamicBalanceControl), nameof(MoveStateDynamicBalanceControl.UpdateBalance))",
+    "methods": [
+      "Prefix@19"
+    ],
+    "dev": false
+  },
+  {
+    "file": "World/FruitPose.Native.cs",
+    "line": 33,
+    "patchClass": "FruitPoseNative.Patch_CanStand",
+    "target": "HarmonyPatch(typeof(HumanoidStandabilityChecker), nameof(HumanoidStandabilityChecker.CanStand))",
+    "methods": [
+      "Prefix@36"
+    ],
+    "dev": false
+  },
+  {
+    "file": "World/FruitPose.Native.cs",
+    "line": 53,
+    "patchClass": "FruitPoseNative.Patch_MoveExit",
+    "target": "HarmonyPatch(typeof(HumanoidMoveState), nameof(HumanoidMoveState.Exit))",
+    "methods": [
+      "Prefix@56"
+    ],
+    "dev": false
+  },
+  {
+    "file": "World/FruitPose.Native.cs",
+    "line": 70,
+    "patchClass": "FruitPoseNative.Patch_GrounderWeight",
+    "target": "HarmonyPatch(typeof(GrounderIKTools), nameof(GrounderIKTools.SetGrounderWeight))",
+    "methods": [
+      "Prefix@73"
+    ],
+    "dev": false
+  },
+  {
+    "file": "World/FruitPose.Native.cs",
+    "line": 87,
+    "patchClass": "FruitPoseNative.Patch_MuscleSync",
+    "target": "HarmonyPatch(typeof(DefaultMuscleForce), nameof(DefaultMuscleForce.SyncJointDriveWithMuscleForceValue))",
+    "methods": [
+      "Postfix@90"
+    ],
+    "dev": false
+  },
+  {
+    "file": "World/FruitPropMenu.cs",
+    "line": 126,
+    "patchClass": "(call)",
+    "target": "new HarmonyLib.Harmony(\u0022FruitLib.PropMenu\u0022).Patch(target, prefix: new HarmonyMethod(typeof(FruitPropMenu), nameof(TryOpenPrefix)))",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "World/FruitPropMenu.cs",
+    "line": 304,
+    "patchClass": "(call)",
+    "target": "ClassInjector.RegisterTypeInIl2Cpp\u003CFruitMenuHandler\u003E()",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "World/FruitPropMenu.cs",
+    "line": 305,
+    "patchClass": "(call)",
+    "target": "ClassInjector.RegisterTypeInIl2Cpp\u003CFruitMenuAction\u003E()",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "World/FruitPropMenu.cs",
+    "line": 306,
+    "patchClass": "(call)",
+    "target": "ClassInjector.RegisterTypeInIl2Cpp\u003CFruitMenuToggle\u003E()",
+    "methods": [],
+    "dev": false
+  },
+  {
+    "file": "World/FruitWorldEvents.cs",
+    "line": 222,
+    "patchClass": "FruitWorldEvents.Patch_ShootLogic",
+    "target": "HarmonyPatch(typeof(Firearm), nameof(Firearm.ShootLogic))",
+    "methods": [
+      "Postfix@225"
+    ],
+    "dev": false
+  }
+]

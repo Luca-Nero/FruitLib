@@ -164,6 +164,11 @@ namespace FruitLib
         /// <summary>When a goto order ends: its totals, to the test.</summary>
         private static void Summarise(Order o)
         {
+            Vector3 target = o.Target != null ? (o.Slotted ? o.Slot : LiveCentre(o.Target)) : o.Dest;
+            FruitInteractionTrace.Write(o.TraceId, "movement-" + o.Result, o.Body, target, o.StopDistance,
+                detail: "target=#" + (o.Target?.Id ?? 0) + " retries=" + o.Retries + " slots=" + o.Reslots +
+                    " social-slot=" + o.Slotted + " stance-order=" + o.Stance,
+                stance: o.Stance ? o.Stand : (Vector3?)null);
             var st = o.Stats;
             o.Stats = null;
             if (st == null || Summarised == null) return;

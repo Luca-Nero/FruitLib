@@ -65,11 +65,26 @@ namespace FruitLib
         [MenuCategory("Bodies"), MenuLabel("Step when turning on the spot")]
         public static bool StepTurns = true;
 
+        [MenuCategory("Bodies"), MenuLabel("Walking muscle support")]
+        public static bool WalkStability = true;
+
+        [MenuCategory("Bodies"), MenuLabel("Limit planted foot friction")]
+        public static bool FootTraction = true;
+
+        // Scale newly computed native drives only while a healthy body follows an order.
+        // Legs keep their original compliance; zero native damping remains zero.
+        public static float WalkPelvisSpring = 1.5f;
+        public static float WalkTorsoSpring = 1.5f;
+        public static float WalkLegSpring = 1f;
+
         /// <summary>Forward move direction (0..1) a stepping turn holds, ini-only. 0.25 shuffles, 0.6 takes real steps. Since 5.32.0.</summary>
         public static float StepTurnPace = 0.6f;
 
         /// <summary>Widest navmesh box FruitNav builds, metres (ini-only).</summary>
         public static float NavMaxSize = 240f;
+
+        // 5 cm opens the narrow bathroom/vestry approaches lost by the 10 cm bake.
+        public static float NavVoxelSize = 0.05f;
 
         /// <summary>Extra room shaped paths keep from walls, metres (ini-only). Since 5.21.0.</summary>
         public static float NavPathMargin = 0.3f;
@@ -119,6 +134,9 @@ namespace FruitLib
         public static bool CheckForUpdates = true;
 
         // ── Diagnostics: last ──
+
+        [MenuCategory("Diagnostics"), MenuLabel("Interaction diagnostics")]
+        public static bool InteractionDiagnostics = true;
 
         [MenuCategory("Diagnostics"), MenuLabel("Verbose log")]
         public static bool VerboseLog = false;
@@ -282,7 +300,13 @@ namespace FruitLib
             ["BallisticsProbe"]    ="logs the game's native bullet model: calibre constants once per scene, then power spent, channel and exit tear for every native shot that hits a body. For building the shared projectile API; noisy otherwise",
             ["SightProbe"]         = "test for NeuroFrukt's sight: on the key, captures what the body under the crosshair sees through an eye camera (two ways, timed, saved to UserData/FruitSight/) and logs what rays from its eyes hit, who it can see and which loose objects are near, to UserData/FruitSight.log. Also shows the player's orb to those captures. Off otherwise",
             ["SightProbeKey"]      = "while SightProbe is on: tests the body under the crosshair; with Shift, every tracked body one after another (None to disable the key)",
-            ["StepTurns"]          = "a body ordered to turn on the spot (face someone, look around, pivot at a corner) walks a tight arc on its own steps while it turns, instead of twisting with both feet planted and dragging them. Costs a drift of about 20 cm per 120 degrees. Since 5.32.0",
+            ["StepTurns"]          = "a body ordered to turn on the spot (face someone or pivot at a corner) walks a tight arc on its own steps while it turns, instead of twisting with both feet planted and dragging them. Costs a drift of about 20 cm per 120 degrees. Since 5.32.0",
+            ["WalkStability"]      = "supports the pelvis and torso during controlled walking and turns. Scales the game's current muscle values, releases on injury or a fall, and leaves the legs at their native strength. Since 5.36.0",
+            ["FootTraction"]       = "limits planted-foot grip to the walking surface while keeping the game's slippery swinging foot. Only while a healthy body follows an order. Since 5.36.0",
+            ["WalkPelvisSpring"]   = "native pelvis spring multiplier while walking; 1 disables this bone's support, range 1 to 2",
+            ["WalkTorsoSpring"]    = "native torso and head spring multiplier while walking; damping follows its square root",
+            ["WalkLegSpring"]      = "native leg spring multiplier while walking; default 1 keeps their compliance",
+            ["NavVoxelSize"]       = "navmesh cell size in metres, 0.05 to 0.2. Default 0.05 preserves narrow approaches; finer cells cost more bake time. Changing it triggers a rebuild",
             ["StepTurnPace"]       = "how hard a stepping turn walks, 0 to 1: 0.25 shuffles, 0.4 small steps, 0.6 (default) real steps with the feet lifted about 9 cm, more drifts further. Measured on 120-degree turns by the GaitProbe",
             ["StepAssist"]         = "bodies walking under a mod's orders get a lift up kerbs, thresholds and stairs (up to 30 cm): the game's walk barely raises the feet, so without it any step stops them and pathing treats steps as walls",
             ["NavMaxSize"]         = "widest box, in metres, FruitNav builds a navmesh in. It covers you and every body; past this it is centred on you",

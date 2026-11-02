@@ -236,6 +236,7 @@ namespace FruitLib
                 if (placed == null) { Invalid(host); return null; }
 
                 FruitLog.Info($"[FruitSpawnMode] placed {item} at {pose.position}");
+                placed.Interaction = prop.Interaction;
                 if (prop.OnUse != null || prop.OnUseHeld != null)
                 {
                     placed.OnUse         = prop.OnUse;

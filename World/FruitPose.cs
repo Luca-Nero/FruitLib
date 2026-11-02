@@ -88,6 +88,17 @@ namespace FruitLib
         /// fallen over a tilt), e.g. while carrying something awkward.</summary>
         public static readonly FruitPoseShape Steady = new FruitPoseShape("steady");
 
+        /// <summary>Reach forward without taking over the legs.</summary>
+        public static readonly FruitPoseShape Lean = new FruitPoseShape("lean")
+            .Bend(FruitBone.LowerSpine, Vector3.up, Vector3.forward, 15f)
+            .Bend(FruitBone.UpperSpine, Vector3.up, Vector3.forward, 15f);
+
+        /// <summary>Low seated working pose. Callers must provide a clear support surface.</summary>
+        public static readonly FruitPoseShape Sit = new FruitPoseShape("sit")
+            .BendBoth(FruitBone.RightThigh, Vector3.down, Vector3.forward, 90f)
+            .BendBoth(FruitBone.RightShin, Vector3.down, Vector3.back, 90f)
+            .Bend(FruitBone.LowerSpine, Vector3.up, Vector3.forward, 8f);
+
         /// <summary>A deep squat, back leaning in, low enough to reach the floor in front.</summary>
         public static readonly FruitPoseShape Crouch = new FruitPoseShape("crouch")
             .BendBoth(FruitBone.RightThigh, Vector3.down, Vector3.forward, 95f)
@@ -228,6 +239,7 @@ namespace FruitLib
 
         /// <summary>Whether the body's stance is ours right now (a pose held or blending out).</summary>
         public static bool IsHolding(FruitBody body) => body != null && _held.ContainsKey(body.Id);
+        public static bool IsReleasing(FruitBody body) => body != null && _held.TryGetValue(body.Id, out var h) && h.Releasing;
 
         /// <summary>How far into its pose a body is, 0..1.</summary>
         public static float Weight(FruitBody body)
@@ -277,6 +289,7 @@ namespace FruitLib
         {
             if (body == null || shape == null || !body.Alive || !body.Conscious) return false;
             if (!InMoveState(body)) return false;
+            FruitBodyControl.YieldLookToPose(body);
             if (blendSeconds < 0f) blendSeconds = DefaultBlend;
 
             if (!_held.TryGetValue(body.Id, out var h) || h.Creature != body.CreaturePtr)

@@ -114,6 +114,8 @@ namespace FruitLib
 
         private sealed class Hands
         {
+            public string TraceId = FruitInteractionTrace.NewId("hands");
+            public float TraceAt;
             public FruitBody Body;
             public FruitWorldItem Item;
             public HandStage Stage;
@@ -127,6 +129,7 @@ namespace FruitLib
             public bool MassCapped;
             /// <summary>Went down into a crouch for an item low down (FruitPose), and when.</summary>
             public bool Crouched, CrouchTried;
+            public FruitPoseShape PickupPose;
             public float CrouchAt;
             public Vector3 PullFromPos;
             public Quaternion PullFromRot;
@@ -165,6 +168,20 @@ namespace FruitLib
         /// <summary>Whether a body is on its way to an item or reaching for it. Since 5.27.0.</summary>
         public static bool IsReaching(FruitBody body)
             => body != null && _hands.TryGetValue(body.Id, out var h) && h.Stage <= HandStage.Pull;
+
+        private static bool HandsBusyForRoom(FruitBody body)
+            => IsHandling(body) || (body != null && _hands.TryGetValue(body.Id, out var h) && h.Stage != HandStage.Hold);
+
+        private static bool NativeCareBusy(FruitBody body)
+        {
+            try
+            {
+                var covering = body.Creature?.AssignedPuppeteer?.TryCast<Il2CppLVA.Puppeteers.Variants.Humanoid.HumanoidPuppeteer>()?
+                    .HumanoidReferences?.PainPerception?.PainPointsProcessor?.WoundsCovering;
+                return covering?.LeftArm?.ExternalActivated?.Value == true || covering?.RightArm?.ExternalActivated?.Value == true;
+            }
+            catch (Exception e) { FruitBodies.ReportOnce("make room wound controls", e); return true; }
+        }
 
         /// <summary>The item a body is going for, holding or using, or null. Since 5.27.0.</summary>
         public static FruitWorldItem HandsOn(FruitBody body)
@@ -226,6 +243,7 @@ namespace FruitLib
         /// <summary>Puts down what a body holds (or stops it going for something). Since 5.27.0.</summary>
         public static bool Drop(FruitBody body, string source = "FruitLib")
         {
+            CancelInteraction(body, "tool put down");
             if (body == null || !_hands.TryGetValue(body.Id, out var h)) return false;
             if (h.Joint == null) { if (h.Stage == HandStage.Walk) Stop(body); End(h, FruitHandsResult.Stopped); return true; }
             h.Source = Src(source);
@@ -266,6 +284,7 @@ namespace FruitLib
         /// </summary>
         public static bool Use(FruitBody body, FruitBody target, Vector3? point = null, string source = "FruitLib", bool run = false)
         {
+            CancelInteraction(body, "new item use");
             var h = Held(body);
             if (h == null) return false;
             var it = h.Item;
@@ -286,6 +305,10 @@ namespace FruitLib
                 SetStage(h, HandStage.Aim);
                 return true;
             }
+            if (it.Interaction != null)
+                return StartItemInteraction(body, it, target, point,
+                    op => HandsEnd(body, it, op.Stage == FruitInteractionStage.Completed ? FruitHandsResult.Used :
+                        op.Stage == FruitInteractionStage.Cancelled ? FruitHandsResult.Stopped : FruitHandsResult.Failed));
             if (it.OnUse != null)
             {
                 bool ok = false;
@@ -295,8 +318,10 @@ namespace FruitLib
             }
             if (it.Can(FruitAffords.Swing) && target != null)
             {
-                bool ok = Attack(body, target, FruitStrike.Punch, 10f, run, h.Source, 1.3f);
-                HandsEnd(body, it, ok ? FruitHandsResult.Used : FruitHandsResult.Failed);
+                bool ok = StartAttackInteraction(body, target, FruitStrike.Punch, 10f, h.Source, 1.3f, run,
+                    op => HandsEnd(body, it, op.Stage == FruitInteractionStage.Completed ? FruitHandsResult.Used :
+                        op.Stage == FruitInteractionStage.Cancelled ? FruitHandsResult.Stopped : FruitHandsResult.Failed));
+                if (!ok) HandsEnd(body, it, FruitHandsResult.Failed);
                 return ok;
             }
             if (it.Can(FruitAffords.Throw) && (target != null || point.HasValue))
@@ -356,6 +381,12 @@ namespace FruitLib
                 return;
             }
             float t = now - h.StageAt;
+            if (h.Stage != HandStage.Hold && now >= h.TraceAt)
+            {
+                h.TraceAt = now + 1f;
+                FruitInteractionTrace.Write(h.TraceId, h.Stage.ToString(), b, GripWorld(h, b), ArmReach, h.Left,
+                    "item=" + it.Key + " restances=" + h.Restances, h.Stance);
+            }
 
             switch (h.Stage)
             {
@@ -410,11 +441,12 @@ namespace FruitLib
                         return;
                     }
                     // Low down: crouch to it once the turn to face it is (mostly) done.
-                    if (CrouchToPickUp && !h.CrouchTried && grip.y < LiveCentre(b).y - CrouchBelow && (!IsTurning(b) || t > 0.6f))
+                    if (CrouchToPickUp && !h.CrouchTried && (h.PickupPose != null || grip.y < LiveCentre(b).y - CrouchBelow) && (!IsTurning(b) || t > 0.6f))
                     {
                         h.CrouchTried = true;
                         if (IsTurning(b)) Stop(b);
-                        if (FruitPose.Hold(b, FruitPoseShape.Crouch, 0.5f, source: h.Source)) { h.Crouched = true; h.CrouchAt = now; }
+                        h.PickupPose ??= FruitPoseShape.Crouch;
+                        if (!FruitPose.IsHolding(b) && FruitPose.Hold(b, h.PickupPose, 0.5f, source: h.Source)) { h.Crouched = true; h.CrouchAt = now; }
                     }
                     if (now >= h.NextPlace) { h.NextPlace = now + 0.4f; PlaceHand(b, h.Left, Reachable(h, b, grip), 1.6f); }
                     var hand = b.Limbs[h.Left ? LeftHand : RightHand];
@@ -459,7 +491,7 @@ namespace FruitLib
                         else if (DropWhenDown && now - h.DownSince > 1f) { Detach(h, FruitHandsResult.Dropped, publish: true, why: "fell"); return; }
                     }
                     else h.DownSince = -1f;
-                    if (Swinging(b)) { h.NextPlace = now + 0.3f; return; }
+                    if (Swinging(b) || InteractionOf(b) != null) { h.NextPlace = now + 0.3f; return; }
                     if (now >= h.NextPlace && Upright(b)) PlaceCarry(h, b);
                     return;
 
@@ -517,6 +549,8 @@ namespace FruitLib
         private static void SetStage(Hands h, HandStage s)
         {
             var b = h.Body;
+            FruitInteractionTrace.Write(h.TraceId, s.ToString(), b, h.Item.Position, ArmReach, h.Left,
+                "item=" + h.Item.Key + " previous=" + h.Stage);
             h.Stage = s;
             h.StageAt = Time.time;
             h.NextPlace = 0f;
@@ -626,7 +660,7 @@ namespace FruitLib
 
         /// <summary>Lets go: the joint off, the mass back, the hand free, the holder's colliders
         /// back on a moment later (so the item doesn't burst out of the body).</summary>
-        private static void Detach(Hands h, FruitHandsResult result, bool publish, string why = null)
+        private static void Detach(Hands h, FruitHandsResult result, bool publish, string why = null, bool notify = true)
         {
             var b = h.Body;
             var it = h.Item;
@@ -651,10 +685,10 @@ namespace FruitLib
                 FruitEvents.Publish(h.Source, "Dropped", $"{b.Name} dropped {it.WithArticle}{(why != null ? $" ({why})" : "")}",
                                     it.Position, radius: 8f, body: b.Id, magnitude: 0.2f, detail: why,
                                     actor: FruitEvents.BodyActor(b.Id), cause: it.Name);
-            End(h, result);
+            End(h, result, notify);
         }
 
-        private static void End(Hands h, FruitHandsResult result)
+        private static void End(Hands h, FruitHandsResult result, bool notify = true)
         {
             if (_hands.TryGetValue(h.Body.Id, out var cur) && cur == h) _hands.Remove(h.Body.Id);
             Uncrouch(h, 0.5f);
@@ -663,7 +697,7 @@ namespace FruitLib
                 try { if (h.Item.Valid && h.Item.Rb.isKinematic && h.Stage == HandStage.Pull) h.Item.Rb.isKinematic = false; } catch { }
                 if (h.Ignored.Count > 0) { _unignore.Add((new List<(Collider, Collider)>(h.Ignored), Time.time)); h.Ignored.Clear(); }
             }
-            HandsEnd(h.Body, h.Item, result);
+            if (notify) HandsEnd(h.Body, h.Item, result);
         }
 
         /// <summary>Back up out of the pickup crouch (only the crouch this hand action took).</summary>
@@ -671,11 +705,13 @@ namespace FruitLib
         {
             if (!h.Crouched) return;
             h.Crouched = false;
-            if (FruitPose.Current(h.Body) == FruitPoseShape.Crouch) FruitPose.Release(h.Body, seconds);
+            if (FruitPose.Current(h.Body) == h.PickupPose) FruitPose.Release(h.Body, seconds);
         }
 
         private static void HandsEnd(FruitBody b, FruitWorldItem it, FruitHandsResult r)
         {
+            if (it != null) FruitInteractionTrace.Write("hands-end:" + b.Id, r.ToString(), b, it.Position, ArmReach,
+                detail: "item=" + it.Key);
             if (HandsEnded == null) return;
             try { HandsEnded(b, it, r); }
             catch (Exception e) { FruitBodies.ReportOnce("HandsEnded handler", e); }
@@ -1036,7 +1072,20 @@ namespace FruitLib
         /// <summary>Starts the walk to a stance for this hand action. False if no stance was found.</summary>
         private static bool WalkToStance(Hands h, FruitBody b, bool run, float seconds)
         {
-            if (!FindStance(b, h.Item, StanceFor(h, b), out Vector3 s)) return false;
+            Vector3 s;
+            if (FruitNav.Ready)
+            {
+                var profile = new FruitInteractionSpec
+                {
+                    Item = h.Item, Left = h.Left, Reach = ArmReach, RequireHeldItem = false,
+                    ResolvePoint = () => GripWorld(h, b),
+                    Postures = CrouchToPickUp ? FruitInteractionPostures.Stand | FruitInteractionPostures.Lean |
+                        FruitInteractionPostures.Kneel | FruitInteractionPostures.Crouch : FruitInteractionPostures.Stand
+                };
+                if (!TryInteractionStance(b, profile, out s, out var pose)) return false;
+                h.PickupPose = pose;
+            }
+            else if (!FindStance(b, h.Item, StanceFor(h, b), out s)) return false;
             Vector3 to = s - LiveCentre(b);
             to.y = 0f;
             float len = to.magnitude;
@@ -1135,6 +1184,7 @@ namespace FruitLib
 
         private sealed class Recipe
         {
+            public bool WaitingInteraction;
             public FruitBody Body;
             public FruitWorldItem Item;
             public FruitUseStep[] Steps;
@@ -1151,7 +1201,7 @@ namespace FruitLib
         private static readonly List<Recipe> _recipesNow = new List<Recipe>();
 
         /// <summary>Whether a body is working through an item's handling recipe. Since 5.30.0.</summary>
-        public static bool IsHandling(FruitBody body) => body != null && _recipes.ContainsKey(body.Id);
+        public static bool IsHandling(FruitBody body) => body != null && (_recipes.ContainsKey(body.Id) || InteractionOf(body) != null);
 
         private static bool StartRecipe(FruitBody body, Hands h, FruitWorldItem it, FruitBody target, Vector3? point, bool run)
         {
@@ -1193,6 +1243,7 @@ namespace FruitLib
 
         private static void TickRecipe(Recipe r, float now)
         {
+            if (r.WaitingInteraction) return; // The token owns validity/deadline checks and completion.
             var b = r.Body;
             var it = r.Item;
             if (b.Creature == null || FruitBodies.Get(b.Id) != b || !it.Valid) { Finish(r, FruitHandsResult.Lost); return; }
@@ -1256,6 +1307,19 @@ namespace FruitLib
 
                 case FruitUseStep.Use:
                 {
+                    if (it.Interaction != null)
+                    {
+                        r.WaitingInteraction = true;
+                        bool accepted = StartItemInteraction(b, it, r.Target, r.HasPoint ? r.Point : (Vector3?)null, op =>
+                        {
+                            if (!_recipes.TryGetValue(b.Id, out var current) || current != r) return;
+                            r.WaitingInteraction = false;
+                            if (op.Stage == FruitInteractionStage.Completed) Next(r);
+                            else Finish(r, op.Stage == FruitInteractionStage.Cancelled ? FruitHandsResult.Stopped : FruitHandsResult.Failed);
+                        });
+                        if (!accepted) { r.WaitingInteraction = false; Finish(r, FruitHandsResult.Failed); }
+                        return;
+                    }
                     bool ok = false;
                     Vector3? at = r.Target == null ? RecipeTarget(r) : (Vector3?)null;
                     try { ok = it.OnUse != null && it.OnUse(b, it, r.Target, at); }

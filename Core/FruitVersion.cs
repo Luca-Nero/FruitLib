@@ -5,7 +5,7 @@ namespace FruitLib
 {
     public static class FruitVersion
     {
-        internal const string VersionConst = "5.35.2";
+        internal const string VersionConst = "5.39.0";
 
         public static string Current => VersionConst;
 

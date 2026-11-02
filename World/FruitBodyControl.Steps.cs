@@ -38,6 +38,8 @@ namespace FruitLib
         /// <summary>From FruitLibMod.OnFixedUpdate.</summary>
         internal static void FixedTick()
         {
+            TickLookScans();
+            TickWalkSupport();
             GaitFixedTick();   // FruitBodyControl.Gait.cs
             if (_orders.Count == 0 || !FruitLibConfig.StepAssist) return;
             float now = Time.fixedTime;

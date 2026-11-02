@@ -28,6 +28,13 @@ namespace UnityEngine
         public static float DeltaAngle(float a, float b) => (b-a+540)%360-180;
         public static float MoveTowardsAngle(float a,float b,float d) => a+Math.Clamp(DeltaAngle(a,b),-d,d);
     }
+    public struct Quaternion
+    {
+        float yaw;
+        public static Quaternion Euler(float x,float y,float z)=>new Quaternion { yaw=y*Mathf.Deg2Rad };
+        public static Quaternion Inverse(Quaternion q)=>new Quaternion { yaw=-q.yaw };
+        public static Vector3 operator *(Quaternion q,Vector3 v)=>new(v.x*MathF.Cos(q.yaw)+v.z*MathF.Sin(q.yaw),v.y,v.z*MathF.Cos(q.yaw)-v.x*MathF.Sin(q.yaw));
+    }
     public static class Time { public static float time; }
 }
 
@@ -39,6 +46,7 @@ namespace FruitLib
         public Vector3 Position;
         public Vector3 Facing = new(0,0,1);
         public bool HasPosition = true, Alive = true, Upright = true;
+        public bool Conscious = true, Reaching, Handling, Swing, CoveringWound;
     }
     public static class FruitBodies { public static List<FruitBody> All = new(); }
     public enum FruitPlaceKind { Building, Room, Area }
@@ -56,7 +64,7 @@ namespace FruitLib
         public static FruitPlace Where(Vector3 p) => Place;
     }
     public enum FruitPathStatus { Complete }
-    public enum FruitMoveResult { Arrived }
+    public enum FruitMoveResult { Arrived, Blocked }
     public class FruitPath
     {
         public float Length;
@@ -65,14 +73,20 @@ namespace FruitLib
         public Vector3 PointAt(float d) => Start+(End-Start).normalized*d;
     }
     public static class FruitLog { public static void Info(string s) {} }
+    public static class FruitPose
+    {
+        public static HashSet<int> Held = new();
+        public static bool IsHolding(FruitBody b) => Held.Contains(b.Id);
+    }
     public static class FruitNav
     {
         public static bool Ready = true;
         public static Func<Vector3, bool> Allowed = p => true;
         public static Func<Vector3, Vector3, bool> Clear = (a,b) => true;
         public static float SampleY;
+        public static Func<Vector3,float> FloorHeight = p=>SampleY;
         public static float Flat(Vector3 p) => MathF.Sqrt(p.x*p.x+p.z*p.z);
-        public static bool Sample(Vector3 p, float distance, out Vector3 q) { q=p; q.y=SampleY; return Ready && Allowed(q); }
+        public static bool Sample(Vector3 p, float distance, out Vector3 q) { q=p; q.y=FloorHeight(p); return Ready && Allowed(q); }
         public static bool Under(Vector3 p, float distance, out Vector3 q) => Sample(p,distance,out q);
         public static float Room(Vector3 p) => Allowed(p) ? 2 : 0;
         public static bool StraightClear(Vector3 a,Vector3 b) => Ready && Clear(a,b);
@@ -86,15 +100,29 @@ namespace FruitLib
         {
             public float CreatureYRotation, PuppeteerTargetYRot;
             public void UpdateTargetYRot(float a) { PuppeteerTargetYRot=a; }
+            public Vector3 TargetMoveDirection;
+            public void SetTargetMoveDirection(Vector3 v) { TargetMoveDirection=v; }
         }
+        private sealed class WalkStub
+        { public bool HoldsWalkRequest(object holder)=>false; public void AddWalkRequest(object holder) {} }
         private sealed class Order
         {
             public FruitBody Body, Target;
+            public bool LocalStep, LocalStandalone, StepTurning, YawCmdOn;
+            public Vector3 LocalGoal;
+            public float LocalYaw, LocalDeadline, LocalProgressAt, LocalLeft, LocalRetryAt, LocalSettleAt, LocalCheckAt, StartAt, PaceWanted;
+            public WalkStub Walk=new();
             public Vector3 Want, Stand, Dest, Slot, Dir, PassBeside, PassBeyond, ComVel;
             public float WantStop, SpreadRadius, ReslotAt, StopDistance, PathAt, SlotAt, SlotAngle,
                 HoldDistance, PassUntil, PassCheckAt, ProgressLeft, ProgressAt, TrafficSince;
             public bool HasDest, Slotted, Paused, Requested, Pivot, Stance, Strikes, Keep, Watching, ComInit;
             public bool Run, Tight, TrafficBlocked;
+            public bool Raw, Turn, Courtesy, CourtesyRetreat;
+            public Vector3 CourtesyWaypoint;
+            public Order Suspended;
+            public FruitBody CourtesyFor, RoomPartner;
+            public Vector3 TrafficAim, RoomForward, CourtesyOrigin, CourtesyForward;
+            public float TrafficCommitUntil, RoomCheckAt, RoomWaitUntil, CourtesyStart, Until, YieldUntil;
             public int Reslots, PassStage;
             public FruitPlace SpreadPlace;
             public Stats Stats;
@@ -108,6 +136,24 @@ namespace FruitLib
         private static bool IsGoto(Order o) => o.HasDest || o.Target != null;
         private static Vector3 LiveCentre(FruitBody b) => b.Position;
         private static float FlatSpeed(Order o) => FruitNav.Flat(o.ComVel);
+        private static bool IsReaching(FruitBody b) => b.Reaching;
+        private static bool IsHandling(FruitBody b) => b.Handling;
+        private static bool HandsBusyForRoom(FruitBody b) => b.Reaching || b.Handling;
+        private static bool NativeCareBusy(FruitBody b) => b.CoveringWound;
+        private static bool Swinging(FruitBody b) => b.Swing;
+        private static object Holder=new();
+        private static bool Bind(Order o) => true;
+        private static Order OrderFor(FruitBody b,float seconds,bool run) { var o=Walking(b,b.Position);o.Until=Time.time+seconds;return o; }
+        private static void Stop(FruitBody b) { _orders.Remove(b.Id); }
+        private static void StopLookScan(int id,bool completed) {}
+        private static void ApplyFooting(Order o) {}
+        private static void SetPace(Order o,float p) {}
+        private static float RampMagnitude(Order o,float now)=>1;
+        private static bool ArrivalClear(Vector3 from,Vector3 to)=>FruitNav.StraightClear(from,to);
+        private static Func<Vector3,Vector3,float,bool> Geometry=(p,d,l)=>true;
+        private static bool GeometryClear(Vector3 p,Vector3 d,float l)=>Geometry(p,d,l);
+
+        private static void Release(Order o) { o.Requested=false; }
         private static void Face(FruitBody b, Vector3 d,float t) {}
 
         private static int checks;
@@ -115,8 +161,8 @@ namespace FruitLib
         private static FruitBody Body(float x,float z,float y=1)
         { var b=new FruitBody { Id=FruitBodies.All.Count+1,Position=new(x,y,z) }; FruitBodies.All.Add(b); return b; }
         private static void Reset()
-        { FruitBodies.All.Clear(); _orders.Clear(); FruitPlaces.Doors.Clear(); FruitPlaces.Place=null;
-          FruitNav.Ready=true; FruitNav.Allowed=p=>true; FruitNav.Clear=(a,b)=>true; FruitNav.SampleY=0; }
+        { FruitBodies.All.Clear(); _orders.Clear(); ResetCourtesy(); FruitPose.Held.Clear(); FruitPlaces.Doors.Clear(); FruitPlaces.Place=null;
+          FruitNav.Ready=true; FruitNav.Allowed=p=>true; FruitNav.Clear=(a,b)=>true; FruitNav.SampleY=0; FruitNav.FloorHeight=p=>FruitNav.SampleY; Geometry=(p,d,l)=>true; }
         private static Order Walking(FruitBody b,Vector3 dest)
         { var o=new Order { Body=b,HasDest=true,Dest=dest,Stand=dest,StopDistance=.8f,Requested=true,ComInit=true };
           _orders[b.Id]=o; return o; }
@@ -192,6 +238,7 @@ namespace FruitLib
             Traffic(order,null,walker.Position,new(0,0,1),2);
             Check(order.TrafficSince==1,"waiting timer persists for bounded recovery grace");
             incoming.Position=new(0,1,6);
+            FruitNav.Clear=(a,b)=>true;
             Traffic(order,null,walker.Position,new(0,0,1),3);
             Check(!order.TrafficBlocked,"resume after incoming traffic clears");
             incoming.Position=new(0,1,2.4f); order.Tight=true; FruitNav.Clear=(a,b)=>true;
@@ -213,6 +260,8 @@ namespace FruitLib
             Check(TrafficClear(walker,crossing,walker.Position,new(0,0,1),1.5f),"approach target keeps intended stop-distance behavior");
             crossing.Position=walker.Position;
             Check(TrafficClear(walker,null,walker.Position,new(-1,0,0),1.5f),"coincident centres have a deterministic escape direction");
+            CourtesyChecks();
+            LocalStepChecks();
             Console.WriteLine($"Crowd regression checks passed: {checks}");
         }
     }

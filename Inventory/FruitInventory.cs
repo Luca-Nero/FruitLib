@@ -230,6 +230,7 @@ namespace FruitLib
         /// uses it through <see cref="FruitBodyControl.Use"/>. Null: no use. Since 5.29.0.
         /// </summary>
         public Func<FruitBody, FruitWorldItem, FruitBody, Vector3?, bool> OnUse;
+        public Func<FruitBody, FruitWorldItem, FruitBody, Vector3?, FruitInteractionSpec> Interaction;
 
         /// <summary>Every frame while the player holds the interaction key on the prop, with the
         /// seconds since the press (an automatic gun's trigger). Since 5.29.0.</summary>

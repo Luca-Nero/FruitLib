@@ -1,0 +1,242 @@
+// Syntax-only inventory of FruitLib: public surface, Harmony patches, static-init work, type dependencies.
+// Usage: fruitinv <FruitLibRoot> <ModsRoot> <outDir>
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+
+var root = Path.GetFullPath(args[0]);
+var modsRoot = Path.GetFullPath(args[1]);
+var outDir = Path.GetFullPath(args[2]);
+Directory.CreateDirectory(outDir);
+
+bool Excluded(string p)
+{
+    var rel = Path.GetRelativePath(root, p).Replace('\\', '/');
+    return rel.StartsWith("bin/") || rel.StartsWith("obj/") || rel.StartsWith(".vs/")
+        || rel.StartsWith("Templates/") || rel.StartsWith("Tests/");
+}
+
+// Both configs are parsed: with FRUITLIB_DEVTOOLS on, dev-only members appear too and get flagged by file list.
+var opts = new CSharpParseOptions(LanguageVersion.Latest, preprocessorSymbols: new[] { "FRUITLIB_DEVTOOLS" });
+var devOnlyFiles = new HashSet<string> { "Debug/FruitBundleTests.cs", "Debug/FruitBundleProbe.cs", "Debug/FruitMenuProbe.cs" };
+var files = Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories).Where(f => !Excluded(f)).OrderBy(f => f, StringComparer.Ordinal).ToList();
+var trees = files.Select(f => (rel: Path.GetRelativePath(root, f).Replace('\\', '/'), tree: CSharpSyntaxTree.ParseText(File.ReadAllText(f), opts))).ToList();
+
+int Line(SyntaxNode n) => n.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+string Vis(SyntaxTokenList m, bool nestedDefaultPrivate)
+{
+    if (m.Any(SyntaxKind.PublicKeyword)) return "public";
+    if (m.Any(SyntaxKind.ProtectedKeyword)) return "protected";
+    if (m.Any(SyntaxKind.InternalKeyword)) return "internal";
+    if (m.Any(SyntaxKind.PrivateKeyword)) return "private";
+    return nestedDefaultPrivate ? "private" : "internal";
+}
+string Squash(string s) => Regex.Replace(s, @"\s+", " ").Trim();
+
+var declaredTypes = new Dictionary<string, HashSet<string>>(); // type -> files (partial classes span several)
+var api = new List<object>();
+var apiText = new StringBuilder();
+var patches = new List<object>();
+var staticInit = new List<object>();
+
+foreach (var (rel, tree) in trees)
+{
+    var r = tree.GetRoot();
+    foreach (var t in r.DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
+    {
+        if (!declaredTypes.TryGetValue(t.Identifier.Text, out var set)) declaredTypes[t.Identifier.Text] = set = new();
+        set.Add(rel);
+    }
+    foreach (var d in r.DescendantNodes().OfType<DelegateDeclarationSyntax>())
+    {
+        if (!declaredTypes.TryGetValue(d.Identifier.Text, out var set)) declaredTypes[d.Identifier.Text] = set = new();
+        set.Add(rel);
+    }
+}
+
+// A member is reachable from another mod only if it and every enclosing type are public.
+bool ChainPublic(SyntaxNode n)
+{
+    foreach (var t in n.Ancestors().OfType<BaseTypeDeclarationSyntax>())
+        if (!t.Modifiers.Any(SyntaxKind.PublicKeyword)) return false;
+    return true;
+}
+string TypePath(SyntaxNode n) => string.Join(".", n.AncestorsAndSelf().OfType<BaseTypeDeclarationSyntax>().Reverse().Select(t => t.Identifier.Text));
+
+foreach (var (rel, tree) in trees)
+{
+    var r = tree.GetRoot();
+    bool dev = devOnlyFiles.Contains(rel);
+
+    void Emit(string kind, string typePath, string sig, SyntaxNode n, bool obsolete)
+    {
+        api.Add(new { file = rel, line = Line(n), kind, type = typePath, sig, devOnly = dev, obsolete });
+        apiText.AppendLine($"{rel}:{Line(n)}\t{kind}\t{typePath}\t{sig}{(obsolete ? "\t[Obsolete]" : "")}{(dev ? "\t[DevTools]" : "")}");
+    }
+    bool Obs(MemberDeclarationSyntax m) => m.AttributeLists.SelectMany(a => a.Attributes).Any(a => a.Name.ToString().Contains("Obsolete"));
+
+    foreach (var t in r.DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
+    {
+        if (!t.Modifiers.Any(SyntaxKind.PublicKeyword) || !ChainPublic(t)) continue;
+        var kw = t switch { ClassDeclarationSyntax => "class", StructDeclarationSyntax => "struct", InterfaceDeclarationSyntax => "interface", EnumDeclarationSyntax => "enum", RecordDeclarationSyntax => "record", _ => "type" };
+        var mods = string.Join(" ", t.Modifiers.Select(x => x.Text));
+        var bases = t.BaseList != null ? " " + Squash(t.BaseList.ToString()) : "";
+        Emit(kw, TypePath(t), $"{mods} {kw} {t.Identifier.Text}{bases}", t, Obs(t));
+        if (t is EnumDeclarationSyntax e)
+            Emit("enum-values", TypePath(t), string.Join(", ", e.Members.Select(m => m.Identifier.Text)), e, false);
+    }
+    foreach (var d in r.DescendantNodes().OfType<DelegateDeclarationSyntax>())
+        if (d.Modifiers.Any(SyntaxKind.PublicKeyword) && ChainPublic(d))
+            Emit("delegate", TypePath(d), Squash(d.WithoutTrivia().ToString()), d, Obs(d));
+
+    foreach (var m in r.DescendantNodes().OfType<MemberDeclarationSyntax>())
+    {
+        if (m is BaseTypeDeclarationSyntax || m is DelegateDeclarationSyntax) continue;
+        var parent = m.Parent as BaseTypeDeclarationSyntax;
+        if (parent == null) continue;
+        bool inInterface = parent is InterfaceDeclarationSyntax;
+        if (!(m.Modifiers.Any(SyntaxKind.PublicKeyword) || inInterface)) continue;
+        if (!ChainPublic(m)) continue;
+        string kind, sig;
+        switch (m)
+        {
+            case MethodDeclarationSyntax x: kind = "method"; sig = Squash($"{x.Modifiers} {x.ReturnType} {x.Identifier}{x.TypeParameterList}{x.ParameterList}"); break;
+            case ConstructorDeclarationSyntax x: kind = "ctor"; sig = Squash($"{x.Modifiers} {x.Identifier}{x.ParameterList}"); break;
+            case PropertyDeclarationSyntax x:
+                kind = "property";
+                var acc = x.AccessorList != null ? string.Join(" ", x.AccessorList.Accessors.Select(a => $"{a.Modifiers} {a.Keyword};".Trim())) : "get;";
+                sig = Squash($"{x.Modifiers} {x.Type} {x.Identifier} {{ {acc} }}"); break;
+            case FieldDeclarationSyntax x: kind = "field"; sig = Squash($"{x.Modifiers} {x.Declaration.Type} {string.Join(", ", x.Declaration.Variables.Select(v => v.Identifier.Text))}"); break;
+            case EventFieldDeclarationSyntax x: kind = "event"; sig = Squash($"{x.Modifiers} event {x.Declaration.Type} {string.Join(", ", x.Declaration.Variables.Select(v => v.Identifier.Text))}"); break;
+            case EventDeclarationSyntax x: kind = "event"; sig = Squash($"{x.Modifiers} event {x.Type} {x.Identifier}"); break;
+            case IndexerDeclarationSyntax x: kind = "indexer"; sig = Squash($"{x.Modifiers} {x.Type} this{x.ParameterList}"); break;
+            case OperatorDeclarationSyntax x: kind = "operator"; sig = Squash($"{x.Modifiers} {x.ReturnType} operator {x.OperatorToken}{x.ParameterList}"); break;
+            case ConversionOperatorDeclarationSyntax x: kind = "operator"; sig = Squash($"{x.Modifiers} {x.ImplicitOrExplicitKeyword} operator {x.Type}{x.ParameterList}"); break;
+            default: continue;
+        }
+        Emit(kind, TypePath(m), sig, m, Obs(m));
+    }
+
+    // Harmony: attribute-declared patch classes, plus the prefix/postfix methods inside each.
+    foreach (var t in r.DescendantNodes().OfType<ClassDeclarationSyntax>())
+    {
+        var attrs = t.AttributeLists.SelectMany(a => a.Attributes).Where(a => a.Name.ToString().StartsWith("HarmonyPatch")).ToList();
+        if (attrs.Count == 0) continue;
+        var methods = t.Members.OfType<MethodDeclarationSyntax>()
+            .Where(x => Regex.IsMatch(x.Identifier.Text, "^(Prefix|Postfix|Transpiler|Finalizer|TargetMethods?|Prepare)$")
+                     || x.AttributeLists.SelectMany(a => a.Attributes).Any(a => Regex.IsMatch(a.Name.ToString(), "Harmony(Prefix|Postfix|Transpiler|Finalizer|TargetMethods?|Prepare)")))
+            .Select(x => x.Identifier.Text + "@" + Line(x)).ToList();
+        patches.Add(new { file = rel, line = Line(t), patchClass = TypePath(t), target = string.Join(" | ", attrs.Select(a => Squash(a.ToString()))), methods, dev });
+    }
+    // Harmony: attributes on methods, and calls that install hooks by hand.
+    foreach (var mm in r.DescendantNodes().OfType<MethodDeclarationSyntax>())
+    {
+        var attrs = mm.AttributeLists.SelectMany(a => a.Attributes).Where(a => a.Name.ToString().StartsWith("HarmonyPatch")).ToList();
+        if (attrs.Count > 0)
+            patches.Add(new { file = rel, line = Line(mm), patchClass = TypePath(mm) + "." + mm.Identifier.Text, target = string.Join(" | ", attrs.Select(a => Squash(a.ToString()))), methods = new List<string>(), dev });
+    }
+    foreach (var inv in r.DescendantNodes().OfType<InvocationExpressionSyntax>())
+    {
+        var name = inv.Expression.ToString();
+        if (Regex.IsMatch(name, @"(^|\.)(Patch|PatchAll|Unpatch|UnpatchSelf|CreateProcessor)$|ClassInjector\.Register|RegisterTypeInIl2Cpp|icall_|ResolveICall|il2cpp_resolve_icall|NativeDetour|Detour"))
+            patches.Add(new { file = rel, line = Line(inv), patchClass = "(call)", target = Squash(inv.ToString().Length > 160 ? inv.ToString().Substring(0, 160) : inv.ToString()), methods = new List<string>(), dev });
+    }
+
+    // Work done at static-init time: static ctors, and static field initializers that do more than hold a literal or an empty collection.
+    foreach (var c in r.DescendantNodes().OfType<ConstructorDeclarationSyntax>().Where(c => c.Modifiers.Any(SyntaxKind.StaticKeyword)))
+        staticInit.Add(new { file = rel, line = Line(c), kind = "static-ctor", type = TypePath(c), what = Squash(c.Body?.ToString() ?? c.ExpressionBody?.ToString() ?? "") });
+    foreach (var f in r.DescendantNodes().OfType<FieldDeclarationSyntax>().Where(f => f.Modifiers.Any(SyntaxKind.StaticKeyword)))
+        foreach (var v in f.Declaration.Variables)
+        {
+            var init = v.Initializer?.Value;
+            if (init == null) continue;
+            if (!init.DescendantNodesAndSelf().Any(n => n is InvocationExpressionSyntax)) continue;
+            staticInit.Add(new { file = rel, line = Line(f), kind = "static-field-init", type = TypePath(f) + "." + v.Identifier.Text, what = Squash(init.ToString()) });
+        }
+}
+
+// Lifecycle-ish statements anywhere: event subscriptions to game or FruitLib events, object creation, DontDestroyOnLoad, file IO.
+var sidefx = new List<object>();
+var sidefxRe = new Regex(@"DontDestroyOnLoad|new GameObject|AddComponent|Instantiate|File\.(Write|Move|Delete|Copy|Open|Create|AppendAll)|Directory\.(Create|Delete|Move)|HttpClient|WebRequest|Time\.(timeScale|fixedDeltaTime)|Physics\.(gravity|IgnoreLayerCollision|autoSimulation|simulationMode|Simulate)|Application\.(quitting|targetFrameRate|runInBackground)|SceneManager\.|QualitySettings\.|Cursor\.", RegexOptions.Compiled);
+foreach (var (rel, tree) in trees)
+{
+    foreach (var line in tree.GetText().Lines)
+    {
+        var s = line.ToString();
+        var trimmed = s.TrimStart();
+        if (trimmed.StartsWith("//") || trimmed.StartsWith("///")) continue;
+        var m = sidefxRe.Match(s);
+        if (m.Success) sidefx.Add(new { file = rel, line = line.LineNumber + 1, match = m.Value, text = trimmed.Length > 140 ? trimmed.Substring(0, 140) : trimmed });
+    }
+}
+
+// Internal dependency graph: which file's identifiers name which FruitLib-declared type (Fruit* and the rest).
+var graph = new SortedDictionary<string, SortedSet<string>>();
+var gameUsings = new SortedDictionary<string, SortedSet<string>>();
+foreach (var (rel, tree) in trees)
+{
+    var r = tree.GetRoot();
+    var own = declaredTypes.Where(kv => kv.Value.Contains(rel)).Select(kv => kv.Key).ToHashSet();
+    var refs = new SortedSet<string>();
+    foreach (var id in r.DescendantTokens().Where(t => t.IsKind(SyntaxKind.IdentifierToken)))
+    {
+        var n = id.Text;
+        if (own.Contains(n) || !declaredTypes.ContainsKey(n)) continue;
+        // Only top-level-looking names (Fruit*) make a useful graph; small helper types are too noisy and collide with game names.
+        if (!n.StartsWith("Fruit")) continue;
+        refs.Add(n);
+    }
+    graph[rel] = refs;
+    var u = new SortedSet<string>(r.DescendantNodes().OfType<UsingDirectiveSyntax>().Select(x => x.Name?.ToString() ?? "").Where(x => x.StartsWith("Il2Cpp") || x.StartsWith("UnityEngine") || x == "HarmonyLib" || x.StartsWith("MelonLoader") || x.StartsWith("Unity")));
+    gameUsings[rel] = u;
+}
+
+// Consumers: for each sibling mod (excluding the snapshot), which FruitLib types and Type.Member pairs its sources name.
+var publicTypes = api.Select(o => JsonSerializer.SerializeToElement(o)).Where(e => new[] { "class", "struct", "interface", "enum", "record", "delegate" }.Contains(e.GetProperty("kind").GetString()))
+    .Select(e => e.GetProperty("type").GetString().Split('.').Last()).ToHashSet();
+var consumers = new SortedDictionary<string, object>();
+var memberUseAll = new SortedDictionary<string, SortedSet<string>>();
+foreach (var modDir in Directory.GetDirectories(modsRoot).OrderBy(d => d, StringComparer.Ordinal))
+{
+    var name = Path.GetFileName(modDir);
+    if (name == "5_FruitLib" || name.StartsWith("_pre_")) continue;
+    var cs = Directory.GetFiles(modDir, "*.cs", SearchOption.AllDirectories).Where(f => !Regex.IsMatch(f, @"[\\/](bin|obj|\.vs)[\\/]")).ToList();
+    var typeUse = new SortedDictionary<string, int>();
+    var memberUse = new SortedDictionary<string, int>();
+    int filesUsing = 0;
+    foreach (var f in cs)
+    {
+        var tr = CSharpSyntaxTree.ParseText(File.ReadAllText(f), opts);
+        var rr = tr.GetRoot();
+        bool any = rr.DescendantNodes().OfType<UsingDirectiveSyntax>().Any(u => u.Name?.ToString().StartsWith("FruitLib") == true) || File.ReadAllText(f).Contains("FruitLib.");
+        if (!any) continue;
+        filesUsing++;
+        foreach (var id in rr.DescendantTokens().Where(t => t.IsKind(SyntaxKind.IdentifierToken) && publicTypes.Contains(t.Text)))
+            typeUse[id.Text] = typeUse.GetValueOrDefault(id.Text) + 1;
+        foreach (var ma in rr.DescendantNodes().OfType<MemberAccessExpressionSyntax>())
+        {
+            var left = ma.Expression.ToString().Split('.').Last();
+            if (!publicTypes.Contains(left)) continue;
+            var key = left + "." + ma.Name.Identifier.Text;
+            memberUse[key] = memberUse.GetValueOrDefault(key) + 1;
+            if (!memberUseAll.TryGetValue(key, out var mods)) memberUseAll[key] = mods = new();
+            mods.Add(name);
+        }
+    }
+    consumers[name] = new { csFiles = cs.Count, filesUsing, typeUse, memberUse };
+}
+
+var jsonOpts = new JsonSerializerOptions { WriteIndented = true };
+File.WriteAllText(Path.Combine(outDir, "public_api.tsv"), apiText.ToString());
+File.WriteAllText(Path.Combine(outDir, "public_api.json"), JsonSerializer.Serialize(api, jsonOpts));
+File.WriteAllText(Path.Combine(outDir, "patches.json"), JsonSerializer.Serialize(patches, jsonOpts));
+File.WriteAllText(Path.Combine(outDir, "static_init.json"), JsonSerializer.Serialize(staticInit, jsonOpts));
+File.WriteAllText(Path.Combine(outDir, "side_effect_hits.json"), JsonSerializer.Serialize(sidefx, jsonOpts));
+File.WriteAllText(Path.Combine(outDir, "internal_graph.json"), JsonSerializer.Serialize(graph, jsonOpts));
+File.WriteAllText(Path.Combine(outDir, "game_usings.json"), JsonSerializer.Serialize(gameUsings, jsonOpts));
+File.WriteAllText(Path.Combine(outDir, "consumers.json"), JsonSerializer.Serialize(consumers, jsonOpts));
+File.WriteAllText(Path.Combine(outDir, "member_use.json"), JsonSerializer.Serialize(memberUseAll, jsonOpts));
+Console.WriteLine($"files={files.Count} api={api.Count} patches={patches.Count} staticInit={staticInit.Count} sidefx={sidefx.Count} declaredTypes={declaredTypes.Count} parseErrors={trees.Sum(t => t.tree.GetDiagnostics().Count(d => d.Severity == DiagnosticSeverity.Error))}");

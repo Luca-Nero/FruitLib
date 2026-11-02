@@ -9,8 +9,28 @@ namespace FruitLib
         // drive; when every available heading is occupied, release the walk instead.
         private static Vector3 Traffic(Order o, FruitBody target, Vector3 me, Vector3 direction, float now)
         {
+            if (WaitingForRoom(o, now))
+            {
+                SetTrafficWait(o, true, now);
+                o.ProgressAt = now + ProgressWindow;
+                return direction;
+            }
             float speed = Math.Max(o.Run ? 2.3f : 1.5f, FlatSpeed(o));
-            bool clear = TrafficClear(o.Body, target, me, direction, speed);
+            if (now < o.TrafficCommitUntil)
+            {
+                Vector3 committed = o.TrafficAim - me; committed.y = 0f;
+                if (committed.sqrMagnitude > 0.09f)
+                {
+                    bool safe = TrafficClear(o.Body, target, me, committed.normalized, speed) &&
+                        TrafficLeg(me, me + committed.normalized * Math.Min(speed * 1.2f, committed.magnitude));
+                    SetTrafficWait(o, !safe, now);
+                    if (!safe) QueueRoom(o, target, me, direction, now);
+                    return committed.normalized;
+                }
+                o.TrafficCommitUntil = 0f;
+            }
+            bool clear = TrafficClear(o.Body, target, me, direction, speed) &&
+                (!FruitNav.Ready || TrafficLeg(me, me + direction * 0.6f));
             if (!clear && !o.Tight && FruitNav.Ready)
             {
                 Vector3 right = new Vector3(direction.z, 0f, -direction.x);
@@ -24,19 +44,29 @@ namespace FruitLib
                         Vector3 candidate = direction * MathF.Cos(radians) + right * (side * MathF.Sin(radians));
                         if (!TrafficClear(o.Body, target, me, candidate, speed)) continue;
                         Vector3 end = me + candidate * (speed * 1.2f);
-                        if (!FruitNav.Under(end, 0.5f, out Vector3 floor) ||
-                            FruitNav.Flat(floor - end) > 0.15f || Math.Abs(floor.y - me.y) > 1.6f ||
-                            !FruitNav.StraightClear(me, floor)) continue;
+                        if (!TrafficLeg(me, end)) continue;
                         direction = candidate;
+                        o.TrafficAim = end;
+                        o.TrafficCommitUntil = now + 1.2f;
                         clear = true;
                         break;
                     }
                 }
             }
-            if (!clear && !o.TrafficBlocked) o.TrafficSince = now;
-            o.TrafficBlocked = !clear;
+            SetTrafficWait(o, !clear, now);
+            if (!clear) QueueRoom(o, target, me, direction, now);
             return direction;
         }
+
+        private static void SetTrafficWait(Order o, bool blocked, float now)
+        {
+            if (blocked && !o.TrafficBlocked) o.TrafficSince = now;
+            o.TrafficBlocked = blocked;
+        }
+
+        private static bool TrafficLeg(Vector3 from, Vector3 end)
+            => FruitNav.Under(end, 0.5f, out Vector3 floor) && FruitNav.Flat(floor - end) <= 0.15f &&
+                Math.Abs(floor.y - from.y) <= 1.6f && FruitNav.StraightClear(from, floor);
 
         private static bool TrafficClear(FruitBody self, FruitBody target, Vector3 me, Vector3 direction, float speed)
         {

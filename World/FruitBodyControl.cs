@@ -46,6 +46,7 @@ namespace FruitLib
     {
         private sealed class Order
         {
+            public string TraceId;
             public FruitBody Body;
             public Vector3   Dir;
             public float     Until;
@@ -84,6 +85,18 @@ namespace FruitLib
             public float     YieldUntil;
             public bool      TrafficBlocked;
             public float     TrafficSince;
+            public Vector3   TrafficAim;
+            public Vector3   RoomForward;
+            public float     TrafficCommitUntil, RoomCheckAt;
+            public Order     Suspended;
+            public bool      Courtesy;
+            public FruitBody CourtesyFor;
+            public float     CourtesyStart;
+            public Vector3   CourtesyOrigin, CourtesyForward;
+            public bool CourtesyRetreat;
+            public Vector3 CourtesyWaypoint;
+            public FruitBody RoomPartner;
+            public float     RoomWaitUntil;
             // Footing (FruitBodyControl.Footing.cs): the rig's grounder, and the pathing test's A/B.
             public Footing   Feet;
             public bool      OldFooting;
@@ -128,6 +141,7 @@ namespace FruitLib
             public bool      Tight;
             public int       Retries;
             public float     RecoverUntil, ProgressAt, ProgressLeft;
+            public float     NavWaitAt = -1f;
             public Vector3   RecoverDir;
             // A short route round a stationary body, retained while passing it.
             public Vector3   PassBeside, PassBeyond;
@@ -137,6 +151,11 @@ namespace FruitLib
 
             // Only a walk request, nothing steering it (the gait probe's baseline), and the yaw
             // command kept between frames while PersistentYaw is on.
+            // Short contact-clearance maneuvers keep their original facing.
+            public bool LocalStep;
+            public Vector3 LocalGoal;
+            public float LocalYaw, LocalDeadline, LocalProgressAt, LocalLeft, LocalRetryAt, LocalSettleAt, LocalCheckAt;
+            public bool LocalStandalone;
             public bool      Raw;
             public bool      YawCmdOn;
             public float     YawCmd;
@@ -226,28 +245,34 @@ namespace FruitLib
         public static bool Attack(FruitBody attacker, FruitBody victim, FruitStrike kind, float seconds,
                                   bool run = false, string source = "FruitLib", float strength = 1f)
         {
-            if (attacker == null || victim == null || attacker == victim) return false;
-            bool bound = GoTo(attacker, victim, Reach * 0.8f, seconds, run, keep: false);
-            // An order that could not bind yet stays queued and retries, so it must carry the strike either way.
-            if (!_orders.TryGetValue(attacker.Id, out var o) || o.Target != victim) return false;
-            o.Strikes = true;
-            o.Kind = kind;
-            o.Source = string.IsNullOrEmpty(source) ? "FruitLib" : source;
-            o.Strength = Mathf.Max(0f, strength);
-            return bound;
+            return StartAttackInteraction(attacker, victim, kind, seconds, source, strength, run,
+                op => Ended(attacker, op.Stage == FruitInteractionStage.Completed ? FruitMoveResult.Arrived :
+                    op.Stage == FruitInteractionStage.Cancelled ? FruitMoveResult.Stopped : FruitMoveResult.Blocked));
         }
 
         public static void Stop(FruitBody body)
         {
+            if (_interactionCommand == 0) CancelInteraction(body, "stopped by caller");
+            if (body != null) StopLookScan(body.Id, false);
             if (body != null && _orders.TryGetValue(body.Id, out var o))
             {
                 Release(o);
                 _orders.Remove(body.Id);
-                if (IsGoto(o)) { o.Result = FruitMoveResult.Stopped; Summarise(o); Ended(body, FruitMoveResult.Stopped); }
+                o = CancelCourtesy(o);
+                if (o != null && IsGoto(o)) { o.Result = FruitMoveResult.Stopped; Summarise(o); Ended(body, FruitMoveResult.Stopped); }
             }
         }
 
         private static bool IsGoto(Order o) => o.Target != null || o.HasDest;
+
+        internal static bool NeedsNav
+        {
+            get
+            {
+                foreach (var o in _orders.Values) if (IsGoto(o)) return true;
+                return false;
+            }
+        }
 
         public static bool IsWalking(FruitBody body) => body != null && _orders.ContainsKey(body.Id);
 
@@ -255,21 +280,31 @@ namespace FruitLib
         public static bool IsRunning(FruitBody body) => body != null && _orders.TryGetValue(body.Id, out var o) && o.Run;
 
         /// <summary>The body a walking body is going to, following or about to hit, or null. Since 5.14.0.</summary>
-        public static FruitBody TargetOf(FruitBody body) => body != null && _orders.TryGetValue(body.Id, out var o) ? o.Target : null;
+        public static FruitBody TargetOf(FruitBody body) => InteractionOf(body)?.Spec.Target ??
+            (body != null && _orders.TryGetValue(body.Id, out var o) ? o.Target : null);
 
         /// <summary>Whether a body is on its way to hit another. Since 5.14.0.</summary>
         public static bool IsAttacking(FruitBody body)
-            => body != null && ((_orders.TryGetValue(body.Id, out var o) && o.Strikes) || Swinging(body));
+            => body != null && ((_orders.TryGetValue(body.Id, out var o) && o.Strikes) || Swinging(body) ||
+                InteractionOf(body)?.Spec.Name == "strike");
 
         /// <summary>Where a walking body is headed, or zero.</summary>
         public static Vector3 Heading(FruitBody body) => body != null && _orders.TryGetValue(body.Id, out var o) ? o.Dir : Vector3.zero;
 
         private static Order OrderFor(FruitBody body, float seconds, bool run)
         {
+            if (_interactionCommand == 0) CancelInteraction(body);
+            StopLookScan(body.Id, false);
             FruitPose.YieldToWalk(body);
             if (!_orders.TryGetValue(body.Id, out var o)) _orders[body.Id] = o = new Order { Body = body };
-            else if (IsGoto(o)) { o.Result = FruitMoveResult.Stopped; Summarise(o); Ended(body, FruitMoveResult.Stopped); }   // replaced by this one
+            else
+            {
+                var previous = CancelCourtesy(o);
+                if (previous != null && IsGoto(previous)) { previous.Result = FruitMoveResult.Stopped; Summarise(previous); Ended(body, FruitMoveResult.Stopped); }
+                if (o.Courtesy) { Release(o); _orders[body.Id] = o = new Order { Body = body }; }
+            }
             ResetPath(o);
+            o.TraceId = FruitInteractionTrace.NewId("move");
             o.Until = Time.time + Mathf.Max(0.2f, seconds);
             o.Run = run;
             o.Target = null; o.Paused = false; o.Keep = false; o.Strikes = false;
@@ -279,6 +314,10 @@ namespace FruitLib
             o.Stance = false; o.LookUse = 0f;
             o.PassStage = 0; o.PassCheckAt = 0f;
             o.TrafficBlocked = false;
+            o.TrafficCommitUntil = 0f; o.RoomCheckAt = 0f;
+            o.RoomForward = Vector3.zero;
+            o.RoomPartner = null; o.RoomWaitUntil = 0f;
+            o.LocalStep = false; o.LocalStandalone = false; o.LocalRetryAt = 0f;
             o.Raw = false; o.YawCmdOn = false;
             if (o.Turn) { o.Turn = false; Release(o); }
             return o;
@@ -376,6 +415,7 @@ namespace FruitLib
 
         private static void Release(Order o)
         {
+            ReleaseSupport(o.Body.Id);
             SetPace(o, 1f);
             RestoreFooting(o);
             o.YawCmdOn = false;
@@ -448,6 +488,7 @@ namespace FruitLib
         /// <summary>From FruitLibMod.OnLateUpdate.</summary>
         internal static void LateTick()
         {
+            TickInteractions();
             TickHands();
             if (_swings.Count > 0) TickSwings();
             if (_orders.Count == 0) { PathWalkers = 0; return; }
@@ -487,8 +528,29 @@ namespace FruitLib
                     bool upright = Upright(b);
                     TrackCentre(o, dt);
                     o.PaceWanted = o.Run ? RunAnimationSpeed : 1f;
+                    if (o.Courtesy && !o.LocalStep && DestinationReached(o))
+                    {
+                        Release(o);
+                        if (CourtesyFinished(o, now)) { o.Result = FruitMoveResult.Arrived; _done.Add(kv.Key); }
+                        continue;
+                    }
+                    if (o.LocalStep)
+                    {
+                        int step = TickLocalStep(o, upright, now);
+                        if (step == 0) { walkers++; continue; }
+                        if (step > 0 && o.Courtesy && o.CourtesyRetreat)
+                        {
+                            o.CourtesyRetreat = false;
+                            if (BeginLocalStep(o, o.Dest, now)) continue;
+                            step = -1;
+                        }
+                        if (o.LocalStandalone || (step < 0 && o.Courtesy))
+                        { o.Result = step > 0 ? FruitMoveResult.Arrived : FruitMoveResult.Blocked; _done.Add(kv.Key); continue; }
+                        if (step > 0 && o.Courtesy) continue; // hold the pocket until its owner passes
+                        if (step < 0) { o.PassStage = 0; o.LocalRetryAt = now + 2f; }
+                    }
                     if (o.Target != null && !Steer(o, upright, now)) { _done.Add(kv.Key); continue; }
-                    if (o.HasDest && FruitNav.Flat(o.Dest - LiveCentre(b)) <= o.StopDistance)
+                    if (o.HasDest && DestinationReached(o))
                     { o.Result = FruitMoveResult.Arrived; _done.Add(kv.Key); continue; }
                     if (o.HasDest && !Reslot(o, now)) { _done.Add(kv.Key); continue; }
                     if (IsGoto(o) && !o.Paused && !o.Turn)
@@ -496,6 +558,7 @@ namespace FruitLib
                         Vector3 goal = o.Target == null ? o.Dest : o.Slotted ? o.Slot : LiveCentre(o.Target);
                         if (!FollowPath(o, goal, upright, now)) { _done.Add(kv.Key); continue; }
                         if (o.Path != null && o.Path.Found) walkers++;
+                        if (o.LocalStep) continue;
                     }
                     else o.Pivot = false;
                     if (Telemetry) Measure(o, now, upright);
@@ -505,7 +568,7 @@ namespace FruitLib
                         if (upright) WatchTarget(o, dt);   // FruitBodyControl.Spots.cs
                         continue;
                     }
-                    if (!upright) { SetPace(o, 1f); o.Pivot = false; continue; }
+                    if (!upright) { Release(o); o.Pivot = false; continue; }
                     if (o.Turn)
                     {
                         if (!TickTurn(o, now, dt)) _done.Add(kv.Key);
@@ -514,7 +577,6 @@ namespace FruitLib
                     if (o.TrafficBlocked)
                     {
                         Release(o);
-                        o.Runtime.UpdateTargetYRot(SteerYaw(o, Mathf.Atan2(o.Dir.x, o.Dir.z) * Mathf.Rad2Deg, TurnRate, dt));
                         continue;
                     }
                     if (o.Pivot) { TickPivot(o, dt); continue; }
@@ -559,7 +621,8 @@ namespace FruitLib
                         Vector3 actual = Quaternion.Euler(0f, rt.CreatureYRotation, 0f) * local.normalized;
                         var skip = o.Target;
                         if (o.Slotted && skip != null && FruitNav.Flat(LiveCentre(skip) - LiveCentre(b)) < FruitNav.Flat(o.Slot - LiveCentre(b))) skip = null;
-                        if (!TrafficClear(b, skip, LiveCentre(b), actual, Math.Max(o.Run ? 2.3f : 1.5f, FlatSpeed(o))))
+                        if (!TrafficClear(b, skip, LiveCentre(b), actual, Math.Max(o.Run ? 2.3f : 1.5f, FlatSpeed(o))) ||
+                            !GeometryClear(LiveCentre(b), actual, 0.65f))
                         { Release(o); continue; }
                     }
                     if (local.sqrMagnitude > 1e-4f) rt.SetTargetMoveDirection(local.normalized * RampMagnitude(o, now));
@@ -577,6 +640,13 @@ namespace FruitLib
                 if (!_orders.TryGetValue(id, out var o)) continue;
                 Release(o);
                 _orders.Remove(id);
+                if (o.Courtesy)
+                {
+                    if (o.Result == FruitMoveResult.Lost && o.Suspended != null)
+                    { o.Suspended.Result = FruitMoveResult.Lost; Summarise(o.Suspended); Ended(o.Body, FruitMoveResult.Lost); }
+                    else RestoreCourtesy(o, now);
+                    continue;
+                }
                 if (!IsGoto(o)) continue;
                 Summarise(o);
                 // Before Ended: a handler that turns it some other way (to a spot's sofa) has the last word.
@@ -587,6 +657,7 @@ namespace FruitLib
                 }
                 Ended(o.Body, o.Result);
             }
+            StartRoomRequests(now);
         }
 
         /// <summary>Re-aims an order at its target body. False when the order is finished: the target
@@ -607,7 +678,7 @@ namespace FruitLib
                 return false;
             }
             if (UsesSlot(o)) return SteerToSlot(o, centre, me, d, now);   // FruitBodyControl.Spots.cs
-            if (d <= o.StopDistance)
+            if (d <= o.StopDistance && Math.Abs(centre.y - me.y) <= 1.6f && GeometryClear(me, to, d))
             {
                 if (o.Strikes) { o.Paused = true; return true; }   // in range but down: strike once up
                 if (!o.Keep) { o.Result = FruitMoveResult.Arrived; return false; }
@@ -622,8 +693,12 @@ namespace FruitLib
 
         internal static void ResetForScene()
         {
+            ResetInteractions();
             foreach (var o in _orders.Values) { try { Release(o); } catch { } }
             _orders.Clear();
+            ResetWalkSupport();
+            ResetLookScans();
+            ResetCourtesy();
             ResetStrikes();
             ResetHands();
             FruitPose.ResetForScene();
