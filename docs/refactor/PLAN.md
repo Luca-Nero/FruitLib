@@ -2,7 +2,7 @@
 
 The plan for FruitLib's makeover, written so agents can pick up one milestone at a time. Scoped with the designer on 2026-11-02 from the audit of 5.39.0. Evidence is in [`baseline/`](baseline/).
 
-**Status:** draft for the designer's review. No milestone has started.
+**Status:** R0-M1 is done, apart from pushing `master`. R0-M2 is next.
 
 ## What this refactor does
 
@@ -33,6 +33,7 @@ These are settled. Don't reopen them inside a milestone.
 | IMGUI fallbacks | Removed. The native menu gets a second look as part of that |
 | GitHub update check | Stays, on by default |
 | Probes and diagnostics | Moved out of the shipped DLL |
+| FruitTweaks, BloodColor, NoHUD | Effectively dead. No migration; their folders stay as reference, even once they stop compiling |
 | `FruitDecals`, unused gait knobs, older walking paths, obsolete APIs | Removed |
 
 ### What's out of scope
@@ -159,9 +160,10 @@ R1 comes before R2 so that less dead code has to move. R2 comes before R3 and R4
 - **Owns:** git state only.
 - **Who:** supervisor, with the designer's go-ahead.
 - **Done when:**
-  - `claude/add-claude-md` is merged into FruitLib's `master`, with `aaf417d` included.
-  - A fresh checkout of `master` builds with `-p:ModRefsDir=...` and `-p:SkipDeploy=true`.
-  - NeuroFrukt is a git repo with its current state committed. It has no remote.
+  - [x] `claude/add-claude-md` is merged into FruitLib's `master`, with `aaf417d` included (`ce6875a`).
+  - [x] A fresh checkout of `master` builds with `-p:ModRefsDir=...` and `-p:SkipDeploy=true`: 5 warnings, crowd 151, interaction 50.
+  - [x] NeuroFrukt is a git repo with its current state committed, `e036b8f`. It has no remote.
+  - [ ] `master` is pushed.
 
 <a id="r0-m2"></a>
 ### R0-M2: Builds that work from a worktree
@@ -243,7 +245,7 @@ Streams A to D don't share files, except hub edits, which the supervisor applies
   - The older walking paths: `NavSmoothWalking`, `NavWidthAware`, `Order.Legacy`, and the half of `FruitNavProbe`'s course that compares against them.
   - `FruitPerfMon.RegisterCounter`, `Begin`, `End`, and `FruitVersion.Require`.
 - **Done when:** the API snapshot shows only these gone, NeuroFrukt's walking is unchanged in the live check, and the crowd and interaction harnesses pass.
-- **Note:** this breaks FruitTweaks until it's revived. It's on hiatus, so that's accepted.
+- **Note:** FruitTweaks stops compiling after this. That's accepted: see the designer's decisions.
 
 <a id="r1-m4"></a>
 ### R1-M4: Remove the IMGUI fallbacks (stream D)
@@ -455,13 +457,12 @@ One milestone each, in parallel. Each owns its folder, applies `Surface.md`, and
 
 ## Waiting for the designer
 
-To confirm before R0 starts:
+1. **Push `master`.** It's what worktrees and the board's code workers start from, so R0-M1 isn't finished until it's on GitHub.
+2. **R0-M4's live baseline**, once the checklist is drafted.
 
-1. **Merge the branches.** Your commit `aaf417d` is on `claude/add-claude-md`, not `master`. AIStack's change is on `claude/fruitlib-cloud-repo`. R0-M1 needs them merged.
-2. **NeuroFrukt in git.** It has no repo today, and R2 moves 11,000 lines into it. The plan makes it a local repo with no remote.
-3. **Is this plan public?** `docs/` goes to GitHub when pushed, and this file describes NeuroFrukt. The source already mentions it, and R2-M5 removes those mentions. `docs/refactor/baseline/` is already in `aaf417d`, though not pushed. If you'd rather keep all this private, take it out of git before pushing. The cloud workers still read it from the working tree.
-4. **Hiatus mods.** The plan assumes FruitTweaks, BloodColor and NoHUD get no migration. FruitTweaks breaks at R1-M3 until it's revived. Link and Rewind don't use FruitLib.
-5. **Bodies using FruitLab's items.** Confirm that a released FruitLab needs no body stack of its own, as described [above](#the-finding-that-shapes-the-plan).
+Assumed unless the designer says otherwise: a released FruitLab needs no body stack of its own, as described [above](#the-finding-that-shapes-the-plan).
+
+Settled on 2026-11-02: this plan is public, NeuroFrukt's repo stays local with no remote, and the hiatus mods stay as reference with no migration.
 
 ## Parking lot
 
