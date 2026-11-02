@@ -61,7 +61,8 @@ standing body given a new yaw turns its pelvis with the feet planted, so they dr
 makes a turn of more than `StepTurnFrom` (30 degrees) also hold a walk request at a small
 forward move direction (`StepTurnPace`, default 0.6) while the yaw sweeps: the body walks a
 tight arc on its own steps, and lets go within `StepTurnStop` (15 degrees) of the heading. It
-applies to `Face`, `LookAround` and the pivots of a walk.
+applies to `Face` and the pivots of a walk. Since 5.37.0, `LookAround` uses a
+stationary head scan instead.
 
 First turn run (2026-10-11, 120-degree turns, body #2):
 
@@ -107,3 +108,30 @@ Turn NeuroFrukt's "Bodies walk, run and follow" off while it runs.
   (`YawDampingTau` 0.35 s, an intended turn) taken out. 28 is about a damping ratio of 0.7 at 3 Hz.
 - `StartRampSeconds` (default 0, off): the move direction asked for grows from `StartRampFrom`
   (0.4) to 1 over this long.
+
+
+## Short local maneuvers (5.38.0)
+
+`FruitBodyControl.StepTo(body, point, seconds = 5)` requests a level, clear leg up
+to three metres long while holding the initial body yaw. It uses the native lateral
+and backward clips; it does not apply translation forces. Ordinary route following
+retains its forward gait cap and corner pivots.
+
+Courtesy steps, sufficiently lateral first passing legs, and stuck-route backoffs
+use this controller automatically. A corridor pocket may require two legs: move
+away from the waiting walker along the passage, then sideways. Both legs must be
+clear; endpoints alone cannot authorize a shortcut through the doorway wall.
+The waiting walker stays stopped until the final pocket is reached. Suspended
+orders retain their original goal and resume after the owner passes.
+
+Local legs sample the floor every 20 cm, reject lateral navmesh snaps over 15 cm
+and floor changes over 25 cm, and check scenery at knee, hip and chest height.
+Full legs are rechecked every 120 ms; traffic prediction is checked every frame.
+Each leg has a 3–10 second deadline and must gain 8 cm every two seconds, independently
+of path replans. Falling or yaw drift beyond 35 degrees stops it. Motion eases near
+the goal and commands zero movement for 400 ms within 18 cm before releasing the gait.
+MoveEnded reports a standalone StepTo result using the normal movement event.
+
+Pocket search remains local (up to 2.4 m along the passage and 1.6 m sideways with
+default personal space). It cannot resolve arbitrary long single-file corridors or
+multi-party deadlocks; those require a larger passing-bay/reservation planner.

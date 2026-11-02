@@ -1,0 +1,1277 @@
+Ballistics/BallisticsSpecs.cs:16	class	WoundProfile	public sealed class WoundProfile
+Ballistics/BallisticsSpecs.cs:71	class	ProjectileSpec	public sealed class ProjectileSpec
+Ballistics/BallisticsSpecs.cs:238	enum	ExplosionFeatures	public enum ExplosionFeatures
+Ballistics/BallisticsSpecs.cs:238	enum-values	ExplosionFeatures	None, Shockwave, Overpressure, OrganInjury, BlastCover, Fragments, WallPenetration, Ricochet, LimbPassThrough, FragmentPush, Jet, Spall, BoneFragments, Debris, BlastOnly, SimpleFragments, All
+Ballistics/BallisticsSpecs.cs:295	class	ExplosionSpec	public sealed class ExplosionSpec
+Ballistics/BallisticsSpecs.cs:20	field	WoundProfile	public int CrushRadius
+Ballistics/BallisticsSpecs.cs:25	field	WoundProfile	public int CleanEntryDepth
+Ballistics/BallisticsSpecs.cs:29	field	WoundProfile	public float SpreadChance
+Ballistics/BallisticsSpecs.cs:33	field	WoundProfile	public int CavitationPeakRadius
+Ballistics/BallisticsSpecs.cs:36	field	WoundProfile	public float CavitationDamage
+Ballistics/BallisticsSpecs.cs:39	field	WoundProfile	public float TearMinRadius
+Ballistics/BallisticsSpecs.cs:40	field	WoundProfile	public float TearMaxRadius
+Ballistics/BallisticsSpecs.cs:41	field	WoundProfile	public float ExitTearDamage
+Ballistics/BallisticsSpecs.cs:44	field	WoundProfile	public int MaxDepth
+Ballistics/BallisticsSpecs.cs:52	field	WoundProfile	public float HardTissueScale
+Ballistics/BallisticsSpecs.cs:56	field	WoundProfile	public float ImpactImpulse
+Ballistics/BallisticsSpecs.cs:60	field	WoundProfile	public bool Ejecta
+Ballistics/BallisticsSpecs.cs:62	method	WoundProfile	public WoundProfile Clone()
+Ballistics/BallisticsSpecs.cs:75	field	ProjectileSpec	public string Id
+Ballistics/BallisticsSpecs.cs:77	field	ProjectileSpec	public float MassGrams
+Ballistics/BallisticsSpecs.cs:78	field	ProjectileSpec	public float CaliberMm
+Ballistics/BallisticsSpecs.cs:81	field	ProjectileSpec	public float DragCoefficient
+Ballistics/BallisticsSpecs.cs:89	field	ProjectileSpec	public float BallisticCoefficientG7
+Ballistics/BallisticsSpecs.cs:90	field	ProjectileSpec	public float MuzzleVelocity
+Ballistics/BallisticsSpecs.cs:91	field	ProjectileSpec	public float GravityScale
+Ballistics/BallisticsSpecs.cs:92	field	ProjectileSpec	public float Lifetime
+Ballistics/BallisticsSpecs.cs:93	field	ProjectileSpec	public bool ExternalForces
+Ballistics/BallisticsSpecs.cs:97	field	ProjectileSpec	public float PowerPerJoule
+Ballistics/BallisticsSpecs.cs:101	field	ProjectileSpec	public int PowerOverride
+Ballistics/BallisticsSpecs.cs:104	field	ProjectileSpec	public float KillPowerRatio
+Ballistics/BallisticsSpecs.cs:107	field	ProjectileSpec	public float PenetrationDeflect
+Ballistics/BallisticsSpecs.cs:112	field	ProjectileSpec	public float RicochetAngle
+Ballistics/BallisticsSpecs.cs:113	field	ProjectileSpec	public int MaxBounces
+Ballistics/BallisticsSpecs.cs:115	field	ProjectileSpec	public float RicochetEnergyLoss
+Ballistics/BallisticsSpecs.cs:116	field	ProjectileSpec	public float RicochetScatter
+Ballistics/BallisticsSpecs.cs:124	field	ProjectileSpec	public float WorldImpulse
+Ballistics/BallisticsSpecs.cs:132	field	ProjectileSpec	public float PenetrationScale
+Ballistics/BallisticsSpecs.cs:134	field	ProjectileSpec	public WoundProfile Wound
+Ballistics/BallisticsSpecs.cs:185	method	ProjectileSpec	public ProjectileSpec Clone()
+Ballistics/BallisticsSpecs.cs:195	method	ProjectileSpec	public static ProjectileSpec Cartridge(string id, float massGrams, float caliberMm, float muzzleVelocity, float dragCoefficient)
+Ballistics/BallisticsSpecs.cs:205	method	ProjectileSpec	public static ProjectileSpec Native762(string id)
+Ballistics/BallisticsSpecs.cs:208	method	ProjectileSpec	public static ProjectileSpec Native9mm(string id)
+Ballistics/BallisticsSpecs.cs:297	field	ExplosionSpec	public string Id
+Ballistics/BallisticsSpecs.cs:305	field	ExplosionSpec	public ExplosionFeatures Features
+Ballistics/BallisticsSpecs.cs:309	field	ExplosionSpec	public float HSpreadDeg
+Ballistics/BallisticsSpecs.cs:310	field	ExplosionSpec	public float VSpreadDeg
+Ballistics/BallisticsSpecs.cs:313	field	ExplosionSpec	public float BlastRadius
+Ballistics/BallisticsSpecs.cs:314	field	ExplosionSpec	public float BlastForce
+Ballistics/BallisticsSpecs.cs:315	field	ExplosionSpec	public float BlastUpward
+Ballistics/BallisticsSpecs.cs:320	field	ExplosionSpec	public bool BlastOcclusion
+Ballistics/BallisticsSpecs.cs:323	field	ExplosionSpec	public float BlastDiffraction
+Ballistics/BallisticsSpecs.cs:326	field	ExplosionSpec	public float OverpressureRadius
+Ballistics/BallisticsSpecs.cs:327	field	ExplosionSpec	public float OverpressureFalloffExp
+Ballistics/BallisticsSpecs.cs:328	field	ExplosionSpec	public int OverpressurePoints
+Ballistics/BallisticsSpecs.cs:329	field	ExplosionSpec	public int OverpressureWoundRadius
+Ballistics/BallisticsSpecs.cs:330	field	ExplosionSpec	public float OverpressureDamage
+Ballistics/BallisticsSpecs.cs:340	field	ExplosionSpec	public float ChargeKgTNT
+Ballistics/BallisticsSpecs.cs:343	field	ExplosionSpec	public float SurfaceBurstFactor
+Ballistics/BallisticsSpecs.cs:350	field	ExplosionSpec	public float SurfaceBurstScaledHeight
+Ballistics/BallisticsSpecs.cs:354	field	ExplosionSpec	public float BlastPushScale
+Ballistics/BallisticsSpecs.cs:359	field	ExplosionSpec	public float MaxPushRange
+Ballistics/BallisticsSpecs.cs:362	field	ExplosionSpec	public float MaxInjuryRange
+Ballistics/BallisticsSpecs.cs:365	field	ExplosionSpec	public BlastInjuryProfile Injury
+Ballistics/BallisticsSpecs.cs:368	field	ExplosionSpec	public int FragCount
+Ballistics/BallisticsSpecs.cs:371	field	ExplosionSpec	public float FragSpeed
+Ballistics/BallisticsSpecs.cs:372	field	ExplosionSpec	public float FragMaxTime
+Ballistics/BallisticsSpecs.cs:373	field	ExplosionSpec	public float FragImpulse
+Ballistics/BallisticsSpecs.cs:375	field	ExplosionSpec	public int FragPower
+Ballistics/BallisticsSpecs.cs:378	field	ExplosionSpec	public float FragPowerFalloff
+Ballistics/BallisticsSpecs.cs:385	field	ExplosionSpec	public float FragMassGrams
+Ballistics/BallisticsSpecs.cs:388	field	ExplosionSpec	public float FragPenetrationScale
+Ballistics/BallisticsSpecs.cs:391	field	ExplosionSpec	public float FragRicochetAngle
+Ballistics/BallisticsSpecs.cs:393	field	ExplosionSpec	public int FragMaxBounces
+Ballistics/BallisticsSpecs.cs:395	field	ExplosionSpec	public float FragRicochetEnergyLoss
+Ballistics/BallisticsSpecs.cs:397	field	ExplosionSpec	public float FragRicochetScatter
+Ballistics/BallisticsSpecs.cs:411	field	ExplosionSpec	public int FragTargeted
+Ballistics/BallisticsSpecs.cs:414	field	ExplosionSpec	public float FragTargetRange
+Ballistics/BallisticsSpecs.cs:420	field	ExplosionSpec	public int MaxWalksPerLimb
+Ballistics/BallisticsSpecs.cs:427	field	ExplosionSpec	public float FragBeltDeg
+Ballistics/BallisticsSpecs.cs:429	field	ExplosionSpec	public float FragBeltShare
+Ballistics/BallisticsSpecs.cs:434	field	ExplosionSpec	public int JetRays
+Ballistics/BallisticsSpecs.cs:436	field	ExplosionSpec	public float JetConeDeg
+Ballistics/BallisticsSpecs.cs:442	field	ExplosionSpec	public float JetPenetration
+Ballistics/BallisticsSpecs.cs:445	field	ExplosionSpec	public int JetPower
+Ballistics/BallisticsSpecs.cs:448	field	ExplosionSpec	public WoundProfile JetWound
+Ballistics/BallisticsSpecs.cs:463	field	ExplosionSpec	public int JetSpallCount
+Ballistics/BallisticsSpecs.cs:464	field	ExplosionSpec	public float JetSpallConeDeg
+Ballistics/BallisticsSpecs.cs:466	field	ExplosionSpec	public int JetSpallPower
+Ballistics/BallisticsSpecs.cs:469	field	ExplosionSpec	public float JetSpallMassGrams
+Ballistics/BallisticsSpecs.cs:475	field	ExplosionSpec	public float JetSpallCraterScale
+Ballistics/BallisticsSpecs.cs:479	field	ExplosionSpec	public int SecondaryMaxWounds
+Ballistics/BallisticsSpecs.cs:486	field	ExplosionSpec	public int BoneFragments
+Ballistics/BallisticsSpecs.cs:489	field	ExplosionSpec	public int BoneFragmentPower
+Ballistics/BallisticsSpecs.cs:490	field	ExplosionSpec	public float BoneFragmentConeDeg
+Ballistics/BallisticsSpecs.cs:491	field	ExplosionSpec	public int ArcSteps
+Ballistics/BallisticsSpecs.cs:492	field	ExplosionSpec	public float DebrisRatio
+Ballistics/BallisticsSpecs.cs:493	field	ExplosionSpec	public int MaxDebris
+Ballistics/BallisticsSpecs.cs:496	field	ExplosionSpec	public float DamageScale
+Ballistics/BallisticsSpecs.cs:498	field	ExplosionSpec	public int MaxWounds
+Ballistics/BallisticsSpecs.cs:501	field	ExplosionSpec	public float OverpressureBudgetShare
+Ballistics/BallisticsSpecs.cs:503	field	ExplosionSpec	public bool AdaptiveQuality
+Ballistics/BallisticsSpecs.cs:504	field	ExplosionSpec	public float MinQuality
+Ballistics/BallisticsSpecs.cs:506	field	ExplosionSpec	public int LayerMask
+Ballistics/BallisticsSpecs.cs:508	field	ExplosionSpec	public WoundProfile FragWound
+Ballistics/BallisticsSpecs.cs:540	method	ExplosionSpec	public ExplosionSpec Clone()
+Ballistics/FruitBallistics.cs:8	enum	BallisticsCommandKind	public enum BallisticsCommandKind
+Ballistics/FruitBallistics.cs:8	enum-values	BallisticsCommandKind	Projectile, Explosion
+Ballistics/FruitBallistics.cs:15	struct	BallisticsCommand	public struct BallisticsCommand
+Ballistics/FruitBallistics.cs:41	struct	ExplosionStats	public struct ExplosionStats
+Ballistics/FruitBallistics.cs:66	class	Projectile	public sealed class Projectile
+Ballistics/FruitBallistics.cs:130	struct	SurfaceHitInfo	public struct SurfaceHitInfo
+Ballistics/FruitBallistics.cs:152	enum	SurfaceOutcome	public enum SurfaceOutcome
+Ballistics/FruitBallistics.cs:152	enum-values	SurfaceOutcome	Physics, PassThrough, Stop, Ricochet, Handled
+Ballistics/FruitBallistics.cs:170	struct	SurfaceDecision	public struct SurfaceDecision
+Ballistics/FruitBallistics.cs:183	struct	WoundInfo	public struct WoundInfo
+Ballistics/FruitBallistics.cs:197	struct	ExplosionInfo	public struct ExplosionInfo
+Ballistics/FruitBallistics.cs:214	enum	FragmentEnd	public enum FragmentEnd
+Ballistics/FruitBallistics.cs:214	enum-values	FragmentEnd	Spent, Lodged, PassedThrough, Ricocheted, Penetrated, Stopped, OverBudget, TooWeak
+Ballistics/FruitBallistics.cs:243	struct	FragmentTrace	public struct FragmentTrace
+Ballistics/FruitBallistics.cs:278	struct	BlastTrace	public struct BlastTrace
+Ballistics/FruitBallistics.cs:315	class	FruitBallistics	public static class FruitBallistics
+Ballistics/FruitBallistics.cs:181	delegate		public delegate void SurfaceDecisionHandler(ref SurfaceDecision d);
+Ballistics/FruitBallistics.cs:17	field	BallisticsCommand	public BallisticsCommandKind Kind
+Ballistics/FruitBallistics.cs:18	field	BallisticsCommand	public string SpecId
+Ballistics/FruitBallistics.cs:19	field	BallisticsCommand	public Vector3 Origin
+Ballistics/FruitBallistics.cs:20	field	BallisticsCommand	public Vector3 Direction
+Ballistics/FruitBallistics.cs:21	field	BallisticsCommand	public int Seed
+Ballistics/FruitBallistics.cs:24	field	BallisticsCommand	public int Owner
+Ballistics/FruitBallistics.cs:28	field	BallisticsCommand	public int Instigator
+Ballistics/FruitBallistics.cs:31	field	BallisticsCommand	public ExplosionFeatures Disabled
+Ballistics/FruitBallistics.cs:34	field	BallisticsCommand	public Vector3 Axis
+Ballistics/FruitBallistics.cs:43	field	ExplosionStats	public ExplosionSpec Spec
+Ballistics/FruitBallistics.cs:46	field	ExplosionStats	public float TotalMs, BlastMs, OrganMs, FragmentMs, WalkMs
+Ballistics/FruitBallistics.cs:48	field	ExplosionStats	public int Organs, OrgansSkipped
+Ballistics/FruitBallistics.cs:50	field	ExplosionStats	public int Walks
+Ballistics/FruitBallistics.cs:54	field	ExplosionStats	public int TargetLimbs, Aimed, Dropped, Folded
+Ballistics/FruitBallistics.cs:55	field	ExplosionStats	public float Expected
+Ballistics/FruitBallistics.cs:57	field	ExplosionStats	public int Rays
+Ballistics/FruitBallistics.cs:68	property	Projectile	public int Id { get; internal set; }
+Ballistics/FruitBallistics.cs:69	property	Projectile	public ProjectileSpec Spec { get; internal set; }
+Ballistics/FruitBallistics.cs:71	property	Projectile	public Vector3 Position { get; set; }
+Ballistics/FruitBallistics.cs:74	property	Projectile	public Vector3 Velocity { get; set; }
+Ballistics/FruitBallistics.cs:75	property	Projectile	public float Age { get; internal set; }
+Ballistics/FruitBallistics.cs:76	property	Projectile	public bool Alive { get; internal set; }
+Ballistics/FruitBallistics.cs:78	property	Projectile	public int Owner { get; internal set; }
+Ballistics/FruitBallistics.cs:80	property	Projectile	public int Instigator { get; internal set; }
+Ballistics/FruitBallistics.cs:82	property	Projectile	public int Penetrations { get; internal set; }
+Ballistics/FruitBallistics.cs:85	property	Projectile	public bool Tumbling { get; internal set; }
+Ballistics/FruitBallistics.cs:87	field	Projectile	public float PowerScale
+Ballistics/FruitBallistics.cs:90	property	Projectile	public bool Cosmetic { get; internal set; }
+Ballistics/FruitBallistics.cs:92	field	Projectile	public object Tag
+Ballistics/FruitBallistics.cs:95	property	Projectile	public int Power { get; }
+Ballistics/FruitBallistics.cs:96	property	Projectile	public float PowerRatio { get; }
+Ballistics/FruitBallistics.cs:107	method	Projectile	public void Kill()
+Ballistics/FruitBallistics.cs:114	method	Projectile	public void Set(string key, object value)
+Ballistics/FruitBallistics.cs:116	method	Projectile	public T Get<T>(string key, T fallback = default)
+Ballistics/FruitBallistics.cs:119	method	Projectile	public bool Has(string key)
+Ballistics/FruitBallistics.cs:132	field	SurfaceHitInfo	public Projectile Projectile
+Ballistics/FruitBallistics.cs:133	field	SurfaceHitInfo	public Collider Collider
+Ballistics/FruitBallistics.cs:134	field	SurfaceHitInfo	public Vector3 Point, Normal, Direction
+Ballistics/FruitBallistics.cs:136	field	SurfaceHitInfo	public float Incidence
+Ballistics/FruitBallistics.cs:137	field	SurfaceHitInfo	public bool Ricocheted
+Ballistics/FruitBallistics.cs:138	field	SurfaceHitInfo	public float PowerRatio
+Ballistics/FruitBallistics.cs:140	field	SurfaceHitInfo	public SurfaceMaterial Material
+Ballistics/FruitBallistics.cs:142	field	SurfaceHitInfo	public bool Penetrated
+Ballistics/FruitBallistics.cs:143	field	SurfaceHitInfo	public Vector3 Exit
+Ballistics/FruitBallistics.cs:144	field	SurfaceHitInfo	public float Thickness
+Ballistics/FruitBallistics.cs:146	field	SurfaceHitInfo	public float SpeedIn, SpeedOut
+Ballistics/FruitBallistics.cs:148	field	SurfaceHitInfo	public SurfaceOutcome Outcome
+Ballistics/FruitBallistics.cs:172	field	SurfaceDecision	public Projectile Projectile
+Ballistics/FruitBallistics.cs:173	field	SurfaceDecision	public Collider Collider
+Ballistics/FruitBallistics.cs:174	field	SurfaceDecision	public Vector3 Point, Normal, Direction
+Ballistics/FruitBallistics.cs:176	field	SurfaceDecision	public float Incidence
+Ballistics/FruitBallistics.cs:177	field	SurfaceDecision	public SurfaceMaterial Material
+Ballistics/FruitBallistics.cs:178	field	SurfaceDecision	public SurfaceOutcome Outcome
+Ballistics/FruitBallistics.cs:186	field	WoundInfo	public Projectile Projectile
+Ballistics/FruitBallistics.cs:187	field	WoundInfo	public GameObject Limb
+Ballistics/FruitBallistics.cs:188	field	WoundInfo	public Vector3 Entry, Exit, Direction
+Ballistics/FruitBallistics.cs:189	field	WoundInfo	public int PowerIn, PowerOut
+Ballistics/FruitBallistics.cs:190	field	WoundInfo	public bool Exited
+Ballistics/FruitBallistics.cs:191	field	WoundInfo	public int Steps
+Ballistics/FruitBallistics.cs:192	field	WoundInfo	public bool Cosmetic
+Ballistics/FruitBallistics.cs:194	field	WoundInfo	public int Instigator
+Ballistics/FruitBallistics.cs:199	field	ExplosionInfo	public ExplosionSpec Spec
+Ballistics/FruitBallistics.cs:200	field	ExplosionInfo	public Vector3 Origin, Forward
+Ballistics/FruitBallistics.cs:201	field	ExplosionInfo	public bool HasGround
+Ballistics/FruitBallistics.cs:202	field	ExplosionInfo	public RaycastHit Ground
+Ballistics/FruitBallistics.cs:203	field	ExplosionInfo	public bool Cosmetic
+Ballistics/FruitBallistics.cs:205	field	ExplosionInfo	public int Owner
+Ballistics/FruitBallistics.cs:207	field	ExplosionInfo	public int Instigator
+Ballistics/FruitBallistics.cs:210	field	ExplosionInfo	public ExplosionFeatures Features
+Ballistics/FruitBallistics.cs:245	field	FragmentTrace	public ExplosionSpec Spec
+Ballistics/FruitBallistics.cs:246	field	FragmentTrace	public int Owner
+Ballistics/FruitBallistics.cs:247	field	FragmentTrace	public int Instigator
+Ballistics/FruitBallistics.cs:248	field	FragmentTrace	public bool Cosmetic
+Ballistics/FruitBallistics.cs:250	field	FragmentTrace	public int Fragment, Leg
+Ballistics/FruitBallistics.cs:252	field	FragmentTrace	public bool Jet
+Ballistics/FruitBallistics.cs:254	field	FragmentTrace	public bool Spall
+Ballistics/FruitBallistics.cs:256	field	FragmentTrace	public bool Bone
+Ballistics/FruitBallistics.cs:257	field	FragmentTrace	public Vector3 Start, ArcVelocity, End
+Ballistics/FruitBallistics.cs:258	field	FragmentTrace	public float Time
+Ballistics/FruitBallistics.cs:259	field	FragmentTrace	public FragmentEnd EndedBy
+Ballistics/FruitBallistics.cs:261	field	FragmentTrace	public Collider Collider
+Ballistics/FruitBallistics.cs:262	field	FragmentTrace	public Vector3 Normal
+Ballistics/FruitBallistics.cs:264	field	FragmentTrace	public float Incidence
+Ballistics/FruitBallistics.cs:266	field	FragmentTrace	public SurfaceMaterial Material
+Ballistics/FruitBallistics.cs:268	field	FragmentTrace	public Vector3 Exit
+Ballistics/FruitBallistics.cs:269	field	FragmentTrace	public float Thickness
+Ballistics/FruitBallistics.cs:271	field	FragmentTrace	public float SpeedIn, SpeedOut
+Ballistics/FruitBallistics.cs:280	field	BlastTrace	public ExplosionSpec Spec
+Ballistics/FruitBallistics.cs:281	field	BlastTrace	public int Owner
+Ballistics/FruitBallistics.cs:282	field	BlastTrace	public int Instigator
+Ballistics/FruitBallistics.cs:283	field	BlastTrace	public Vector3 Origin, Target
+Ballistics/FruitBallistics.cs:285	field	BlastTrace	public bool Overpressure
+Ballistics/FruitBallistics.cs:287	field	BlastTrace	public float Transmission
+Ballistics/FruitBallistics.cs:289	field	BlastTrace	public Collider Occluder
+Ballistics/FruitBallistics.cs:290	field	BlastTrace	public SurfaceMaterial OccluderMaterial
+Ballistics/FruitBallistics.cs:293	field	BlastTrace	public float PeakKPa
+Ballistics/FruitBallistics.cs:325	event	FruitBallistics	public static event Action<Projectile> ProjectileSpawned
+Ballistics/FruitBallistics.cs:326	event	FruitBallistics	public static event Action<Projectile> ProjectileEnded
+Ballistics/FruitBallistics.cs:333	event	FruitBallistics	public static event Action ProjectilesMoved
+Ballistics/FruitBallistics.cs:334	event	FruitBallistics	public static event Action<SurfaceHitInfo> SurfaceHit
+Ballistics/FruitBallistics.cs:341	event	FruitBallistics	public static event Action<Projectile, float> ProjectileStep
+Ballistics/FruitBallistics.cs:349	event	FruitBallistics	public static event SurfaceDecisionHandler BeforeSurfaceHit
+Ballistics/FruitBallistics.cs:350	event	FruitBallistics	public static event Action<WoundInfo> LimbWounded
+Ballistics/FruitBallistics.cs:351	event	FruitBallistics	public static event Action<ExplosionInfo> Exploded
+Ballistics/FruitBallistics.cs:354	event	FruitBallistics	public static event Action<ExplosionSpec, Vector3, Vector3, float> DebrisArc
+Ballistics/FruitBallistics.cs:363	event	FruitBallistics	public static event Action<FragmentTrace> FragmentTraced
+Ballistics/FruitBallistics.cs:367	event	FruitBallistics	public static event Action<BlastTrace> BlastTraced
+Ballistics/FruitBallistics.cs:375	field	FruitBallistics	public static Func<BallisticsCommand, bool> Intercept
+Ballistics/FruitBallistics.cs:379	event	FruitBallistics	public static event Action<BallisticsCommand> Issued
+Ballistics/FruitBallistics.cs:383	method	FruitBallistics	public static void Register(ProjectileSpec spec)
+Ballistics/FruitBallistics.cs:389	method	FruitBallistics	public static void Register(ExplosionSpec spec)
+Ballistics/FruitBallistics.cs:396	method	FruitBallistics	public static bool TryGetProjectile(string id, out ProjectileSpec spec)
+Ballistics/FruitBallistics.cs:397	method	FruitBallistics	public static bool TryGetExplosion(string id, out ExplosionSpec spec)
+Ballistics/FruitBallistics.cs:402	method	FruitBallistics	public static Projectile SpawnProjectile(string specId, Vector3 origin, Vector3 direction)
+Ballistics/FruitBallistics.cs:406	method	FruitBallistics	public static Projectile SpawnProjectile(string specId, Vector3 origin, Vector3 direction, int owner)
+Ballistics/FruitBallistics.cs:414	method	FruitBallistics	public static Projectile SpawnProjectile(string specId, Vector3 origin, Vector3 direction, int owner, int instigator)
+Ballistics/FruitBallistics.cs:423	method	FruitBallistics	public static void SpawnExplosion(string specId, Vector3 origin, Vector3 forward)
+Ballistics/FruitBallistics.cs:427	method	FruitBallistics	public static void SpawnExplosion(string specId, Vector3 origin, Vector3 forward, int owner)
+Ballistics/FruitBallistics.cs:436	method	FruitBallistics	public static void SpawnExplosion(string specId, Vector3 origin, Vector3 forward, int owner, ExplosionFeatures features)
+Ballistics/FruitBallistics.cs:444	method	FruitBallistics	public static void SpawnExplosion(string specId, Vector3 origin, Vector3 forward, Vector3 axis, int owner, ExplosionFeatures features)
+Ballistics/FruitBallistics.cs:453	method	FruitBallistics	public static void SpawnExplosion(string specId, Vector3 origin, Vector3 forward, Vector3 axis, int owner, ExplosionFeatures features, int instigator)
+Ballistics/FruitBallistics.cs:464	property	FruitBallistics	public static ExplosionStats LastExplosion { get; internal set; }
+Ballistics/FruitBallistics.cs:478	method	FruitBallistics	public static object Execute(BallisticsCommand cmd, bool cosmetic)
+Ballistics/FruitBlast.cs:17	class	FruitBlast	public static class FruitBlast
+Ballistics/FruitBlast.cs:20	field	FruitBlast	public const float AmbientKPa
+Ballistics/FruitBlast.cs:23	field	FruitBlast	public const float MaxKPa
+Ballistics/FruitBlast.cs:26	method	FruitBlast	public static float Scaled(float metres, float kgTnt)
+Ballistics/FruitBlast.cs:30	method	FruitBlast	public static float IncidentKPa(float z)
+Ballistics/FruitBlast.cs:38	method	FruitBlast	public static float ReflectedKPa(float incidentKPa)
+Ballistics/FruitBlast.cs:45	method	FruitBlast	public static float IncidentKPa(float metres, float kgTnt)
+Ballistics/FruitBlast.cs:53	method	FruitBlast	public static float ReflectedImpulse(float metres, float kgTnt)
+Ballistics/FruitBlast.cs:61	method	FruitBlast	public static float RangeFor(float kgTnt, float kPa)
+Ballistics/FruitBlastInjury.cs:26	class	BlastInjuryProfile	public sealed class BlastInjuryProfile
+Ballistics/FruitBlastInjury.cs:29	field	BlastInjuryProfile	public float LungKPa
+Ballistics/FruitBlastInjury.cs:30	field	BlastInjuryProfile	public float StomachKPa
+Ballistics/FruitBlastInjury.cs:31	field	BlastInjuryProfile	public float BrainKPa
+Ballistics/FruitBlastInjury.cs:32	field	BlastInjuryProfile	public float HeartKPa
+Ballistics/FruitBlastInjury.cs:33	field	BlastInjuryProfile	public float LiverKPa
+Ballistics/FruitBlastInjury.cs:35	field	BlastInjuryProfile	public float SurfaceKPa
+Ballistics/FruitBlastInjury.cs:37	field	BlastInjuryProfile	public float DisruptionKPa
+Ballistics/FruitBlastInjury.cs:39	method	BlastInjuryProfile	public BlastInjuryProfile Clone()
+Ballistics/FruitSurfaces.cs:25	class	SurfaceMaterial	public sealed class SurfaceMaterial
+Ballistics/FruitSurfaces.cs:117	class	FruitSurfaces	public static class FruitSurfaces
+Ballistics/FruitSurfaces.cs:27	field	SurfaceMaterial	public string Name
+Ballistics/FruitSurfaces.cs:30	field	SurfaceMaterial	public float Density
+Ballistics/FruitSurfaces.cs:32	field	SurfaceMaterial	public float Strength
+Ballistics/FruitSurfaces.cs:36	field	SurfaceMaterial	public float RicochetAngleShift
+Ballistics/FruitSurfaces.cs:39	field	SurfaceMaterial	public float Restitution
+Ballistics/FruitSurfaces.cs:41	field	SurfaceMaterial	public float Grip
+Ballistics/FruitSurfaces.cs:43	field	SurfaceMaterial	public float RicochetLossScale
+Ballistics/FruitSurfaces.cs:47	field	SurfaceMaterial	public float ExitScatter
+Ballistics/FruitSurfaces.cs:49	field	SurfaceMaterial	public float MaxThickness
+Ballistics/FruitSurfaces.cs:50	field	SurfaceMaterial	public bool Penetrable
+Ballistics/FruitSurfaces.cs:55	field	SurfaceMaterial	public float BlastTransmission
+Ballistics/FruitSurfaces.cs:60	field	SurfaceMaterial	public float Spall
+Ballistics/FruitSurfaces.cs:62	method	SurfaceMaterial	public SurfaceMaterial Clone()
+Ballistics/FruitSurfaces.cs:87	method	SurfaceMaterial	public float Depth(float sd, float speed)
+Ballistics/FruitSurfaces.cs:94	method	SurfaceMaterial	public float ExitSpeed(float sd, float speed, float thickness)
+Ballistics/FruitSurfaces.cs:126	property	FruitSurfaces	public static SurfaceMaterial Concrete { get; }
+Ballistics/FruitSurfaces.cs:162	method	FruitSurfaces	public static void Register(SurfaceMaterial m)
+Ballistics/FruitSurfaces.cs:170	method	FruitSurfaces	public static SurfaceMaterial Get(string name)
+Ballistics/FruitSurfaces.cs:175	method	FruitSurfaces	public static void AddKeyword(string keyword, string material)
+Ballistics/FruitSurfaces.cs:186	method	FruitSurfaces	public static void AddResolver(Func<Collider, SurfaceMaterial> resolver)
+Ballistics/FruitSurfaces.cs:193	method	FruitSurfaces	public static void RemoveResolver(Func<Collider, SurfaceMaterial> resolver)
+Ballistics/FruitSurfaces.cs:199	method	FruitSurfaces	public static SurfaceMaterial Resolve(Collider c)
+Ballistics/FruitSurfaces.cs:202	method	FruitSurfaces	public static SurfaceMaterial Explain(Collider c, out string why)
+Content/FruitBundles.cs:21	class	FruitBundle	public sealed class FruitBundle
+Content/FruitBundles.cs:23	property	FruitBundle	public string Name { get; }
+Content/FruitBundles.cs:24	property	FruitBundle	public AssetBundle Bundle { get; private set; }
+Content/FruitBundles.cs:41	method	FruitBundle	public static FruitBundle FromFile(string path)
+Content/FruitBundles.cs:62	method	FruitBundle	public static FruitBundle FromResource(Assembly assembly, string resourceSuffix)
+Content/FruitBundles.cs:91	method	FruitBundle	public static FruitBundle FromBytes(byte[] bytes, string key, string name = null)
+Content/FruitBundles.cs:106	method	FruitBundle	public static IEnumerator FromFileAsync(string path, Action<FruitBundle> done)
+Content/FruitBundles.cs:170	method	FruitBundle	public string[] AssetNames()
+Content/FruitBundles.cs:176	method	FruitBundle	public T Load<T>(string name)
+Content/FruitBundles.cs:190	method	FruitBundle	public GameObject Spawn(string prefab, Vector3 position, Quaternion rotation, bool rebindShaders = false)
+Content/FruitBundles.cs:200	method	FruitBundle	public void Unload(bool unloadAssets)
+Content/FruitBundles.cs:225	method	FruitBundle	public static void CaptureGameShaders()
+Content/FruitBundles.cs:241	method	FruitBundle	public static void RebindShaders(GameObject root)
+Content/FruitDecals.cs:25	class	FruitDecals	public static class FruitDecals
+Content/FruitDecals.cs:30	property	FruitDecals	public static string LastError { get; private set; }
+Content/FruitDecals.cs:33	property	FruitDecals	public static bool Active { get; }
+Content/FruitDecals.cs:39	method	FruitDecals	public static bool Ensure(float maxDrawDistance = 60f)
+Content/FruitDecals.cs:94	method	FruitDecals	public static DecalProjector Place(Material material, Vector3 point, Vector3 normal, float size, float lifetime = 0f, float depth = 0.3f, float? spinDegrees = null)
+Content/FruitMeshLoader.cs:14	class	FruitMaterialGroup	public class FruitMaterialGroup
+Content/FruitMeshLoader.cs:23	class	FruitMeshEntry	public class FruitMeshEntry
+Content/FruitMeshLoader.cs:31	class	FruitMeshLibrary	public class FruitMeshLibrary
+Content/FruitMeshLoader.cs:144	class	FruitMeshUtil	public static class FruitMeshUtil
+Content/FruitMeshLoader.cs:16	field	FruitMaterialGroup	public string Name
+Content/FruitMeshLoader.cs:17	field	FruitMaterialGroup	public float[] Kd
+Content/FruitMeshLoader.cs:18	field	FruitMaterialGroup	public float Alpha
+Content/FruitMeshLoader.cs:19	field	FruitMaterialGroup	public int TriStart
+Content/FruitMeshLoader.cs:20	field	FruitMaterialGroup	public int TriCount
+Content/FruitMeshLoader.cs:25	field	FruitMeshEntry	public string Name
+Content/FruitMeshLoader.cs:26	field	FruitMeshEntry	public Mesh Mesh
+Content/FruitMeshLoader.cs:27	field	FruitMeshEntry	public FruitMaterialGroup[] Materials
+Content/FruitMeshLoader.cs:35	property	FruitMeshLibrary	public int Count { get; }
+Content/FruitMeshLoader.cs:37	ctor	FruitMeshLibrary	public FruitMeshLibrary(Assembly assembly, string suffix = "_mesh.json")
+Content/FruitMeshLoader.cs:72	method	FruitMeshLibrary	public Mesh GetMesh(string name)
+Content/FruitMeshLoader.cs:82	method	FruitMeshLibrary	public FruitMaterialGroup[] GetMaterials(string name)
+Content/FruitMeshLoader.cs:148	method	FruitMeshUtil	public static void ApplyMaterials(Renderer renderer, FruitMaterialGroup[] groups, Shader shader, Color fallbackColor)
+Content/FruitMeshLoader.cs:154	method	FruitMeshUtil	public static Material[] ApplyNewMaterials(Renderer renderer, FruitMaterialGroup[] groups, Shader shader, Color fallbackColor)
+Content/FruitSfx.cs:23	class	FruitSfx	public static class FruitSfx
+Content/FruitSfx.cs:99	method	FruitSfx	public static FAudioResource WeaponResource(WeaponSFXType type)
+Content/FruitSfx.cs:106	method	FruitSfx	public static FAudioResource ImpactResource(ImpactSFXType type)
+Content/FruitSfx.cs:113	method	FruitSfx	public static FAudioResource WhooshResource(WhooshSFXType type)
+Content/FruitSfx.cs:120	method	FruitSfx	public static FAudioResource ToolsResource(ToolsSFXType type)
+Content/FruitSfx.cs:128	method	FruitSfx	public static AudioClip Weapon(WeaponSFXType type)
+Content/FruitSfx.cs:130	method	FruitSfx	public static AudioClip Impact(ImpactSFXType type)
+Content/FruitSfx.cs:132	method	FruitSfx	public static AudioClip Whoosh(WhooshSFXType type)
+Content/FruitSfx.cs:134	method	FruitSfx	public static AudioClip Tools(ToolsSFXType type)
+Content/FruitSfx.cs:144	method	FruitSfx	public static AudioClip AsClip(FAudioResource res)
+Content/FruitSfx.cs:158	method	FruitSfx	public static void PlayUI(UISFXType type)
+Core/FruitLibConfig.cs:17	class	FruitLibConfig	public static class FruitLibConfig
+Core/FruitLibConfig.cs:25	field	FruitLibConfig	public static bool WallPenetration
+Core/FruitLibConfig.cs:28	field	FruitLibConfig	public static float PenetrationScale
+Core/FruitLibConfig.cs:31	field	FruitLibConfig	public static bool BlastOcclusion
+Core/FruitLibConfig.cs:36	field	FruitLibConfig	public static bool Ejecta
+Core/FruitLibConfig.cs:39	field	FruitLibConfig	public static bool EjectaVisible
+Core/FruitLibConfig.cs:42	field	FruitLibConfig	public static int EjectaMaxCount
+Core/FruitLibConfig.cs:45	field	FruitLibConfig	public static float EjectaSize
+Core/FruitLibConfig.cs:48	field	FruitLibConfig	public static float EjectaLifetime
+Core/FruitLibConfig.cs:51	field	FruitLibConfig	public static bool BloodDecals
+Core/FruitLibConfig.cs:54	field	FruitLibConfig	public static float BloodDecalSize
+Core/FruitLibConfig.cs:57	field	FruitLibConfig	public static float BloodDecalLifetime
+Core/FruitLibConfig.cs:62	field	FruitLibConfig	public static bool StepAssist
+Core/FruitLibConfig.cs:65	field	FruitLibConfig	public static bool StepTurns
+Core/FruitLibConfig.cs:68	field	FruitLibConfig	public static bool WalkStability
+Core/FruitLibConfig.cs:71	field	FruitLibConfig	public static bool FootTraction
+Core/FruitLibConfig.cs:76	field	FruitLibConfig	public static float WalkPelvisSpring
+Core/FruitLibConfig.cs:77	field	FruitLibConfig	public static float WalkTorsoSpring
+Core/FruitLibConfig.cs:78	field	FruitLibConfig	public static float WalkLegSpring
+Core/FruitLibConfig.cs:81	field	FruitLibConfig	public static float StepTurnPace
+Core/FruitLibConfig.cs:84	field	FruitLibConfig	public static float NavMaxSize
+Core/FruitLibConfig.cs:87	field	FruitLibConfig	public static float NavVoxelSize
+Core/FruitLibConfig.cs:90	field	FruitLibConfig	public static float NavPathMargin
+Core/FruitLibConfig.cs:93	field	FruitLibConfig	public static bool NavSmoothWalking
+Core/FruitLibConfig.cs:98	field	FruitLibConfig	public static bool NavWidthAware
+Core/FruitLibConfig.cs:103	field	FruitLibConfig	public static float NavClimb
+Core/FruitLibConfig.cs:108	field	FruitLibConfig	public static float PickupStance
+Core/FruitLibConfig.cs:109	field	FruitLibConfig	public static float PickupStanceLow
+Core/FruitLibConfig.cs:113	field	FruitLibConfig	public static bool Enabled
+Core/FruitLibConfig.cs:116	field	FruitLibConfig	public static KeyCode ToggleKey
+Core/FruitLibConfig.cs:119	field	FruitLibConfig	public static int Corner
+Core/FruitLibConfig.cs:122	field	FruitLibConfig	public static int FontSize
+Core/FruitLibConfig.cs:125	field	FruitLibConfig	public static float BgAlpha
+Core/FruitLibConfig.cs:130	field	FruitLibConfig	public static float PerfTargetFps
+Core/FruitLibConfig.cs:133	field	FruitLibConfig	public static bool CheckForUpdates
+Core/FruitLibConfig.cs:138	field	FruitLibConfig	public static bool InteractionDiagnostics
+Core/FruitLibConfig.cs:141	field	FruitLibConfig	public static bool VerboseLog
+Core/FruitLibConfig.cs:144	field	FruitLibConfig	public static KeyCode PerfKey
+Core/FruitLibConfig.cs:147	field	FruitLibConfig	public static bool NativeHud
+Core/FruitLibConfig.cs:150	field	FruitLibConfig	public static bool BallisticsProbe
+Core/FruitLibConfig.cs:153	field	FruitLibConfig	public static KeyCode BallisticsProbeKey
+Core/FruitLibConfig.cs:156	field	FruitLibConfig	public static bool SightProbe
+Core/FruitLibConfig.cs:159	field	FruitLibConfig	public static KeyCode SightProbeKey
+Core/FruitLibConfig.cs:162	field	FruitLibConfig	public static bool NavDraw
+Core/FruitLibConfig.cs:165	field	FruitLibConfig	public static bool NavProbe
+Core/FruitLibConfig.cs:168	field	FruitLibConfig	public static KeyCode NavProbeKey
+Core/FruitLibConfig.cs:171	field	FruitLibConfig	public static bool HandsProbe
+Core/FruitLibConfig.cs:174	field	FruitLibConfig	public static KeyCode HandsProbeKey
+Core/FruitLibConfig.cs:177	field	FruitLibConfig	public static bool GaitProbe
+Core/FruitLibConfig.cs:180	field	FruitLibConfig	public static KeyCode GaitProbeKey
+Core/FruitLibConfig.cs:183	field	FruitLibConfig	public static bool EventLog
+Core/FruitLibConfig.cs:186	field	FruitLibConfig	public static bool EventPanel
+Core/FruitLibConfig.cs:189	field	FruitLibConfig	public static bool DebugHooks
+Core/FruitLibConfig.cs:193	field	FruitLibConfig	public static bool MenuProbe
+Core/FruitLibConfig.cs:196	field	FruitLibConfig	public static KeyCode MenuProbeKey
+Core/FruitLibConfig.cs:199	field	FruitLibConfig	public static bool BundleProbe
+Core/FruitLibConfig.cs:202	field	FruitLibConfig	public static KeyCode BundleProbeKey
+Core/FruitLibConfig.cs:208	field	FruitLibConfig	public static float MarginX
+Core/FruitLibConfig.cs:211	field	FruitLibConfig	public static float MarginY
+Core/FruitLibConfig.cs:214	field	FruitLibConfig	public static float Gap
+Core/FruitLibConfig.cs:217	field	FruitLibConfig	public static int EjectaMinDepth
+Core/FruitLibConfig.cs:220	field	FruitLibConfig	public static int EjectaFullPower
+Core/FruitLibConfig.cs:223	field	FruitLibConfig	public static float EjectaSpeed
+Core/FruitLibConfig.cs:226	field	FruitLibConfig	public static float EjectaSpread
+Core/FruitLibConfig.cs:229	field	FruitLibConfig	public static int BloodDecalCount
+Core/FruitLibConfig.cs:232	field	FruitLibConfig	public static int BloodAtlasCols
+Core/FruitLibConfig.cs:235	field	FruitLibConfig	public static int BloodAtlasRows
+Core/FruitLibConfig.cs:238	field	FruitLibConfig	public static float EjectaTargetFps
+Core/FruitLibConfig.cs:241	field	FruitLibConfig	public static float EjectaCullSpeed
+Core/FruitLibConfig.cs:244	field	FruitLibConfig	public static int MaxLiveRounds
+Core/FruitLibConfig.cs:247	field	FruitLibConfig	public static float BodySampleHz
+Core/FruitLibConfig.cs:250	field	FruitLibConfig	public static float EventLogSnapshotSeconds
+Core/FruitLibConfig.cs:253	property	FruitLibConfig	public static string IniPath { get; }
+Core/FruitLibMod.cs:15	class	FruitLibMod	public class FruitLibMod : MelonMod
+Core/FruitLibMod.cs:21	method	FruitLibMod	public override void OnInitializeMelon()
+Core/FruitLibMod.cs:65	method	FruitLibMod	public override void OnUpdate()
+Core/FruitLibMod.cs:115	method	FruitLibMod	public override void OnApplicationQuit()
+Core/FruitLibMod.cs:135	method	FruitLibMod	public override void OnGUI()
+Core/FruitLibMod.cs:138	method	FruitLibMod	public override void OnLateUpdate()
+Core/FruitLibMod.cs:145	method	FruitLibMod	public override void OnFixedUpdate()
+Core/FruitLibMod.cs:154	method	FruitLibMod	public override void OnSceneWasLoaded(int buildIndex, string sceneName)
+Core/FruitLibMod.cs:157	method	FruitLibMod	public override void OnSceneWasUnloaded(int buildIndex, string sceneName)
+Core/FruitLibMod.cs:160	method	FruitLibMod	public override void OnSceneWasInitialized(int buildIndex, string sceneName)
+Core/FruitVersion.cs:6	class	FruitVersion	public static class FruitVersion
+Core/FruitVersion.cs:10	property	FruitVersion	public static string Current { get; }
+Core/FruitVersion.cs:12	field	FruitVersion	public static readonly int Major
+Core/FruitVersion.cs:13	field	FruitVersion	public static readonly int Minor
+Core/FruitVersion.cs:14	field	FruitVersion	public static readonly int Patch
+Core/FruitVersion.cs:16	field	FruitVersion	public const string MelonName
+Core/FruitVersion.cs:17	field	FruitVersion	public const string MelonAuthor
+Core/FruitVersion.cs:21	method	FruitVersion	public static bool AtLeast(int major, int minor = 0, int patch = 0)
+Core/FruitVersion.cs:24	method	FruitVersion	public static bool Require(string modName, int major, int minor = 0, int patch = 0)	[Obsolete]
+Hud/FruitHud.cs:8	enum	HudCorner	public enum HudCorner
+Hud/FruitHud.cs:8	enum-values	HudCorner	TopLeft, TopRight, BottomLeft, BottomRight
+Hud/FruitHud.cs:19	class	FruitHud	public static class FruitHud
+Hud/FruitHud.cs:311	class	HudHandle	public sealed class HudHandle
+Hud/FruitHud.cs:340	class	HudPanel	public sealed class HudPanel
+Hud/FruitHud.cs:21	method	FruitHud	public static HudHandle Register(string name, Action<HudPanel> build, int order = 0, HudCorner? corner = null, float minWidth = 0f, int fontSize = 0)
+Hud/FruitHud.cs:44	method	FruitHud	public static void Unregister(string name)
+Hud/FruitHud.cs:57	property	FruitHud	public static bool Visible { get; set; }
+Hud/FruitHud.cs:63	method	FruitHud	public static void SetVisible(string name, bool visible)
+Hud/FruitHud.cs:69	method	FruitHud	public static bool IsVisible(string name)
+Hud/FruitHud.cs:71	method	FruitHud	public static HudHandle Find(string name)
+Hud/FruitHud.cs:313	field	HudHandle	public readonly string Name
+Hud/FruitHud.cs:315	field	HudHandle	public bool Visible
+Hud/FruitHud.cs:317	method	HudHandle	public void Unregister()
+Hud/FruitHud.cs:342	field	HudPanel	public static readonly Color Normal
+Hud/FruitHud.cs:343	field	HudPanel	public static readonly Color Dim
+Hud/FruitHud.cs:344	field	HudPanel	public static readonly Color Good
+Hud/FruitHud.cs:345	field	HudPanel	public static readonly Color Warn
+Hud/FruitHud.cs:346	field	HudPanel	public static readonly Color Bad
+Hud/FruitHud.cs:359	method	HudPanel	public void Line(string text)
+Hud/FruitHud.cs:361	method	HudPanel	public void Line(string text, Color color)
+Hud/FruitHud.cs:364	method	HudPanel	public void Header(string text)
+Hud/FruitHud.cs:366	method	HudPanel	public void Header(string text, Color color)
+Hud/FruitHud.cs:369	method	HudPanel	public void Separator()
+Hud/FruitHud.cs:371	method	HudPanel	public void Blank()
+Hud/FruitPerfMon.cs:27	class	FruitPerfMon	public static class FruitPerfMon
+Hud/FruitPerfMon.cs:201	class	ModPerf	public sealed class ModPerf
+Hud/FruitPerfMon.cs:305	struct	PerfTiming	public readonly struct PerfTiming : IDisposable
+Hud/FruitPerfMon.cs:30	property	FruitPerfMon	public static float PressureLevel { get; private set; }
+Hud/FruitPerfMon.cs:33	property	FruitPerfMon	public static float LongFps { get; }
+Hud/FruitPerfMon.cs:36	property	FruitPerfMon	public static float TargetFps { get; }
+Hud/FruitPerfMon.cs:39	field	FruitPerfMon	public static float PressureDrop
+Hud/FruitPerfMon.cs:45	method	FruitPerfMon	public static ModPerf For(string modName)
+Hud/FruitPerfMon.cs:58	method	FruitPerfMon	public static void RegisterCounter(string name, Func<int> getter)	[Obsolete]
+Hud/FruitPerfMon.cs:63	method	FruitPerfMon	public static void Begin(string name)	[Obsolete]
+Hud/FruitPerfMon.cs:67	method	FruitPerfMon	public static void End(string name)	[Obsolete]
+Hud/FruitPerfMon.cs:203	property	ModPerf	public string Name { get; }
+Hud/FruitPerfMon.cs:217	method	ModPerf	public ModPerf Counter(string name, Func<int> getter)
+Hud/FruitPerfMon.cs:229	method	ModPerf	public ModPerf Value(string name, Func<string> getter)
+Hud/FruitPerfMon.cs:238	method	ModPerf	public void Begin(string name)
+Hud/FruitPerfMon.cs:241	method	ModPerf	public void End(string name)
+Hud/FruitPerfMon.cs:247	method	ModPerf	public PerfTiming Time(string name)
+Hud/FruitPerfMon.cs:249	method	ModPerf	public void ResetPeaks()
+Hud/FruitPerfMon.cs:309	method	PerfTiming	public void Dispose()
+Hud/FruitTextInput.cs:30	class	FruitTextInput	public static class FruitTextInput
+Hud/FruitTextInput.cs:44	property	FruitTextInput	public static bool Active { get; private set; }
+Hud/FruitTextInput.cs:48	property	FruitTextInput	public static bool JustClosed { get; }
+Hud/FruitTextInput.cs:51	property	FruitTextInput	public static string Owner { get; }
+Hud/FruitTextInput.cs:54	property	FruitTextInput	public static string Text { get; }
+Hud/FruitTextInput.cs:58	property	FruitTextInput	public static bool HoldsGame { get; }
+Hud/FruitTextInput.cs:65	method	FruitTextInput	public static bool Open(string owner, string prompt, Action<string, bool> onSubmit, Action onCancel = null, int maxLength = 200)
+Hud/FruitTextInput.cs:83	method	FruitTextInput	public static void SetPrompt(string prompt)
+Hud/FruitTextInput.cs:86	method	FruitTextInput	public static void Close()
+Inventory/FruitIcons.cs:13	class	FruitIcons	public static class FruitIcons
+Inventory/FruitIcons.cs:30	method	FruitIcons	public static Sprite Load(Assembly assembly, string resourceName, FilterMode filter = FilterMode.Bilinear)
+Inventory/FruitIcons.cs:86	method	FruitIcons	public static Sprite Load(byte[] png, FilterMode filter = FilterMode.Bilinear, string name = "FruitLib icon")
+Inventory/FruitIcons.cs:132	method	FruitIcons	public static Sprite Solid(Color color, int size = 64)
+Inventory/FruitInventory.cs:17	enum	FruitItemCategory	public enum FruitItemCategory
+Inventory/FruitInventory.cs:17	enum-values	FruitItemCategory	Weapon, Tool, Etc, Prop, Misc
+Inventory/FruitInventory.cs:30	class	FruitItem	public class FruitItem
+Inventory/FruitInventory.cs:197	class	FruitItemProp	public sealed class FruitItemProp
+Inventory/FruitInventory.cs:281	class	FruitCategory	public class FruitCategory
+Inventory/FruitInventory.cs:313	enum	FruitHeldKind	public enum FruitHeldKind
+Inventory/FruitInventory.cs:313	enum-values	FruitHeldKind	None, Hand, Tool, Spawner, Weapon
+Inventory/FruitInventory.cs:327	class	FruitInventory	public static class FruitInventory
+Inventory/FruitInventory.cs:34	field	FruitItem	public string Id
+Inventory/FruitInventory.cs:36	field	FruitItem	public string Name
+Inventory/FruitInventory.cs:37	field	FruitItem	public string Description
+Inventory/FruitInventory.cs:40	field	FruitItem	public Sprite Icon
+Inventory/FruitInventory.cs:48	field	FruitItem	public string Category
+Inventory/FruitInventory.cs:55	field	FruitItem	public bool? Dangerous
+Inventory/FruitInventory.cs:67	field	FruitItem	public string Caliber
+Inventory/FruitInventory.cs:70	field	FruitItem	public string FireMode
+Inventory/FruitInventory.cs:73	field	FruitItem	public string Size
+Inventory/FruitInventory.cs:80	field	FruitItem	public readonly List<KeyValuePair<string, string>> Stats
+Inventory/FruitInventory.cs:83	method	FruitItem	public FruitItem WeaponCard(string caliber, string fireMode)
+Inventory/FruitInventory.cs:91	method	FruitItem	public FruitItem PropCard(string size)
+Inventory/FruitInventory.cs:101	field	FruitItem	public GameObject Model
+Inventory/FruitInventory.cs:109	field	FruitItem	public FruitItemProp Prop
+Inventory/FruitInventory.cs:112	property	FruitItem	public bool InSpawnMode { get; internal set; }
+Inventory/FruitInventory.cs:118	method	FruitItem	public FruitItem Placeable(GameObject model = null, float mass = 1f, FruitAffords affords = FruitAffords.None)
+Inventory/FruitInventory.cs:128	field	FruitItem	public Action<FruitItem> OnSelected
+Inventory/FruitInventory.cs:130	field	FruitItem	public Action<FruitItem> OnDeselected
+Inventory/FruitInventory.cs:132	field	FruitItem	public Action<FruitItem> WhileHeld
+Inventory/FruitInventory.cs:136	field	FruitItem	public Action<FruitItem> OnPrimary
+Inventory/FruitInventory.cs:137	field	FruitItem	public Action<FruitItem, float> OnPrimaryHold
+Inventory/FruitInventory.cs:138	field	FruitItem	public Action<FruitItem> OnPrimaryRelease
+Inventory/FruitInventory.cs:139	field	FruitItem	public Action<FruitItem> OnSecondary
+Inventory/FruitInventory.cs:140	field	FruitItem	public Action<FruitItem, float> OnSecondaryHold
+Inventory/FruitInventory.cs:141	field	FruitItem	public Action<FruitItem> OnSecondaryRelease
+Inventory/FruitInventory.cs:142	field	FruitItem	public Action<FruitItem> OnMiddle
+Inventory/FruitInventory.cs:143	field	FruitItem	public Action<FruitItem, float> OnScroll
+Inventory/FruitInventory.cs:146	property	FruitItem	public bool IsRegistered { get; }
+Inventory/FruitInventory.cs:149	property	FruitItem	public bool IsHeld { get; }
+Inventory/FruitInventory.cs:152	property	FruitItem	public GameObject Held { get; internal set; }
+Inventory/FruitInventory.cs:155	property	FruitItem	public int Slot { get; internal set; }
+Inventory/FruitInventory.cs:158	property	FruitItem	public string ResolvedCategory { get; internal set; }
+Inventory/FruitInventory.cs:160	method	FruitItem	public FruitItem AddStat(string key, string value)
+Inventory/FruitInventory.cs:171	method	FruitItem	public void SetDisplay(string name = null, Sprite icon = null)
+Inventory/FruitInventory.cs:188	method	FruitItem	public override string ToString()
+Inventory/FruitInventory.cs:201	field	FruitItemProp	public GameObject Model
+Inventory/FruitInventory.cs:209	field	FruitItemProp	public Func<GameObject> MakeModel
+Inventory/FruitInventory.cs:212	field	FruitItemProp	public string Name
+Inventory/FruitInventory.cs:215	field	FruitItemProp	public float Mass
+Inventory/FruitInventory.cs:218	field	FruitItemProp	public FruitAffords Affords
+Inventory/FruitInventory.cs:221	field	FruitItemProp	public string MenuCategory
+Inventory/FruitInventory.cs:224	field	FruitItemProp	public Func<FruitWorldItem, IEnumerable<FruitMenuEntry>> Menu
+Inventory/FruitInventory.cs:232	field	FruitItemProp	public Func<FruitBody, FruitWorldItem, FruitBody, Vector3?, bool> OnUse
+Inventory/FruitInventory.cs:233	field	FruitItemProp	public Func<FruitBody, FruitWorldItem, FruitBody, Vector3?, FruitInteractionSpec> Interaction
+Inventory/FruitInventory.cs:237	field	FruitItemProp	public Action<FruitWorldItem, float> OnUseHeld
+Inventory/FruitInventory.cs:240	field	FruitItemProp	public Action<FruitWorldItem> OnUseReleased
+Inventory/FruitInventory.cs:243	field	FruitItemProp	public string UseVerb
+Inventory/FruitInventory.cs:248	field	FruitItemProp	public FruitUseStep[] Handling
+Inventory/FruitInventory.cs:251	field	FruitItemProp	public float HandlingPause, RetreatDistance
+Inventory/FruitInventory.cs:254	field	FruitItemProp	public Action<FruitItem, FruitWorldItem> OnPlaced
+Inventory/FruitInventory.cs:257	field	FruitItemProp	public Action<FruitItem, bool> OnSpawnMode
+Inventory/FruitInventory.cs:260	field	FruitItemProp	public float ModelTurn
+Inventory/FruitInventory.cs:270	field	FruitItemProp	public bool PlaceOnClick
+Inventory/FruitInventory.cs:273	property	FruitItemProp	public bool Broken { get; internal set; }
+Inventory/FruitInventory.cs:283	field	FruitCategory	public string Name
+Inventory/FruitInventory.cs:284	field	FruitCategory	public string Description
+Inventory/FruitInventory.cs:287	field	FruitCategory	public Sprite Icon
+Inventory/FruitInventory.cs:290	property	FruitCategory	public bool InLayout { get; internal set; }
+Inventory/FruitInventory.cs:294	method	FruitCategory	public override string ToString()
+Inventory/FruitInventory.cs:331	property	FruitInventory	public static IReadOnlyList<FruitItem> Items { get; }
+Inventory/FruitInventory.cs:334	property	FruitInventory	public static IReadOnlyList<string> Categories { get; }
+Inventory/FruitInventory.cs:336	method	FruitInventory	public static FruitItem AddItem(string id, string name, FruitItemCategory category, Sprite icon = null, string description = null)
+Inventory/FruitInventory.cs:345	method	FruitInventory	public static FruitItem AddItem(string id, string name, int category, Sprite icon = null, string description = null)
+Inventory/FruitInventory.cs:365	method	FruitInventory	public static FruitItem AddItem(string id, string name, string category, Sprite icon = null, string description = null)
+Inventory/FruitInventory.cs:371	method	FruitInventory	public static FruitItem AddItem(FruitItem item)
+Inventory/FruitInventory.cs:374	method	FruitInventory	public static FruitItem Get(string id)
+Inventory/FruitInventory.cs:383	property	FruitInventory	public static IReadOnlyList<FruitCategory> CustomCategories { get; }
+Inventory/FruitInventory.cs:395	method	FruitInventory	public static FruitCategory AddCategory(string name, Sprite icon = null, string description = null)
+Inventory/FruitInventory.cs:517	property	FruitInventory	public static string HeldName { get; private set; }
+Inventory/FruitInventory.cs:520	property	FruitInventory	public static FruitHeldKind HeldKind { get; private set; }
+Inventory/FruitInventory.cs:527	property	FruitInventory	public static bool HeldDangerous { get; private set; }
+Inventory/FruitInventoryNative.cs:750	class	FruitHeldItem	public class FruitHeldItem : GodInventoryItem
+Inventory/FruitInventoryNative.cs:752	ctor	FruitHeldItem	public FruitHeldItem(IntPtr ptr)
+Inventory/FruitInventoryNative.cs:784	property	FruitHeldItem	public override ISFXPlayerService SfxPlayerService { get; }
+Inventory/FruitInventoryNative.cs:793	method	FruitHeldItem	public override void OnDestroyInternal()
+Inventory/FruitInventoryNative.cs:799	method	FruitHeldItem	public override void OnLeftMouseButtonClick()
+Inventory/FruitInventoryNative.cs:805	method	FruitHeldItem	public override void OnLeftMouseButtonHold(float time)
+Inventory/FruitInventoryNative.cs:806	method	FruitHeldItem	public override void OnLeftMouseButtonRelease()
+Inventory/FruitInventoryNative.cs:807	method	FruitHeldItem	public override void OnRightMouseButtonClick()
+Inventory/FruitInventoryNative.cs:808	method	FruitHeldItem	public override void OnRightMouseButtonHold(float time)
+Inventory/FruitInventoryNative.cs:809	method	FruitHeldItem	public override void OnRightMouseButtonRelease()
+Inventory/FruitInventoryNative.cs:810	method	FruitHeldItem	public override void OnMiddleMouseButtonClick()
+Inventory/FruitInventoryNative.cs:811	method	FruitHeldItem	public override void OnMiddleMouseButtonScroll(float n)
+Inventory/FruitSpawnMode.cs:584	class	FruitSpawnHost	public class FruitSpawnHost : Il2CppSystem.Object
+Inventory/FruitSpawnMode.cs:586	ctor	FruitSpawnHost	public FruitSpawnHost(IntPtr ptr)
+Inventory/FruitSpawnMode.cs:588	ctor	FruitSpawnHost	public FruitSpawnHost()
+Inventory/FruitSpawnMode.cs:592	method	FruitSpawnHost	public MeshDataHandler get_HologramModel()
+Inventory/FruitSpawnMode.cs:593	method	FruitSpawnHost	public float get_ModelTurn()
+Inventory/FruitSpawnMode.cs:597	method	FruitSpawnHost	public unsafe ISpawnableObject Place(IntPtr pose)
+Inventory/FruitSpawnMode.cs:599	method	FruitSpawnHost	public void PlayInvalidActionSound()
+Inventory/FruitSpawnMode.cs:602	method	FruitSpawnHost	public IGIIMouseTarget get_MouseTarget()
+Inventory/FruitSpawnMode.cs:603	method	FruitSpawnHost	public void OnSpawnModeEntered()
+Inventory/FruitSpawnMode.cs:604	method	FruitSpawnHost	public void OnSpawnModeLeft()
+Maps/FruitMaps.cs:21	enum	FruitHostMap	public enum FruitHostMap
+Maps/FruitMaps.cs:21	enum-values	FruitHostMap	Flatland
+Maps/FruitMaps.cs:33	class	FruitMapDef	public sealed class FruitMapDef
+Maps/FruitMaps.cs:77	class	FruitMapContext	public sealed class FruitMapContext
+Maps/FruitMaps.cs:141	class	FruitMaps	public static class FruitMaps
+Maps/FruitMaps.cs:36	field	FruitMapDef	public string Id
+Maps/FruitMaps.cs:38	field	FruitMapDef	public string Word
+Maps/FruitMaps.cs:40	field	FruitMapDef	public string Size
+Maps/FruitMaps.cs:42	field	FruitMapDef	public string Blurb
+Maps/FruitMaps.cs:45	field	FruitMapDef	public Texture2D Preview
+Maps/FruitMaps.cs:47	field	FruitMapDef	public FruitHostMap Host
+Maps/FruitMaps.cs:55	field	FruitMapDef	public string Setting
+Maps/FruitMaps.cs:62	field	FruitMapDef	public bool HideHostGround
+Maps/FruitMaps.cs:69	field	FruitMapDef	public Action<FruitMapContext> Build
+Maps/FruitMaps.cs:73	field	FruitMapDef	public Action Teardown
+Maps/FruitMaps.cs:79	property	FruitMapContext	public FruitMapDef Map { get; internal set; }
+Maps/FruitMaps.cs:81	property	FruitMapContext	public Scene Scene { get; internal set; }
+Maps/FruitMaps.cs:83	property	FruitMapContext	public Vector3 Ground { get; internal set; }
+Maps/FruitMaps.cs:85	property	FruitMapContext	public Vector3 PlayerStart { get; }
+Maps/FruitMaps.cs:87	property	FruitMapContext	public Vector3 HumanSpawn { get; }
+Maps/FruitMaps.cs:98	property	FruitMapContext	public Transform Root { get; internal set; }
+Maps/FruitMaps.cs:101	method	FruitMapContext	public void Adopt(GameObject go)
+Maps/FruitMaps.cs:113	method	FruitMapContext	public void MovePlayerStart(Vector3 eye)
+Maps/FruitMaps.cs:120	method	FruitMapContext	public void MoveHumanSpawn(Vector3 ground)
+Maps/FruitMaps.cs:126	method	FruitMapContext	public bool HideHostObject(string path)
+Maps/FruitMaps.cs:179	property	FruitMaps	public static FruitMapDef Current { get; }
+Maps/FruitMaps.cs:182	event	FruitMaps	public static event Action<FruitMapDef> Loaded
+Maps/FruitMaps.cs:188	method	FruitMaps	public static void Register(FruitMapDef def)
+Menu/FruitMenu.cs:13	class	MenuCategoryAttribute	public class MenuCategoryAttribute : Attribute
+Menu/FruitMenu.cs:20	enum	ButtonKind	public enum ButtonKind
+Menu/FruitMenu.cs:20	enum-values	ButtonKind	Toggle, Momentary
+Menu/FruitMenu.cs:29	class	MenuLabelAttribute	public class MenuLabelAttribute : Attribute
+Menu/FruitMenu.cs:43	class	MenuRangeAttribute	public class MenuRangeAttribute : Attribute
+Menu/FruitMenu.cs:77	class	MenuButtonAttribute	public class MenuButtonAttribute : Attribute
+Menu/FruitMenu.cs:84	class	FruitMenu	public static class FruitMenu
+Menu/FruitMenu.cs:16	field	MenuCategoryAttribute	public readonly string Name
+Menu/FruitMenu.cs:17	ctor	MenuCategoryAttribute	public MenuCategoryAttribute(string name)
+Menu/FruitMenu.cs:32	field	MenuLabelAttribute	public readonly string Text
+Menu/FruitMenu.cs:33	ctor	MenuLabelAttribute	public MenuLabelAttribute(string text)
+Menu/FruitMenu.cs:46	field	MenuRangeAttribute	public readonly float Min, Max
+Menu/FruitMenu.cs:47	ctor	MenuRangeAttribute	public MenuRangeAttribute(float min, float max)
+Menu/FruitMenu.cs:80	field	MenuButtonAttribute	public readonly ButtonKind Kind
+Menu/FruitMenu.cs:81	ctor	MenuButtonAttribute	public MenuButtonAttribute(ButtonKind kind)
+Menu/FruitMenu.cs:89	property	FruitMenu	public static bool IsOpen { get; }
+Menu/FruitMenu.cs:91	event	FruitMenu	public static event Action OnConfigChanged
+Menu/FruitMenu.cs:93	property	FruitMenu	public static bool JustClosed { get; internal set; }
+Menu/FruitMenu.cs:99	property	FruitMenu	public static bool IsInputSuppressed { get; }
+Menu/FruitMenu.cs:104	property	FruitMenu	public static bool GameMenuOpen { get; }
+Menu/FruitMenu.cs:106	property	FruitMenu	public static bool IsGamePaused { get; private set; }
+Menu/FruitMenu.cs:109	property	FruitMenu	public static bool BlocksGameplayInput { get; }
+Menu/FruitMenu.cs:130	method	FruitMenu	public static void Register(string displayName, string iniFilePath, Type configType)
+Menu/FruitMenu.cs:138	method	FruitMenu	public static void Register(string displayName, string iniFilePath, Type configType, Action save)
+Menu/FruitMenu.cs:150	method	FruitMenu	public static void CaptureDefaults(Type configType)
+Menu/FruitWorldMenu.cs:18	enum	FruitSceneAction	public enum FruitSceneAction
+Menu/FruitWorldMenu.cs:18	enum-values	FruitSceneAction	DeleteNpc, DeleteBodies, ClearParticles, ResetMap, ResetAll, ResetPlayer
+Menu/FruitWorldMenu.cs:45	class	FruitWorldMenu	public static class FruitWorldMenu
+Menu/FruitWorldMenu.cs:51	event	FruitWorldMenu	public static event Action<FruitSceneAction> SceneActionRan
+Menu/FruitWorldMenu.cs:61	event	FruitWorldMenu	public static event Action MapReset
+Menu/FruitWorldMenu.cs:71	method	FruitWorldMenu	public static void AddButton(string id, string label, Action onClick)
+Menu/FruitWorldMenu.cs:84	method	FruitWorldMenu	public static void RemoveButton(string id)
+Utilities/FruitForces.cs:9	struct	ForceQuery	public struct ForceQuery
+Utilities/FruitForces.cs:26	class	ForceOptions	public sealed class ForceOptions
+Utilities/FruitForces.cs:58	class	FruitForces	public static class FruitForces
+Utilities/FruitForces.cs:23	delegate		public delegate Vector3 ForceField(ForceQuery q);
+Utilities/FruitForces.cs:61	delegate	FruitForces	public delegate Vector3 ForceSampler(Vector3 position);
+Utilities/FruitForces.cs:11	field	ForceQuery	public Vector3 Position
+Utilities/FruitForces.cs:12	field	ForceQuery	public Vector3 Velocity
+Utilities/FruitForces.cs:14	field	ForceQuery	public float MassKg
+Utilities/FruitForces.cs:15	field	ForceQuery	public float Dt
+Utilities/FruitForces.cs:17	field	ForceQuery	public Projectile Projectile
+Utilities/FruitForces.cs:19	property	ForceQuery	public string SpecId { get; }
+Utilities/FruitForces.cs:29	field	ForceOptions	public string SpecPrefix
+Utilities/FruitForces.cs:32	field	ForceOptions	public bool IncludeCosmetic
+Utilities/FruitForces.cs:34	field	ForceOptions	public bool IncludeOther
+Utilities/FruitForces.cs:82	method	FruitForces	public static void Register(string id, ForceField field, ForceOptions options = null)
+Utilities/FruitForces.cs:92	method	FruitForces	public static void Register(string id, ForceSampler sampler)
+Utilities/FruitForces.cs:103	method	FruitForces	public static void RegisterWind(string id, Func<Vector3, Vector3> windAt)
+Utilities/FruitForces.cs:113	method	FruitForces	public static void Unregister(string id)
+Utilities/FruitForces.cs:120	property	FruitForces	public static bool Any { get; }
+Utilities/FruitForces.cs:121	property	FruitForces	public static bool AnyWind { get; }
+Utilities/FruitForces.cs:125	method	FruitForces	public static Vector3 SampleAt(Vector3 position)
+Utilities/FruitForces.cs:129	method	FruitForces	public static Vector3 Accelerate(ForceQuery q)
+Utilities/FruitForces.cs:162	method	FruitForces	public static Vector3 WindAt(Vector3 position)
+Utilities/FruitLog.cs:16	class	FruitLog	public static class FruitLog
+Utilities/FruitLog.cs:18	property	FruitLog	public static bool Verbose { get; }
+Utilities/FruitLog.cs:20	method	FruitLog	public static void Info(string message)
+Utilities/FruitNative.cs:16	class	FruitNative	public static class FruitNative
+Utilities/FruitNative.cs:40	method	FruitNative	public static void SetInteger(Animator animator, string name, int value)
+Utilities/FruitNative.cs:43	method	FruitNative	public static void SetInteger(Animator animator, int id, int value)
+Utilities/FruitNative.cs:50	method	FruitNative	public static void SetController(Animator animator, RuntimeAnimatorController controller)
+Utilities/FruitNative.cs:55	method	FruitNative	public static void SetBlendShapeWeight(SkinnedMeshRenderer smr, int index, float weight)
+Utilities/FruitNative.cs:58	method	FruitNative	public static float GetBlendShapeWeight(SkinnedMeshRenderer smr, int index)
+Utilities/FruitNative.cs:79	method	FruitNative	public static bool LoadImage(Texture2D tex, byte[] data, bool markNonReadable = false)
+Utilities/FruitPaths.cs:15	class	FruitPaths	public static class FruitPaths
+Utilities/FruitPaths.cs:21	property	FruitPaths	public static string UserData { get; }
+Utilities/FruitPaths.cs:52	method	FruitPaths	public static string Config(string fileName, Assembly owner = null)
+Utilities/FruitPaths.cs:89	method	FruitPaths	public static void WriteAllTextAtomic(string path, string contents)
+Utilities/FruitPng.cs:14	class	FruitPng	public static class FruitPng
+Utilities/FruitPng.cs:31	method	FruitPng	public static byte[] FromRgba(byte[] rgba, int w, int h)
+Utilities/FruitScene.cs:23	class	FruitScene	public static class FruitScene
+Utilities/FruitScene.cs:30	method	FruitScene	public static T First<T>(bool includeInactive = true)
+Utilities/FruitScene.cs:46	method	FruitScene	public static int Count<T>(bool includeInactive = true)
+Utilities/FruitTrace.cs:19	class	FruitTrace	public static class FruitTrace
+Utilities/FruitTrace.cs:24	property	FruitTrace	public static string FilePath { get; }
+Utilities/FruitTrace.cs:38	property	FruitTrace	public static bool Enabled { get; }
+Utilities/FruitTrace.cs:40	method	FruitTrace	public static void Mark(string what)
+Utilities/FruitUpdateCheck.cs:10	class	FruitUpdateCheck	public static class FruitUpdateCheck
+Utilities/FruitUpdateCheck.cs:12	method	FruitUpdateCheck	public static void Register(string modName, string currentVersion, string owner, string repo)
+World/FruitBodies.Sample.cs:34	class	FruitBodies	public static partial class FruitBodies
+World/FruitBodies.cs:13	enum	FruitBehaviour	public enum FruitBehaviour
+World/FruitBodies.cs:13	enum-values	FruitBehaviour	Unknown, Standing, Moving, Falling, Agony, Lying, GettingUp, Dead
+World/FruitBodies.cs:33	enum	FruitPosture	public enum FruitPosture
+World/FruitBodies.cs:33	enum-values	FruitPosture	Unknown, Upright, OnBack, FaceDown, OnSide, Airborne
+World/FruitBodies.cs:36	class	FruitLimb	public sealed class FruitLimb
+World/FruitBodies.cs:82	class	FruitBody	public sealed class FruitBody
+World/FruitBodies.cs:309	class	FruitBodies	public static partial class FruitBodies
+World/FruitBodies.cs:39	field	FruitLimb	public readonly int Index
+World/FruitBodies.cs:41	field	FruitLimb	public readonly string Name
+World/FruitBodies.cs:43	field	FruitLimb	public bool Present
+World/FruitBodies.cs:45	field	FruitLimb	public float Pain
+World/FruitBodies.cs:47	field	FruitLimb	public float Wholeness
+World/FruitBodies.cs:49	field	FruitLimb	public float Innervation
+World/FruitBodies.cs:51	field	FruitLimb	public int Bleeds
+World/FruitBodies.cs:53	field	FruitLimb	public Vector3 Position
+World/FruitBodies.cs:57	property	FruitLimb	public Vector3 LivePosition { get; }
+World/FruitBodies.cs:86	property	FruitBody	public int Id { get; internal set; }
+World/FruitBodies.cs:88	property	FruitBody	public string Name { get; internal set; }
+World/FruitBodies.cs:90	property	FruitBody	public AbstractCreature Creature { get; internal set; }
+World/FruitBodies.cs:92	field	FruitBody	public bool Alive
+World/FruitBodies.cs:94	field	FruitBody	public float Cognition
+World/FruitBodies.cs:96	field	FruitBody	public float Pain
+World/FruitBodies.cs:98	field	FruitBody	public float Nociception
+World/FruitBodies.cs:100	field	FruitBody	public float Blood
+World/FruitBodies.cs:102	field	FruitBody	public float Balance
+World/FruitBodies.cs:104	field	FruitBody	public float Muscle
+World/FruitBodies.cs:106	field	FruitBody	public FruitBehaviour Behaviour
+World/FruitBodies.cs:108	field	FruitBody	public float BehaviourSince
+World/FruitBodies.cs:110	field	FruitBody	public string StateName
+World/FruitBodies.cs:112	field	FruitBody	public string AgonyStage
+World/FruitBodies.cs:114	field	FruitBody	public float AgonyDepth
+World/FruitBodies.cs:116	field	FruitBody	public int AgonyLimb
+World/FruitBodies.cs:118	field	FruitBody	public FruitPosture Posture
+World/FruitBodies.cs:119	field	FruitBody	public bool Grounded
+World/FruitBodies.cs:121	field	FruitBody	public float Speed
+World/FruitBodies.cs:122	field	FruitBody	public bool HasPosition
+World/FruitBodies.cs:124	field	FruitBody	public Vector3 Position
+World/FruitBodies.cs:125	field	FruitBody	public Vector3 HeadPosition
+World/FruitBodies.cs:127	field	FruitBody	public Vector3 Facing
+World/FruitBodies.cs:129	field	FruitBody	public readonly FruitLimb[] Limbs
+World/FruitBodies.cs:132	field	FruitBody	public float LastSpikeTime, LastSpikeIntensity
+World/FruitBodies.cs:133	field	FruitBody	public int LastSpikeLimb
+World/FruitBodies.cs:137	field	FruitBody	public int LastStruckBy
+World/FruitBodies.cs:138	field	FruitBody	public float LastStruckAt
+World/FruitBodies.cs:144	field	FruitBody	public string LastHarmedBy
+World/FruitBodies.cs:145	field	FruitBody	public float LastHarmedAt
+World/FruitBodies.cs:147	property	FruitBody	public float AppearedAt { get; internal set; }
+World/FruitBodies.cs:148	property	FruitBody	public float DiedAt { get; internal set; }
+World/FruitBodies.cs:150	property	FruitBody	public float SampledAt { get; internal set; }
+World/FruitBodies.cs:152	property	FruitBody	public bool Conscious { get; }
+World/FruitBodies.cs:155	property	FruitBody	public int LimbsMissing { get; }
+World/FruitBodies.cs:161	property	FruitBody	public int Bleeds { get; }
+World/FruitBodies.cs:167	property	FruitBody	public FruitLimb WorstLimb { get; }
+World/FruitBodies.cs:179	property	FruitBody	public Vector3 LiveHeadPosition { get; }
+World/FruitBodies.cs:191	method	FruitBody	public string Bearing(Vector3 point)
+World/FruitBodies.cs:209	method	FruitBody	public string Describe(bool limbs = true)
+World/FruitBodies.cs:257	method	FruitBody	public string BehaviourText()
+World/FruitBodies.cs:269	method	FruitBody	public string PostureText()
+World/FruitBodies.cs:311	field	FruitBodies	public const int LimbCount
+World/FruitBodies.cs:314	field	FruitBodies	public static readonly string[] LimbNames
+World/FruitBodies.cs:323	field	FruitBodies	public const int Pelvis, Torso, Head
+World/FruitBodies.cs:326	field	FruitBodies	public const float UnconsciousBelow, WokeAbove
+World/FruitBodies.cs:328	event	FruitBodies	public static event Action<FruitBody> Added
+World/FruitBodies.cs:329	event	FruitBodies	public static event Action<FruitBody> Removed
+World/FruitBodies.cs:339	property	FruitBodies	public static IReadOnlyList<FruitBody> All { get; }
+World/FruitBodies.cs:342	property	FruitBodies	public static bool Active { get; }
+World/FruitBodies.cs:345	method	FruitBodies	public static void Require(string mod)
+World/FruitBodies.cs:351	property	FruitBodies	public static Vector3 ViewPosition { get; private set; }
+World/FruitBodies.cs:352	property	FruitBodies	public static Vector3 ViewForward { get; private set; }
+World/FruitBodies.cs:353	property	FruitBodies	public static bool HasView { get; private set; }
+World/FruitBodies.cs:355	method	FruitBodies	public static FruitBody Get(int id)
+World/FruitBodies.cs:362	method	FruitBodies	public static FruitBody Of(AbstractCreature creature)
+World/FruitBodies.cs:379	method	FruitBodies	public static FruitBody OfObject(GameObject go, out int limb)
+World/FruitBodies.cs:414	method	FruitBodies	public static FruitBody Nearest(Vector3 point, float maxDistance = float.MaxValue, bool aliveOnly = true)
+World/FruitBodyControl.Courtesy.cs:7	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Crowds.cs:6	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Footing.cs:7	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Footing.cs:30	field	FruitBodyControl	public static bool TuneGrounder
+World/FruitBodyControl.Footing.cs:33	field	FruitBodyControl	public static float WalkPrediction, WalkFootSpeed, WalkMaxStep
+World/FruitBodyControl.Gait.cs:7	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Gait.cs:23	field	FruitBodyControl	public static float YawDamping
+World/FruitBodyControl.Gait.cs:26	field	FruitBodyControl	public static float YawDampingTau
+World/FruitBodyControl.Gait.cs:29	field	FruitBodyControl	public static float YawDampingMax
+World/FruitBodyControl.Gait.cs:36	field	FruitBodyControl	public static float StartRampSeconds
+World/FruitBodyControl.Gait.cs:38	field	FruitBodyControl	public static float StartRampFrom
+World/FruitBodyControl.Hands.cs:10	enum	FruitHandsResult	public enum FruitHandsResult
+World/FruitBodyControl.Hands.cs:10	enum-values	FruitHandsResult	PickedUp, Dropped, Thrown, Used, Given, Unreachable, TooHeavy, Taken, Lost, Stopped, Failed
+World/FruitBodyControl.Hands.cs:52	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Hands.cs:57	field	FruitBodyControl	public static float MagnetReach, MagnetAbove
+World/FruitBodyControl.Hands.cs:60	field	FruitBodyControl	public static float ReachSeconds
+World/FruitBodyControl.Hands.cs:68	field	FruitBodyControl	public static float StanceTooClose, StanceTooFar
+World/FruitBodyControl.Hands.cs:75	field	FruitBodyControl	public static float ArmReach, ReachAbortBalance
+World/FruitBodyControl.Hands.cs:84	field	FruitBodyControl	public static bool CrouchToPickUp
+World/FruitBodyControl.Hands.cs:85	field	FruitBodyControl	public static float CrouchBelow, CrouchMagnet, CrouchSeconds
+World/FruitBodyControl.Hands.cs:89	field	FruitBodyControl	public static float CarryMaxMass, HeldMassCap
+World/FruitBodyControl.Hands.cs:94	field	FruitBodyControl	public static float HeldMassScale
+World/FruitBodyControl.Hands.cs:97	field	FruitBodyControl	public static float HoldBreakForce
+World/FruitBodyControl.Hands.cs:100	field	FruitBodyControl	public static bool DropWhenDown
+World/FruitBodyControl.Hands.cs:103	field	FruitBodyControl	public static float ThrowSpeed
+World/FruitBodyControl.Hands.cs:107	field	FruitBodyControl	public static float AimSeconds, BurstSeconds
+World/FruitBodyControl.Hands.cs:108	field	FruitBodyControl	public static int ShotsPerUse
+World/FruitBodyControl.Hands.cs:111	event	FruitBodyControl	public static event Action<FruitBody, FruitWorldItem, FruitHandsResult> HandsEnded
+World/FruitBodyControl.Hands.cs:165	method	FruitBodyControl	public static FruitWorldItem Holding(FruitBody body)
+World/FruitBodyControl.Hands.cs:169	method	FruitBodyControl	public static bool IsReaching(FruitBody body)
+World/FruitBodyControl.Hands.cs:187	method	FruitBodyControl	public static FruitWorldItem HandsOn(FruitBody body)
+World/FruitBodyControl.Hands.cs:192	method	FruitBodyControl	public static Vector3? AimTarget(FruitBody body)
+World/FruitBodyControl.Hands.cs:196	method	FruitBodyControl	public static bool AimingAt(FruitBody body, Vector3 point, float degrees = 8f)
+World/FruitBodyControl.Hands.cs:216	method	FruitBodyControl	public static bool PickUp(FruitBody body, FruitWorldItem item, bool run = false, string source = "FruitLib", float seconds = 30f)
+World/FruitBodyControl.Hands.cs:244	method	FruitBodyControl	public static bool Drop(FruitBody body, string source = "FruitLib")
+World/FruitBodyControl.Hands.cs:258	method	FruitBodyControl	public static bool Throw(FruitBody body, Vector3 at, float strength = 1f, string source = "FruitLib")
+World/FruitBodyControl.Hands.cs:285	method	FruitBodyControl	public static bool Use(FruitBody body, FruitBody target, Vector3? point = null, string source = "FruitLib", bool run = false)
+World/FruitBodyControl.Hands.cs:335	method	FruitBodyControl	public static bool Give(FruitBody body, FruitBody to, bool run = false, string source = "FruitLib")
+World/FruitBodyControl.Hands.cs:817	method	FruitBodyControl	public static float Shake(FruitBody b)
+World/FruitBodyControl.Hands.cs:1204	method	FruitBodyControl	public static bool IsHandling(FruitBody body)
+World/FruitBodyControl.Interactions.cs:7	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Interactions.cs:14	method	FruitBodyControl	public static string InteractionResultDetail(FruitBody body, FruitWorldItem item)
+World/FruitBodyControl.Interactions.cs:17	method	FruitBodyControl	public static string InteractionResultDetail(FruitBody body)
+World/FruitBodyControl.Interactions.cs:20	event	FruitBodyControl	public static event Action<FruitInteraction> InteractionEnded
+World/FruitBodyControl.Interactions.cs:21	method	FruitBodyControl	public static FruitInteraction InteractionOf(FruitBody body)
+World/FruitBodyControl.Interactions.cs:25	method	FruitBodyControl	public static bool TryInteractionStance(FruitBody actor, FruitInteractionSpec spec, out Vector3 stance, out FruitPoseShape pose)
+World/FruitBodyControl.Interactions.cs:51	method	FruitBodyControl	public static bool ConsumeInteractionItem(FruitInteraction op)
+World/FruitBodyControl.Interactions.cs:63	method	FruitBodyControl	public static bool CanApplyInteraction(FruitInteraction op)
+World/FruitBodyControl.Interactions.cs:79	method	FruitBodyControl	public static bool Interact(FruitBody actor, FruitInteractionSpec spec, Action<FruitInteraction> ended = null)
+World/FruitBodyControl.Interactions.cs:96	method	FruitBodyControl	public static void CancelInteraction(FruitBody actor, string reason = "a new order replaced it")
+World/FruitBodyControl.LocalSteps.cs:6	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.LocalSteps.cs:12	method	FruitBodyControl	public static bool StepTo(FruitBody body, Vector3 point, float seconds = 5f)
+World/FruitBodyControl.Look.cs:8	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Look.cs:10	event	FruitBodyControl	public static event Action<FruitBody> LookSampled
+World/FruitBodyControl.Look.cs:11	event	FruitBodyControl	public static event Action<FruitBody, bool> LookScanEnded
+World/FruitBodyControl.Look.cs:12	method	FruitBodyControl	public static bool IsLookingAround(FruitBody body)
+World/FruitBodyControl.Paths.cs:7	enum	FruitMoveResult	public enum FruitMoveResult
+World/FruitBodyControl.Paths.cs:7	enum-values	FruitMoveResult	Arrived, Blocked, NoRoute, TimedOut, Stopped, Lost
+World/FruitBodyControl.Paths.cs:23	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Paths.cs:58	event	FruitBodyControl	public static event Action<FruitBody, FruitMoveResult> MoveEnded
+World/FruitBodyControl.Paths.cs:61	property	FruitBodyControl	public static int PathWalkers { get; private set; }
+World/FruitBodyControl.Paths.cs:64	field	FruitBodyControl	public static float LookAhead
+World/FruitBodyControl.Paths.cs:66	field	FruitBodyControl	public static float LookAheadTight
+World/FruitBodyControl.Paths.cs:68	field	FruitBodyControl	public static float TightRoom
+World/FruitBodyControl.Paths.cs:71	field	FruitBodyControl	public static float LookAheadBase, LookAheadPerSpeed, LookAheadMax
+World/FruitBodyControl.Paths.cs:73	field	FruitBodyControl	public static float CentreSmoothing
+World/FruitBodyControl.Paths.cs:76	field	FruitBodyControl	public static float TightPace, CornerPace
+World/FruitBodyControl.Paths.cs:79	field	FruitBodyControl	public static float PivotEnter, PivotExit
+World/FruitBodyControl.Paths.cs:81	field	FruitBodyControl	public static float MaxSideStep
+World/FruitBodyControl.Paths.cs:93	method	FruitBodyControl	public static bool GoTo(FruitBody body, Vector3 point, float stopDistance, float seconds, bool run = false)
+World/FruitBodyControl.Paths.cs:130	method	FruitBodyControl	public static FruitPath PathOf(FruitBody body)
+World/FruitBodyControl.Paths.cs:135	method	FruitBodyControl	public static bool GoalOf(FruitBody body, out Vector3 goal)
+World/FruitBodyControl.Paths.cs:427	field	FruitBodyControl	public static float MaxCut, MinCut, CutSlack
+World/FruitBodyControl.Paths.cs:429	field	FruitBodyControl	public static float MinLookAhead, LookRegrow
+World/FruitBodyControl.Paths.cs:598	field	FruitBodyControl	public static float YieldSeconds
+World/FruitBodyControl.Spots.cs:7	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Spots.cs:32	field	FruitBodyControl	public static bool SpreadOut
+World/FruitBodyControl.Spots.cs:35	field	FruitBodyControl	public static float PersonalSpace, LyingSpace
+World/FruitBodyControl.Spots.cs:38	field	FruitBodyControl	public static float SpreadRadius, SpreadRadiusMax
+World/FruitBodyControl.Spots.cs:40	field	FruitBodyControl	public static float SpotStop
+World/FruitBodyControl.Spots.cs:44	field	FruitBodyControl	public static bool FaceTheGroup
+World/FruitBodyControl.Spots.cs:45	field	FruitBodyControl	public static float GroupRadius
+World/FruitBodyControl.Spots.cs:57	method	FruitBodyControl	public static bool Taken(Vector3 point, FruitBody except = null)
+World/FruitBodyControl.Spots.cs:98	method	FruitBodyControl	public static bool FreeSpot(FruitBody body, Vector3 want, out Vector3 spot)
+World/FruitBodyControl.Spots.cs:303	field	FruitBodyControl	public static bool TargetSlots
+World/FruitBodyControl.Spots.cs:306	field	FruitBodyControl	public static float SlotWithin, SlotStep, SlotSweep
+World/FruitBodyControl.Stability.cs:10	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Steps.cs:6	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Steps.cs:24	field	FruitBodyControl	public static float MaxStep
+World/FruitBodyControl.Steps.cs:29	field	FruitBodyControl	public static float MinStep
+World/FruitBodyControl.Steps.cs:32	event	FruitBodyControl	public static event Action<FruitBody, float, int> Stepped
+World/FruitBodyControl.Strikes.cs:29	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Strikes.cs:33	field	FruitBodyControl	public static float Reach
+World/FruitBodyControl.Strikes.cs:36	field	FruitBodyControl	public static float WindUp
+World/FruitBodyControl.Strikes.cs:39	field	FruitBodyControl	public static float MaxExtendTime
+World/FruitBodyControl.Strikes.cs:43	field	FruitBodyControl	public static float PunchHandSpeed, ShoveHandSpeed
+World/FruitBodyControl.Strikes.cs:50	field	FruitBodyControl	public static float PunchSpeed, ShoveSpeed
+World/FruitBodyControl.Strikes.cs:54	field	FruitBodyControl	public static float PunchReaction, ShoveReaction
+World/FruitBodyControl.Strikes.cs:59	field	FruitBodyControl	public static float PunchBruise
+World/FruitBodyControl.Strikes.cs:96	method	FruitBodyControl	public static bool Strike(FruitBody attacker, FruitBody victim, FruitStrike kind = FruitStrike.Punch, string source = "FruitLib", float strength = 1f)
+World/FruitBodyControl.Strikes.cs:108	method	FruitBodyControl	public static Vector3? SurfacePoint(FruitBody target, int limb, Vector3 from)
+World/FruitBodyControl.Strikes.cs:120	method	FruitBodyControl	public static bool PlaceHand(FruitBody body, bool left, Vector3 worldPoint, float speed = 1f)
+World/FruitBodyControl.Strikes.cs:128	method	FruitBodyControl	public static void ReleaseHand(FruitBody body, bool left)
+World/FruitBodyControl.Telemetry.cs:41	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Traffic.cs:6	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Turn.cs:6	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.Turn.cs:31	property	FruitBodyControl	public static bool StepTurns { get; set; }
+World/FruitBodyControl.Turn.cs:34	property	FruitBodyControl	public static float StepTurnPace { get; set; }
+World/FruitBodyControl.Turn.cs:36	field	FruitBodyControl	public static float StepTurnFrom, StepTurnStop
+World/FruitBodyControl.Turn.cs:81	method	FruitBodyControl	public static bool Face(FruitBody body, Vector3 worldDirection, float seconds = 3f)
+World/FruitBodyControl.Turn.cs:94	method	FruitBodyControl	public static bool LookAround(FruitBody body, float seconds = 4f)
+World/FruitBodyControl.Turn.cs:98	method	FruitBodyControl	public static bool IsTurning(FruitBody body)
+World/FruitBodyControl.cs:10	enum	FruitStrike	public enum FruitStrike
+World/FruitBodyControl.cs:10	enum-values	FruitStrike	Punch, Shove
+World/FruitBodyControl.cs:45	class	FruitBodyControl	public static partial class FruitBodyControl
+World/FruitBodyControl.cs:181	field	FruitBodyControl	public static float TurnRate
+World/FruitBodyControl.cs:184	field	FruitBodyControl	public static float RunAnimationSpeed
+World/FruitBodyControl.cs:190	method	FruitBodyControl	public static bool Walk(FruitBody body, Vector3 worldDirection, float seconds)
+World/FruitBodyControl.cs:194	method	FruitBodyControl	public static bool Walk(FruitBody body, Vector3 worldDirection, float seconds, bool run)
+World/FruitBodyControl.cs:207	method	FruitBodyControl	public static bool WalkAway(FruitBody body, Vector3 from, float seconds)
+World/FruitBodyControl.cs:211	method	FruitBodyControl	public static bool WalkAway(FruitBody body, Vector3 from, float seconds, bool run)
+World/FruitBodyControl.cs:216	method	FruitBodyControl	public static bool WalkTo(FruitBody body, Vector3 to, float seconds)
+World/FruitBodyControl.cs:220	method	FruitBodyControl	public static bool WalkTo(FruitBody body, Vector3 to, float seconds, bool run)
+World/FruitBodyControl.cs:228	method	FruitBodyControl	public static bool Approach(FruitBody body, FruitBody target, float stopDistance, float seconds, bool run = false)
+World/FruitBodyControl.cs:236	method	FruitBodyControl	public static bool Follow(FruitBody body, FruitBody target, float stopDistance, float seconds, bool run = false)
+World/FruitBodyControl.cs:245	method	FruitBodyControl	public static bool Attack(FruitBody attacker, FruitBody victim, FruitStrike kind, float seconds, bool run = false, string source = "FruitLib", float strength = 1f)
+World/FruitBodyControl.cs:253	method	FruitBodyControl	public static void Stop(FruitBody body)
+World/FruitBodyControl.cs:277	method	FruitBodyControl	public static bool IsWalking(FruitBody body)
+World/FruitBodyControl.cs:280	method	FruitBodyControl	public static bool IsRunning(FruitBody body)
+World/FruitBodyControl.cs:283	method	FruitBodyControl	public static FruitBody TargetOf(FruitBody body)
+World/FruitBodyControl.cs:287	method	FruitBodyControl	public static bool IsAttacking(FruitBody body)
+World/FruitBodyControl.cs:292	method	FruitBodyControl	public static Vector3 Heading(FruitBody body)
+World/FruitBodyControl.cs:335	field	FruitBodyControl	public static bool PersistentYaw
+World/FruitBodyControl.cs:338	field	FruitBodyControl	public static float YawLead
+World/FruitBodyControl.cs:471	method	FruitBodyControl	public static float Distance(FruitBody from, FruitBody to)
+World/FruitEvents.cs:9	struct	NearBody	public struct NearBody
+World/FruitEvents.cs:20	class	FruitEvent	public sealed class FruitEvent
+World/FruitEvents.cs:105	class	FruitEvents	public static class FruitEvents
+World/FruitEvents.cs:11	field	NearBody	public int Body
+World/FruitEvents.cs:12	field	NearBody	public float Distance
+World/FruitEvents.cs:23	field	FruitEvent	public long Seq
+World/FruitEvents.cs:25	field	FruitEvent	public float Time
+World/FruitEvents.cs:27	field	FruitEvent	public string Source
+World/FruitEvents.cs:29	field	FruitEvent	public string Kind
+World/FruitEvents.cs:31	field	FruitEvent	public string Text
+World/FruitEvents.cs:32	field	FruitEvent	public bool HasPosition
+World/FruitEvents.cs:33	field	FruitEvent	public Vector3 Position
+World/FruitEvents.cs:36	field	FruitEvent	public float Radius
+World/FruitEvents.cs:38	field	FruitEvent	public int Body
+World/FruitEvents.cs:40	field	FruitEvent	public int Limb
+World/FruitEvents.cs:42	field	FruitEvent	public float Magnitude
+World/FruitEvents.cs:44	field	FruitEvent	public string Detail
+World/FruitEvents.cs:48	field	FruitEvent	public string Actor
+World/FruitEvents.cs:50	field	FruitEvent	public string Cause
+World/FruitEvents.cs:52	field	FruitEvent	public bool HasDirection
+World/FruitEvents.cs:53	field	FruitEvent	public Vector3 Direction
+World/FruitEvents.cs:56	field	FruitEvent	public readonly List<NearBody> Near
+World/FruitEvents.cs:59	property	FruitEvent	public int ActorBody { get; }
+World/FruitEvents.cs:64	method	FruitEvent	public bool Concerns(int body, out float distance)
+World/FruitEvents.cs:73	method	FruitEvent	public override string ToString()
+World/FruitEvents.cs:108	event	FruitEvents	public static event Action<FruitEvent> Raised
+World/FruitEvents.cs:111	field	FruitEvents	public const float DefaultRadius
+World/FruitEvents.cs:117	method	FruitEvents	public static string BodyActor(int bodyId)
+World/FruitEvents.cs:128	property	FruitEvents	public static long LastSeq { get; }
+World/FruitEvents.cs:131	property	FruitEvents	public static long Count { get; }
+World/FruitEvents.cs:137	method	FruitEvents	public static FruitEvent Publish(string source, string kind, string text, Vector3? position = null, float radius = 0f, int body = 0, float magnitude = 0f, int limb = -1, string detail = null, string actor = "", string cause = "", Vector3? direction = null)
+World/FruitEvents.cs:155	method	FruitEvents	public static FruitEvent Publish(FruitEvent e)
+World/FruitEvents.cs:165	method	FruitEvents	public static void CopySince(long afterSeq, List<FruitEvent> into)
+World/FruitEvents.cs:177	method	FruitEvents	public static List<FruitEvent> Recent(int max = 32)
+World/FruitEyeCamera.cs:28	class	FruitEyeCamera	public static class FruitEyeCamera
+World/FruitEyeCamera.cs:30	field	FruitEyeCamera	public const int Width, Height
+World/FruitEyeCamera.cs:32	field	FruitEyeCamera	public static float FieldOfView
+World/FruitEyeCamera.cs:35	field	FruitEyeCamera	public static bool ShowPlayerOrb
+World/FruitEyeCamera.cs:37	field	FruitEyeCamera	public static float OrbSize
+World/FruitEyeCamera.cs:40	property	FruitEyeCamera	public static int Captures { get; private set; }
+World/FruitEyeCamera.cs:41	property	FruitEyeCamera	public static double LastMs { get; private set; }
+World/FruitEyeCamera.cs:42	property	FruitEyeCamera	public static bool Broken { get; private set; }
+World/FruitEyeCamera.cs:51	method	FruitEyeCamera	public static byte[] Capture(FruitBody b)
+World/FruitInteraction.cs:6	enum	FruitInteractionPostures	public enum FruitInteractionPostures
+World/FruitInteraction.cs:6	enum-values	FruitInteractionPostures	Stand, Lean, Crouch, Kneel, Sit
+World/FruitInteraction.cs:8	enum	FruitInteractionStage	public enum FruitInteractionStage
+World/FruitInteraction.cs:8	enum-values	FruitInteractionStage	Accepted, Positioning, Facing, Posing, Reaching, Applying, Completed, Failed, Cancelled
+World/FruitInteraction.cs:13	class	FruitInteractionSpec	public sealed class FruitInteractionSpec
+World/FruitInteraction.cs:34	class	FruitInteraction	public sealed class FruitInteraction
+World/FruitInteraction.cs:15	field	FruitInteractionSpec	public string Name, Source
+World/FruitInteraction.cs:16	field	FruitInteractionSpec	public FruitBody Target
+World/FruitInteraction.cs:17	field	FruitInteractionSpec	public FruitWorldItem Item
+World/FruitInteraction.cs:18	field	FruitInteractionSpec	public Func<Vector3?> ResolvePoint
+World/FruitInteraction.cs:19	field	FruitInteractionSpec	public Func<bool> Valid
+World/FruitInteraction.cs:20	field	FruitInteractionSpec	public Action<FruitInteraction> Begin
+World/FruitInteraction.cs:21	field	FruitInteractionSpec	public Action Cancel
+World/FruitInteraction.cs:22	field	FruitInteractionSpec	public float Reach, ToolReach, ContactTolerance, ContactSeconds
+World/FruitInteraction.cs:23	field	FruitInteractionSpec	public float Seconds
+World/FruitInteraction.cs:24	field	FruitInteractionSpec	public bool RequireContact, RequireHeldItem
+World/FruitInteraction.cs:26	field	FruitInteractionSpec	public bool AllowTargetDeathAfterApply
+World/FruitInteraction.cs:27	field	FruitInteractionSpec	public bool Left
+World/FruitInteraction.cs:28	field	FruitInteractionSpec	public bool Run
+World/FruitInteraction.cs:29	field	FruitInteractionSpec	public FruitInteractionPostures Postures
+World/FruitInteraction.cs:36	property	FruitInteraction	public string Id { get; internal set; }
+World/FruitInteraction.cs:37	property	FruitInteraction	public FruitBody Actor { get; internal set; }
+World/FruitInteraction.cs:38	property	FruitInteraction	public FruitInteractionSpec Spec { get; internal set; }
+World/FruitInteraction.cs:39	property	FruitInteraction	public FruitInteractionStage Stage { get; internal set; }
+World/FruitInteraction.cs:40	property	FruitInteraction	public string Detail { get; internal set; }
+World/FruitInteraction.cs:41	property	FruitInteraction	public Vector3 Point { get; internal set; }
+World/FruitInteraction.cs:42	property	FruitInteraction	public Vector3? Stance { get; internal set; }
+World/FruitInteraction.cs:43	property	FruitInteraction	public bool Terminal { get; }
+World/FruitInteraction.cs:49	method	FruitInteraction	public void Complete(string detail = "completed")
+World/FruitInteraction.cs:50	method	FruitInteraction	public void Fail(string detail)
+World/FruitInteraction.cs:53	method	FruitInteraction	public bool Apply(Func<bool> change, string detail = "applied")
+World/FruitInteractionTrace.cs:8	class	FruitInteractionTrace	public static class FruitInteractionTrace
+World/FruitInteractionTrace.cs:11	method	FruitInteractionTrace	public static string NewId(string kind)
+World/FruitInteractionTrace.cs:15	method	FruitInteractionTrace	public static void Write(string id, string stage, FruitBody actor, Vector3 target, float reach, bool left = false, string detail = "", Vector3? stance = null)
+World/FruitItems.cs:13	enum	FruitAffords	public enum FruitAffords
+World/FruitItems.cs:13	enum-values	FruitAffords	None, Carry, Throw, Swing, Shoot, Explosive, Use
+World/FruitItems.cs:35	enum	FruitUseStep	public enum FruitUseStep
+World/FruitItems.cs:35	enum-values	FruitUseStep	Aim, Use, Throw, PutDown, Retreat, Wait
+World/FruitItems.cs:54	class	FruitHandling	public static class FruitHandling
+World/FruitItems.cs:113	class	FruitModGun	public sealed class FruitModGun
+World/FruitItems.cs:130	class	FruitWorldItem	public sealed class FruitWorldItem
+World/FruitItems.cs:252	class	FruitItems	public static class FruitItems
+World/FruitItems.cs:57	field	FruitHandling	public static readonly FruitUseStep[] ArmAndThrow
+World/FruitItems.cs:59	field	FruitHandling	public static readonly FruitUseStep[] AimAndFire
+World/FruitItems.cs:61	field	FruitHandling	public static readonly FruitUseStep[] PlaceAndArm
+World/FruitItems.cs:63	field	FruitHandling	public static readonly FruitUseStep[] PlaceAndDetonate
+World/FruitItems.cs:65	field	FruitHandling	public static readonly FruitUseStep[] InHand
+World/FruitItems.cs:68	method	FruitHandling	public static bool NeedsTarget(FruitUseStep[] steps)
+World/FruitItems.cs:76	method	FruitHandling	public static bool ArmsBeforeThrow(FruitUseStep[] steps)
+World/FruitItems.cs:89	method	FruitHandling	public static string Describe(FruitUseStep[] steps, string useVerb)
+World/FruitItems.cs:116	field	FruitModGun	public Transform Muzzle
+World/FruitItems.cs:118	field	FruitModGun	public bool Automatic
+World/FruitItems.cs:120	field	FruitModGun	public float ShotGap
+World/FruitItems.cs:123	field	FruitModGun	public Action<FruitWorldItem, FruitBody> Shoot
+World/FruitItems.cs:132	property	FruitWorldItem	public Rigidbody Rb { get; internal set; }
+World/FruitItems.cs:134	field	FruitWorldItem	public string Name
+World/FruitItems.cs:135	field	FruitWorldItem	public FruitAffords Affords
+World/FruitItems.cs:137	property	FruitWorldItem	public bool Explicit { get; internal set; }
+World/FruitItems.cs:139	field	FruitWorldItem	public string Source
+World/FruitItems.cs:141	property	FruitWorldItem	public Firearm Gun { get; internal set; }
+World/FruitItems.cs:144	field	FruitWorldItem	public FruitModGun ModGun
+World/FruitItems.cs:146	property	FruitWorldItem	public bool IsGun { get; }
+World/FruitItems.cs:148	property	FruitWorldItem	public float Mass { get; internal set; }
+World/FruitItems.cs:150	property	FruitWorldItem	public Vector3 Size { get; internal set; }
+World/FruitItems.cs:154	field	FruitWorldItem	public Vector3? Grip
+World/FruitItems.cs:157	field	FruitWorldItem	public Quaternion? CarryRotation
+World/FruitItems.cs:162	field	FruitWorldItem	public Func<FruitBody, FruitWorldItem, FruitBody, Vector3?, bool> OnUse
+World/FruitItems.cs:165	field	FruitWorldItem	public Func<FruitBody, FruitWorldItem, FruitBody, Vector3?, FruitInteractionSpec> Interaction
+World/FruitItems.cs:167	field	FruitWorldItem	public float ToolReach
+World/FruitItems.cs:170	field	FruitWorldItem	public Func<Vector3?> WorkingPoint
+World/FruitItems.cs:173	field	FruitWorldItem	public Action<FruitWorldItem, float> OnUseHeld
+World/FruitItems.cs:175	field	FruitWorldItem	public Action<FruitWorldItem> OnUseReleased
+World/FruitItems.cs:177	field	FruitWorldItem	public string UseVerb
+World/FruitItems.cs:185	field	FruitWorldItem	public FruitUseStep[] Handling
+World/FruitItems.cs:187	field	FruitWorldItem	public float HandlingPause
+World/FruitItems.cs:189	field	FruitWorldItem	public float RetreatDistance
+World/FruitItems.cs:193	field	FruitWorldItem	public Transform Muzzle, Breech
+World/FruitItems.cs:196	field	FruitWorldItem	public Quaternion PutDownRotation
+World/FruitItems.cs:198	field	FruitWorldItem	public object Tag
+World/FruitItems.cs:200	property	FruitWorldItem	public FruitBody Holder { get; internal set; }
+World/FruitItems.cs:201	property	FruitWorldItem	public float FoundAt { get; internal set; }
+World/FruitItems.cs:207	property	FruitWorldItem	public string Key { get; }
+World/FruitItems.cs:209	property	FruitWorldItem	public bool Valid { get; }
+World/FruitItems.cs:211	property	FruitWorldItem	public GameObject Root { get; }
+World/FruitItems.cs:214	property	FruitWorldItem	public Vector3 Position { get; }
+World/FruitItems.cs:234	method	FruitWorldItem	public bool Can(FruitAffords a)
+World/FruitItems.cs:237	property	FruitWorldItem	public string WithArticle { get; }
+World/FruitItems.cs:239	method	FruitWorldItem	public override string ToString()
+World/FruitItems.cs:255	field	FruitItems	public static bool AutoMark
+World/FruitItems.cs:257	field	FruitItems	public static float AutoMaxMass, AutoMaxSize
+World/FruitItems.cs:259	field	FruitItems	public static float ThrowMaxMass
+World/FruitItems.cs:265	field	FruitItems	public static readonly List<Func<FruitWorldItem, bool>> Describers
+World/FruitItems.cs:268	event	FruitItems	public static event Action<FruitWorldItem> Found
+World/FruitItems.cs:278	property	FruitItems	public static bool Active { get; }
+World/FruitItems.cs:281	method	FruitItems	public static void Require(string mod)
+World/FruitItems.cs:287	property	FruitItems	public static IReadOnlyList<FruitWorldItem> All { get; }
+World/FruitItems.cs:295	method	FruitItems	public static FruitWorldItem Mark(Rigidbody rb, string name = null, FruitAffords affords = FruitAffords.None, string source = "")
+World/FruitItems.cs:314	method	FruitItems	public static void Unmark(Rigidbody rb)
+World/FruitItems.cs:322	method	FruitItems	public static void Veto(Rigidbody rb)
+World/FruitItems.cs:331	method	FruitItems	public static FruitWorldItem Of(Rigidbody rb)
+World/FruitItems.cs:334	method	FruitItems	public static FruitWorldItem Of(GameObject go)
+World/FruitItems.cs:344	method	FruitItems	public static FruitWorldItem Of(string key)
+World/FruitItems.cs:357	method	FruitItems	public static FruitBody HolderOf(Firearm gun)
+World/FruitItems.cs:369	method	FruitItems	public static bool FireModGun(FruitWorldItem it, FruitBody by = null)
+World/FruitItems.cs:383	method	FruitItems	public static List<FruitWorldItem> Near(Vector3 point, float radius, List<FruitWorldItem> into = null, bool includeHeld = false)
+World/FruitItems.cs:402	method	FruitItems	public static FruitWorldItem Find(string said, Vector3 near, float radius = 30f, bool includeHeld = false)
+World/FruitNav.cs:11	enum	FruitPathStatus	public enum FruitPathStatus
+World/FruitNav.cs:11	enum-values	FruitPathStatus	None, Partial, Complete
+World/FruitNav.cs:22	class	FruitPath	public sealed class FruitPath
+World/FruitNav.cs:119	class	FruitNav	public static class FruitNav
+World/FruitNav.cs:24	field	FruitPath	public FruitPathStatus Status
+World/FruitNav.cs:26	field	FruitPath	public readonly List<Vector3> Corners
+World/FruitNav.cs:28	field	FruitPath	public float Length
+World/FruitNav.cs:32	field	FruitPath	public readonly List<float> Room
+World/FruitNav.cs:34	field	FruitPath	public int Version
+World/FruitNav.cs:36	field	FruitPath	public bool Shaped
+World/FruitNav.cs:38	field	FruitPath	public readonly List<float> Along
+World/FruitNav.cs:40	property	FruitPath	public bool Found { get; }
+World/FruitNav.cs:41	property	FruitPath	public Vector3 End { get; }
+World/FruitNav.cs:44	method	FruitPath	public Vector3 PointAt(float distance)
+World/FruitNav.cs:58	method	FruitPath	public Vector3 DirectionAt(float distance)
+World/FruitNav.cs:82	method	FruitPath	public float RoomAhead(float along, float ahead)
+World/FruitNav.cs:121	field	FruitNav	public const float AgentRadius, AgentHeight, AgentSlope
+World/FruitNav.cs:122	field	FruitNav	public const float StepWithAssist, StepWithout
+World/FruitNav.cs:123	field	FruitNav	public const float RoomStep
+World/FruitNav.cs:126	field	FruitNav	public const int Layers
+World/FruitNav.cs:129	property	FruitNav	public static int Version { get; private set; }
+World/FruitNav.cs:132	property	FruitNav	public static bool Ready { get; }
+World/FruitNav.cs:135	property	FruitNav	public static bool Active { get; }
+World/FruitNav.cs:138	property	FruitNav	public static Bounds Region { get; }
+World/FruitNav.cs:141	event	FruitNav	public static event Action Rebuilt
+World/FruitNav.cs:145	method	FruitNav	public static void Require(string mod)
+World/FruitNav.cs:152	method	FruitNav	public static void MarkDirty(float delay = 1f)
+World/FruitNav.cs:161	method	FruitNav	public static bool Sample(Vector3 point, float maxDistance, out Vector3 onMesh)
+World/FruitNav.cs:177	method	FruitNav	public static bool FindPath(Vector3 from, Vector3 to, FruitPath path, float snap = 3f)
+World/FruitNav.cs:182	method	FruitNav	public static bool FindPath(Vector3 from, Vector3 to, FruitPath path, float snap, bool measureRoom)
+World/FruitNav.cs:188	method	FruitNav	public static bool FindPath(Vector3 from, Vector3 to, FruitPath path, float snap, bool measureRoom, bool shape)
+World/FruitNav.cs:240	method	FruitNav	public static bool StraightClear(Vector3 from, Vector3 to)
+World/FruitNav.cs:253	method	FruitNav	public static float Room(Vector3 onMesh)
+World/FruitNav.cs:265	method	FruitNav	public static bool FindAway(Vector3 from, Vector3 threat, float distance, FruitPath path)
+World/FruitNav.cs:303	method	FruitNav	public static bool FindCover(Vector3 from, Vector3 threat, float maxDistance, FruitPath path)
+World/FruitNav.cs:352	method	FruitNav	public static bool Hidden(Vector3 eye, Vector3 spot)
+World/FruitNav.cs:393	property	FruitNav	public static float PathMargin { get; }
+World/FruitNav.cs:396	field	FruitNav	public const float ShapeStep
+World/FruitNav.cs:398	field	FruitNav	public static int ShapePasses
+World/FruitNav.cs:401	property	FruitNav	public static double LastShapeMs { get; private set; }
+World/FruitNav.cs:410	method	FruitNav	public static bool Shape(FruitPath path)
+World/FruitNav.cs:536	method	FruitNav	public static float Flat(Vector3 v)
+World/FruitNav.cs:551	field	FruitNav	public static float MinInterval
+World/FruitNav.cs:557	field	FruitNav	public static float RefreshSeconds
+World/FruitNav.cs:559	field	FruitNav	public static float MinSize
+World/FruitNav.cs:563	property	FruitNav	public static string LastBuild { get; private set; }
+World/FruitPlaces.cs:9	enum	FruitPlaceKind	public enum FruitPlaceKind
+World/FruitPlaces.cs:9	enum-values	FruitPlaceKind	Area, Building, Room, Spot
+World/FruitPlaces.cs:23	class	FruitPlace	public sealed class FruitPlace
+World/FruitPlaces.cs:98	class	FruitDoor	public sealed class FruitDoor
+World/FruitPlaces.cs:139	class	FruitPlaces	public static class FruitPlaces
+World/FruitPlaces.cs:26	field	FruitPlace	public string Name
+World/FruitPlaces.cs:27	field	FruitPlace	public FruitPlaceKind Kind
+World/FruitPlaces.cs:29	field	FruitPlace	public string Building
+World/FruitPlaces.cs:31	field	FruitPlace	public int Storey
+World/FruitPlaces.cs:32	field	FruitPlace	public Vector3 Center
+World/FruitPlaces.cs:33	field	FruitPlace	public Vector3 Size
+World/FruitPlaces.cs:34	field	FruitPlace	public Quaternion Rotation
+World/FruitPlaces.cs:36	field	FruitPlace	public string Source
+World/FruitPlaces.cs:39	field	FruitPlace	public FruitPlace In
+World/FruitPlaces.cs:42	field	FruitPlace	public Transform Anchor
+World/FruitPlaces.cs:44	field	FruitPlace	public Vector3 LookAt
+World/FruitPlaces.cs:50	method	FruitPlace	public bool Contains(Vector3 p, float pad = 0f)
+World/FruitPlaces.cs:57	property	FruitPlace	public Vector3 Floor { get; }
+World/FruitPlaces.cs:63	property	FruitPlace	public float Area { get; }
+World/FruitPlaces.cs:67	property	FruitPlace	public string Label { get; }
+World/FruitPlaces.cs:78	property	FruitPlace	public string Short { get; }
+World/FruitPlaces.cs:92	property	FruitPlace	public string StoreyName { get; }
+World/FruitPlaces.cs:94	method	FruitPlace	public override string ToString()
+World/FruitPlaces.cs:101	field	FruitDoor	public string Name
+World/FruitPlaces.cs:102	field	FruitDoor	public string Building
+World/FruitPlaces.cs:103	field	FruitDoor	public int Storey
+World/FruitPlaces.cs:105	field	FruitDoor	public Vector3 Position
+World/FruitPlaces.cs:108	field	FruitDoor	public Vector3 Through
+World/FruitPlaces.cs:110	field	FruitDoor	public bool Outside
+World/FruitPlaces.cs:111	field	FruitDoor	public string Source
+World/FruitPlaces.cs:113	property	FruitDoor	public string Label { get; }
+World/FruitPlaces.cs:144	property	FruitPlaces	public static IReadOnlyList<FruitPlace> All { get; }
+World/FruitPlaces.cs:145	property	FruitPlaces	public static IReadOnlyList<FruitDoor> Doors { get; }
+World/FruitPlaces.cs:147	method	FruitPlaces	public static void Register(FruitPlace p)
+World/FruitPlaces.cs:148	method	FruitPlaces	public static void Register(FruitDoor d)
+World/FruitPlaces.cs:151	method	FruitPlaces	public static void Clear(string source)
+World/FruitPlaces.cs:160	method	FruitPlaces	public static int ScanMarkers(string source, Transform root)
+World/FruitPlaces.cs:277	method	FruitPlaces	public static FruitPlace Where(Vector3 point)
+World/FruitPlaces.cs:290	method	FruitPlaces	public static FruitPlace SpotAt(Vector3 point)
+World/FruitPlaces.cs:308	method	FruitPlaces	public static void SpotsIn(FruitPlace place, Vector3 near, List<FruitPlace> into)
+World/FruitPlaces.cs:322	method	FruitPlaces	public static FruitPlace BuildingAt(Vector3 point)
+World/FruitPlaces.cs:338	method	FruitPlaces	public static FruitPlace Find(string said, Vector3 near)
+World/FruitPlaces.cs:403	method	FruitPlaces	public static FruitDoor FindDoor(string said, Vector3 near)
+World/FruitPlaces.cs:451	method	FruitPlaces	public static void Near(Vector3 point, float radius, List<FruitPlace> into, bool spots = false)
+World/FruitPlaces.cs:461	method	FruitPlaces	public static float FlatGap(FruitPlace p, Vector3 point)
+World/FruitPlaces.cs:469	method	FruitPlaces	public static void DoorsOf(string building, List<FruitDoor> into)
+World/FruitPlaces.cs:476	method	FruitPlaces	public static string StoreyName(int storey)
+World/FruitPose.cs:10	enum	FruitBone	public enum FruitBone
+World/FruitPose.cs:10	enum-values	FruitBone	Pelvis, LeftThigh, LeftShin, LeftFoot, RightThigh, RightShin, RightFoot, LowerSpine, UpperSpine, Head, LeftUpperArm, LeftForearm, LeftHand, RightUpperArm, RightForearm, RightHand
+World/FruitPose.cs:32	class	FruitPoseShape	public sealed class FruitPoseShape
+World/FruitPose.cs:152	class	FruitPose	public static class FruitPose
+World/FruitPose.cs:38	property	FruitPoseShape	public string Name { get; }
+World/FruitPose.cs:41	property	FruitPoseShape	public bool UsesLegs { get; private set; }
+World/FruitPose.cs:43	ctor	FruitPoseShape	public FruitPoseShape(string name)
+World/FruitPose.cs:48	method	FruitPoseShape	public FruitPoseShape Bend(FruitBone bone, Vector3 from, Vector3 to, float degrees)
+World/FruitPose.cs:59	method	FruitPoseShape	public FruitPoseShape BendBoth(FruitBone rightBone, Vector3 from, Vector3 to, float degrees)
+World/FruitPose.cs:81	method	FruitPoseShape	public override string ToString()
+World/FruitPose.cs:89	field	FruitPoseShape	public static readonly FruitPoseShape Steady
+World/FruitPose.cs:92	field	FruitPoseShape	public static readonly FruitPoseShape Lean
+World/FruitPose.cs:97	field	FruitPoseShape	public static readonly FruitPoseShape Sit
+World/FruitPose.cs:103	field	FruitPoseShape	public static readonly FruitPoseShape Crouch
+World/FruitPose.cs:112	field	FruitPoseShape	public static readonly FruitPoseShape Kneel
+World/FruitPose.cs:121	field	FruitPoseShape	public static readonly FruitPoseShape HandsUp
+World/FruitPose.cs:155	field	FruitPose	public static float DefaultBlend
+World/FruitPose.cs:159	field	FruitPose	public static float KnockedVelocitySqr
+World/FruitPose.cs:163	field	FruitPose	public static float FallenUpDot, FallenSeconds
+World/FruitPose.cs:168	field	FruitPose	public static float DegreesPerSecond
+World/FruitPose.cs:172	field	FruitPose	public static float Damping
+World/FruitPose.cs:182	field	FruitPose	public static bool BalanceAssist
+World/FruitPose.cs:183	field	FruitPose	public static float AssistMax, AssistSlack, AssistSpring, AssistDamper, SettleSeconds
+World/FruitPose.cs:187	event	FruitPose	public static event Action<FruitBody, FruitPoseShape, string> Ended
+World/FruitPose.cs:237	method	FruitPose	public static FruitPoseShape Current(FruitBody body)
+World/FruitPose.cs:241	method	FruitPose	public static bool IsHolding(FruitBody body)
+World/FruitPose.cs:242	method	FruitPose	public static bool IsReleasing(FruitBody body)
+World/FruitPose.cs:245	method	FruitPose	public static float Weight(FruitBody body)
+World/FruitPose.cs:250	method	FruitPose	public static bool AssistState(FruitBody body, out Vector3 pull, out Vector3 offset)
+World/FruitPose.cs:260	method	FruitPose	public static string RigDrift(FruitBody body, float degrees = 8f)
+World/FruitPose.cs:287	method	FruitPose	public static bool Hold(FruitBody body, FruitPoseShape shape, float blendSeconds = -1f, float tension = 1f, float support = 1f, string source = "FruitLib")
+World/FruitPose.cs:315	method	FruitPose	public static void Release(FruitBody body, float blendSeconds = -1f)
+World/FruitPose.cs:323	method	FruitPose	public static void SetTension(FruitBody body, float tension)
+World/FruitPose.cs:329	method	FruitPose	public static void SetSupport(FruitBody body, float support)
+World/FruitPropMenu.cs:18	class	FruitMenuEntry	public sealed class FruitMenuEntry
+World/FruitPropMenu.cs:50	class	FruitPropMenu	public static class FruitPropMenu
+World/FruitPropMenu.cs:355	class	FruitMenuHandler	public class FruitMenuHandler : ContextMenuActionsHandler
+World/FruitPropMenu.cs:365	class	FruitMenuAction	public class FruitMenuAction : SimpleContextMenuAction
+World/FruitPropMenu.cs:382	class	FruitMenuToggle	public class FruitMenuToggle : ToggleableContextMenuAction
+World/FruitPropMenu.cs:406	class	FruitProps	public static class FruitProps
+World/FruitPropMenu.cs:21	field	FruitMenuEntry	public string Name
+World/FruitPropMenu.cs:22	field	FruitMenuEntry	public Func<string> Label
+World/FruitPropMenu.cs:24	field	FruitMenuEntry	public int Priority
+World/FruitPropMenu.cs:26	field	FruitMenuEntry	public Action OnClick
+World/FruitPropMenu.cs:28	field	FruitMenuEntry	public Func<bool> Available
+World/FruitPropMenu.cs:30	field	FruitMenuEntry	public Func<bool> IsOn
+World/FruitPropMenu.cs:31	field	FruitMenuEntry	public Action<bool> OnToggle
+World/FruitPropMenu.cs:33	property	FruitMenuEntry	public bool Toggle { get; }
+World/FruitPropMenu.cs:57	field	FruitPropMenu	public static readonly List<Func<ContextMenuActionsHandler, Rigidbody, IEnumerable<FruitMenuEntry>>> Extenders
+World/FruitPropMenu.cs:72	property	FruitPropMenu	public static bool Broken { get; }
+World/FruitPropMenu.cs:80	method	FruitPropMenu	public static bool Attach(GameObject rbObject, string title, string category, IEnumerable<FruitMenuEntry> entries)
+World/FruitPropMenu.cs:103	method	FruitPropMenu	public static ContextMenuAction Add(ContextMenuActionsHandler handler, FruitMenuEntry entry)
+World/FruitPropMenu.cs:132	method	FruitPropMenu	public static void Extend(Func<ContextMenuActionsHandler, Rigidbody, IEnumerable<FruitMenuEntry>> extender)
+World/FruitPropMenu.cs:357	ctor	FruitMenuHandler	public FruitMenuHandler(IntPtr ptr)
+World/FruitPropMenu.cs:359	method	FruitMenuHandler	public override string GetTitle()
+World/FruitPropMenu.cs:360	method	FruitMenuHandler	public override string GetCategory()
+World/FruitPropMenu.cs:361	method	FruitMenuHandler	public override Il2CppSystem.Collections.Generic.List<ContextMenuAction> InitializeContextActions()
+World/FruitPropMenu.cs:367	ctor	FruitMenuAction	public FruitMenuAction(IntPtr ptr)
+World/FruitPropMenu.cs:369	ctor	FruitMenuAction	public FruitMenuAction(string name, int priority)
+World/FruitPropMenu.cs:375	method	FruitMenuAction	public override void ExecuteLogic()
+World/FruitPropMenu.cs:384	ctor	FruitMenuToggle	public FruitMenuToggle(IntPtr ptr)
+World/FruitPropMenu.cs:386	ctor	FruitMenuToggle	public FruitMenuToggle(string name, int priority)
+World/FruitPropMenu.cs:392	method	FruitMenuToggle	public override void OnToggle()
+World/FruitPropMenu.cs:414	method	FruitProps	public static FruitWorldItem Spawn(GameObject model, Vector3 at, Quaternion rotation, string name, float mass = 1f, FruitAffords affords = FruitAffords.None, string source = "", string category = "props", IEnumerable<FruitMenuEntry> menu = null)
+World/FruitPropMenu.cs:431	method	FruitProps	public static FruitWorldItem Spawn(GameObject model, Vector3 at, Quaternion rotation, string name, float mass, FruitAffords affords, string source, string category, Func<FruitWorldItem, IEnumerable<FruitMenuEntry>> menuFor)
+World/FruitPropMenu.cs:445	method	FruitProps	public static FruitWorldItem Adopt(GameObject go, string name, float mass = 1f, FruitAffords affords = FruitAffords.None, string source = "", string category = "props", IEnumerable<FruitMenuEntry> menu = null)
+World/FruitPropMenu.cs:475	method	FruitProps	public static void Delete(FruitWorldItem it)
+World/FruitPropUse.cs:32	class	FruitPropUse	public static class FruitPropUse
+World/FruitPropUse.cs:52	method	FruitPropUse	public static bool Attach(GameObject rbObject, Action onPress, Action<float> onHold = null, Action onRelease = null)
+World/FruitPropUse.cs:102	method	FruitPropUse	public static bool Attach(FruitWorldItem it)
+World/FruitPropUse.cs:141	method	FruitPropUse	public static void Detach(GameObject rbObject)
+World/FruitPropUse.cs:149	method	FruitPropUse	public static bool InUse(GameObject rbObject)
+World/FruitSight.cs:12	enum	FruitSightZone	public enum FruitSightZone
+World/FruitSight.cs:12	enum-values	FruitSightZone	InView, Corner, Behind
+World/FruitSight.cs:23	struct	FruitThingName	public struct FruitThingName
+World/FruitSight.cs:39	class	FruitSeen	public sealed class FruitSeen
+World/FruitSight.cs:76	class	FruitView	public sealed class FruitView
+World/FruitSight.cs:131	class	FruitSight	public static class FruitSight
+World/FruitSight.cs:26	field	FruitThingName	public string Part
+World/FruitSight.cs:29	field	FruitThingName	public string Object
+World/FruitSight.cs:31	field	FruitThingName	public int Storey
+World/FruitSight.cs:33	field	FruitThingName	public bool SeeThrough
+World/FruitSight.cs:35	field	FruitThingName	public bool Ground
+World/FruitSight.cs:42	field	FruitSeen	public string Kind
+World/FruitSight.cs:44	field	FruitSeen	public string Name
+World/FruitSight.cs:46	field	FruitSeen	public FruitBody Body
+World/FruitSight.cs:48	field	FruitSeen	public string Key
+World/FruitSight.cs:49	field	FruitSeen	public Vector3 Position
+World/FruitSight.cs:51	field	FruitSeen	public float Distance
+World/FruitSight.cs:53	field	FruitSeen	public float Angle
+World/FruitSight.cs:54	field	FruitSeen	public FruitSightZone Zone
+World/FruitSight.cs:56	field	FruitSeen	public bool Visible
+World/FruitSight.cs:58	field	FruitSeen	public bool Clear
+World/FruitSight.cs:59	field	FruitSeen	public float Mass
+World/FruitSight.cs:60	field	FruitSeen	public Vector3 Size
+World/FruitSight.cs:61	field	FruitSeen	public bool Moving
+World/FruitSight.cs:64	field	FruitSeen	public bool Close
+World/FruitSight.cs:67	field	FruitSeen	public FruitWorldItem Item
+World/FruitSight.cs:70	field	FruitSeen	public string On
+World/FruitSight.cs:72	field	FruitSeen	public float AboveFloor
+World/FruitSight.cs:78	field	FruitView	public FruitBody Body
+World/FruitSight.cs:79	field	FruitView	public float Time
+World/FruitSight.cs:80	field	FruitView	public Vector3 Eye, Forward, Up
+World/FruitSight.cs:82	field	FruitView	public Vector3 Flat
+World/FruitSight.cs:84	field	FruitView	public string Setting
+World/FruitSight.cs:86	field	FruitView	public bool Indoors
+World/FruitSight.cs:88	field	FruitView	public string Inside
+World/FruitSight.cs:89	field	FruitView	public int Storey
+World/FruitSight.cs:91	field	FruitView	public float Ceiling
+World/FruitSight.cs:93	field	FruitView	public string Ground
+World/FruitSight.cs:95	field	FruitView	public float FloorY
+World/FruitSight.cs:98	field	FruitView	public int Walls
+World/FruitSight.cs:99	field	FruitView	public readonly List<string> Open
+World/FruitSight.cs:100	field	FruitView	public readonly List<string> Closed
+World/FruitSight.cs:102	field	FruitView	public readonly List<FruitSeen> Seen
+World/FruitSight.cs:104	field	FruitView	public bool Full
+World/FruitSight.cs:107	method	FruitView	public string Bearing(Vector3 point)
+World/FruitSight.cs:134	field	FruitSight	public static float InViewAngle, CornerAngle
+World/FruitSight.cs:136	field	FruitSight	public static float Range
+World/FruitSight.cs:139	field	FruitSight	public static float CloseRange
+World/FruitSight.cs:143	field	FruitSight	public static readonly List<Func<GameObject, FruitThingName?>> Describers
+World/FruitSight.cs:146	field	FruitSight	public static string SettingOverride
+World/FruitSight.cs:155	property	FruitSight	public static string Setting { get; }
+World/FruitSight.cs:187	method	FruitSight	public static void Eye(FruitBody b, out Vector3 eye, out Vector3 forward, out Vector3 up)
+World/FruitSight.cs:207	method	FruitSight	public static FruitSightZone ZoneOf(float angle)
+World/FruitSight.cs:212	method	FruitSight	public static bool CanSee(FruitBody b, Vector3 point, FruitBody target = null)
+World/FruitSight.cs:222	method	FruitSight	public static bool Clear(Vector3 from, Vector3 to, FruitBody self, FruitBody target = null, Rigidbody targetRb = null)
+World/FruitSight.cs:262	method	FruitSight	public static int BodyOf(Collider c)
+World/FruitSight.cs:297	method	FruitSight	public static FruitThingName Name(GameObject go)
+World/FruitSight.cs:358	method	FruitSight	public static string Clean(string raw)
+World/FruitSight.cs:473	method	FruitSight	public static FruitView Look(FruitBody b, bool full = true)
+World/FruitSight.cs:659	method	FruitSight	public static string Side(float ang)

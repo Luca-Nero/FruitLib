@@ -136,12 +136,27 @@ byte[] png  = FruitPng.FromRgba(rgba, FruitEyeCamera.Width, FruitEyeCamera.Heigh
   is. It appears only in captures: it is switched on for the render and off right
   after, so no other camera ever sees it.
 
-## Turning
+## Looking and turning
 
-`FruitBodyControl.Face(body, direction)` and `FruitBodyControl.LookAround(body, seconds)`
-turn a standing body on the spot. If the target yaw alone hasn't turned it after
-a second, it turns with small steps instead. The log reports which of the two
-happened (`turn check`).
+`FruitBodyControl.LookAround(body, seconds)` is a stationary head scan (5.37.0):
+left about 55 degrees, pause and sample, right about 55 degrees, pause and sample,
+then return to centre. It uses the native head bone override and requests neither
+walking nor pelvis rotation. The physical head must be within 8 degrees of the
+side's target before its sample is emitted. The default scan lasts four seconds;
+durations are bounded to 2–12 seconds.
+
+`IsLookingAround(body)` reports the scan. `LookSampled` is raised at each side;
+`LookScanEnded(body, completed)` reports completion or interruption. Consumers
+should use the samples during the pauses; sampling only after returning to centre
+loses the views from the sides. NeuroFrukt 0.9.8 folds both samples into sight memory.
+
+Walking, a new body order, Stop, injury, falling, unconsciousness, a held pose,
+loss of the head and scene changes release the scan. It declines a rig whose head
+override is already in use. Pose acquisition cancels the scan before taking the
+shared bone override. A completed scan requires both physical sight samples.
+
+`FruitBodyControl.Face(body, direction)` remains an explicit body turn. It can take
+short steps under `StepTurns`. Looking around no longer uses this movement.
 
 ## Debug
 

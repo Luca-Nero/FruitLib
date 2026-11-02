@@ -7,6 +7,8 @@ content through Unity AssetBundles.
 
 **Third-party mod authors start here → [`docs/README.md`](docs/README.md)**, and copy [`Templates/`](Templates/README.md) for a new mod.
 
+- [General interactions](docs/interactions.md): working points, reactive postures, contact, completion and diagnostics
+
 - [Config & menu](docs/config-and-menu.md)
 - [HUD](docs/hud.md)
 - [Performance monitor](docs/perfmon.md)
@@ -37,3 +39,14 @@ content through Unity AssetBundles.
 | `Utilities/` | Logging, paths, scene lookups, stripped-API icalls, diagnostics and crash trace, force fields, update check |
 | `Debug/` | Probes and in-game tests. Their hooks install only if *Debug hooks + crash trace* was on at launch; output only while their `*Probe` setting is on |
 | `Templates/` | Starting files for a new mod (not compiled into FruitLib): see [`Templates/README.md`](Templates/README.md) |
+
+
+## Movement support (5.36.0)
+
+Healthy bodies following FruitBodyControl orders receive 1.5× pelvis, torso and head spring support, with the existing nonzero damping scaled by √1.5. Legs keep their native drives. Each native muscle sync remains authoritative; stopping, falling, injury or a held pose restores native values. No healthy balance fixture or additional pelvis damping is installed. `WalkStability` controls this profile; `WalkPelvisSpring`, `WalkTorsoSpring` and `WalkLegSpring` are ini tuning values.
+
+`FootTraction` uses per-body material clones to bound planted grip to the surface with Minimum combine, preserving native coefficients and the low-friction swinging foot. It releases with the order or injury. City floors use Average so they respect this and the native swing's Minimum.
+
+Standing turns and stalled-turn recovery use forward steps along the current heading, guarded against people and map geometry. Destination arrival rejects other storeys and intervening walls. Failed path queries wait up to six seconds for a rebuild, then report NoRoute; they no longer request a blind straight walk. Replans reset their progress baseline and obey the per-frame replan budget. The final heading after the side-step cap also checks map geometry.
+
+`NavVoxelSize` defaults to 0.05 m, with live rebuild on settings changes. The 0.38 m agent radius remains unchanged. Kerb runs can still drift laterally: foot placement, full grounding-ray stress tests and crowded indoor routes remain follow-up work.

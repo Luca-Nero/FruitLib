@@ -132,7 +132,7 @@ namespace FruitLib
         public static bool Ready => Version > 0 && _data != null && _data.Added;
 
         /// <summary>FruitNav runs while any mod requires it (or the pathing test is on).</summary>
-        public static bool Active => _requiredBy.Count > 0 || FruitLibConfig.NavProbe || FruitLibConfig.NavDraw;
+        public static bool Active => _requiredBy.Count > 0 || FruitLibConfig.NavProbe || FruitLibConfig.NavDraw || FruitBodyControl.NeedsNav;
 
         /// <summary>The box the current navmesh covers.</summary>
         public static Bounds Region => _region;
@@ -540,6 +540,7 @@ namespace FruitLib
         private static FruitNavNative.Data _data;
         private static readonly FruitNavNative.SourceList _list = new FruitNavNative.SourceList();
         private static FruitNavNative.BuildSettings _settings;
+        private static float _builtClimb, _builtVoxel;
         private static bool _checked, _usable, _settingsMade, _builtWithAssist, _subscribed;
         private static IntPtr _op;
         private static Bounds _region, _building;
@@ -570,7 +571,9 @@ namespace FruitLib
             if (_op != IntPtr.Zero) { PollBuild(); return; }
 
             // Step height follows the step assist; a change of mind means a fresh build.
-            if (_settingsMade && _builtWithAssist != FruitLibConfig.StepAssist) { _settingsMade = false; _dirtyAt = 0f; }
+            if (_settingsMade && (_builtWithAssist != FruitLibConfig.StepAssist ||
+                _builtClimb != Mathf.Clamp(FruitLibConfig.NavClimb, 0.1f, 0.32f) ||
+                _builtVoxel != Mathf.Clamp(FruitLibConfig.NavVoxelSize, 0.05f, 0.2f))) { _settingsMade = false; _dirtyAt = 0f; }
 
             if (!Needed(out Bounds need)) return;
             float now = Time.time;
@@ -669,9 +672,11 @@ namespace FruitLib
             s.LedgeDropHeight = 0f;
             s.MaxJumpAcrossDistance = 0f;
             s.MinRegionArea = 1f;
-            // 10 cm cells: the radius erodes 4 cells off each wall, which still leaves a 1 m door open.
+            // 5 cm by default: preserve narrow approaches without shrinking the body's radius.
             s.OverrideVoxelSize = 1;
-            s.VoxelSize = 0.1f;
+            s.VoxelSize = Mathf.Clamp(FruitLibConfig.NavVoxelSize, 0.05f, 0.2f);
+            _builtClimb = Mathf.Clamp(FruitLibConfig.NavClimb, 0.1f, 0.32f);
+            _builtVoxel = s.VoxelSize;
             s.OverrideTileSize = 0;
             s.BuildHeightMesh = 1;
             s.PreserveTilesOutsideBounds = 0;

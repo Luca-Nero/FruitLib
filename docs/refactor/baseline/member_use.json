@@ -1,0 +1,798 @@
+{
+  "ExplosionFeatures.All": [
+    "1_BombsAway"
+  ],
+  "ExplosionFeatures.BlastOnly": [
+    "1_BombsAway"
+  ],
+  "FragmentEnd.Lodged": [
+    "1_BombsAway"
+  ],
+  "FragmentEnd.OverBudget": [
+    "1_BombsAway"
+  ],
+  "FragmentEnd.PassedThrough": [
+    "1_BombsAway"
+  ],
+  "FragmentEnd.Penetrated": [
+    "1_BombsAway"
+  ],
+  "FragmentEnd.Ricocheted": [
+    "1_BombsAway"
+  ],
+  "FragmentEnd.Spent": [
+    "1_BombsAway"
+  ],
+  "FragmentEnd.Stopped": [
+    "1_BombsAway"
+  ],
+  "FragmentEnd.TooWeak": [
+    "1_BombsAway"
+  ],
+  "FruitAffords.Carry": [
+    "1_BombsAway",
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitAffords.Explosive": [
+    "1_BombsAway",
+    "12_NeuroFrukt"
+  ],
+  "FruitAffords.Swing": [
+    "12_NeuroFrukt"
+  ],
+  "FruitAffords.Throw": [
+    "1_BombsAway",
+    "4_FruitLab"
+  ],
+  "FruitAffords.Use": [
+    "1_BombsAway",
+    "4_FruitLab"
+  ],
+  "FruitBallistics.BlastTraced": [
+    "1_BombsAway"
+  ],
+  "FruitBallistics.DebrisArc": [
+    "1_BombsAway"
+  ],
+  "FruitBallistics.Explode": [
+    "11_FruitCity"
+  ],
+  "FruitBallistics.Exploded": [
+    "1_BombsAway",
+    "11_FruitCity"
+  ],
+  "FruitBallistics.FragmentTraced": [
+    "1_BombsAway",
+    "11_FruitCity"
+  ],
+  "FruitBallistics.LastExplosion": [
+    "1_BombsAway"
+  ],
+  "FruitBallistics.LimbWounded": [
+    "1_BombsAway",
+    "2_GunsGunsGunsRefractored"
+  ],
+  "FruitBallistics.ProjectileEnded": [
+    "2_GunsGunsGunsRefractored"
+  ],
+  "FruitBallistics.ProjectilesMoved": [
+    "2_GunsGunsGunsRefractored"
+  ],
+  "FruitBallistics.ProjectileSpawned": [
+    "2_GunsGunsGunsRefractored"
+  ],
+  "FruitBallistics.ProjectileStep": [
+    "1_BombsAway"
+  ],
+  "FruitBallistics.Register": [
+    "1_BombsAway",
+    "2_GunsGunsGunsRefractored"
+  ],
+  "FruitBallistics.SpawnExplosion": [
+    "1_BombsAway"
+  ],
+  "FruitBallistics.SpawnProjectile": [
+    "1_BombsAway",
+    "2_GunsGunsGunsRefractored"
+  ],
+  "FruitBallistics.SurfaceHit": [
+    "1_BombsAway",
+    "11_FruitCity",
+    "2_GunsGunsGunsRefractored"
+  ],
+  "FruitBehaviour.Agony": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBehaviour.Falling": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBehaviour.GettingUp": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBehaviour.Lying": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBehaviour.Moving": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBehaviour.Standing": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBlast.RangeFor": [
+    "1_BombsAway"
+  ],
+  "FruitBodies.Added": [
+    "4_FruitLab"
+  ],
+  "FruitBodies.All": [
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitBodies.Get": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodies.HasView": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodies.Head": [
+    "4_FruitLab"
+  ],
+  "FruitBodies.LimbCount": [
+    "1_BombsAway",
+    "12_NeuroFrukt"
+  ],
+  "FruitBodies.LimbNames": [
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitBodies.Of": [
+    "4_FruitLab"
+  ],
+  "FruitBodies.OfObject": [
+    "1_BombsAway"
+  ],
+  "FruitBodies.Removed": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodies.Require": [
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitBodies.Torso": [
+    "4_FruitLab"
+  ],
+  "FruitBodies.UnconsciousBelow": [
+    "4_FruitLab"
+  ],
+  "FruitBodies.ViewForward": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodies.ViewPosition": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.AimingAt": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.Approach": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.Attack": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.CanApplyInteraction": [
+    "4_FruitLab"
+  ],
+  "FruitBodyControl.ConsumeInteractionItem": [
+    "4_FruitLab"
+  ],
+  "FruitBodyControl.Drop": [
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitBodyControl.EndingDetail": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.Face": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.Follow": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.Give": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.GoTo": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.HandsEnded": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.HandsOn": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.Holding": [
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitBodyControl.Interact": [
+    "4_FruitLab"
+  ],
+  "FruitBodyControl.InteractionOf": [
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitBodyControl.InteractionResultDetail": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.IsAttacking": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.IsHandling": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.IsLookingAround": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.IsReaching": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.IsRunning": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.IsTurning": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.IsWalking": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.LookAround": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.LookSampled": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.LookScanEnded": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.MoveEnded": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.PickUp": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.Stop": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.SurfacePoint": [
+    "4_FruitLab"
+  ],
+  "FruitBodyControl.TargetOf": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.Throw": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.Use": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.WalkAway": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBodyControl.WalkTo": [
+    "12_NeuroFrukt"
+  ],
+  "FruitBundle.FromResource": [
+    "1_BombsAway",
+    "11_FruitCity",
+    "4_FruitLab"
+  ],
+  "FruitEvents.BodyActor": [
+    "1_BombsAway",
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitEvents.DefaultRadius": [
+    "12_NeuroFrukt"
+  ],
+  "FruitEvents.Pending": [
+    "12_NeuroFrukt"
+  ],
+  "FruitEvents.Publish": [
+    "1_BombsAway",
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitEvents.Raised": [
+    "12_NeuroFrukt"
+  ],
+  "FruitEyeCamera.Broken": [
+    "12_NeuroFrukt"
+  ],
+  "FruitEyeCamera.Capture": [
+    "12_NeuroFrukt"
+  ],
+  "FruitEyeCamera.Captures": [
+    "12_NeuroFrukt"
+  ],
+  "FruitEyeCamera.Height": [
+    "12_NeuroFrukt"
+  ],
+  "FruitEyeCamera.LastMs": [
+    "12_NeuroFrukt"
+  ],
+  "FruitEyeCamera.ShowPlayerOrb": [
+    "12_NeuroFrukt"
+  ],
+  "FruitEyeCamera.Width": [
+    "12_NeuroFrukt"
+  ],
+  "FruitForces.Register": [
+    "7_Singularity"
+  ],
+  "FruitForces.Unregister": [
+    "7_Singularity"
+  ],
+  "FruitHandling.AimAndFire": [
+    "1_BombsAway"
+  ],
+  "FruitHandling.ArmAndThrow": [
+    "1_BombsAway"
+  ],
+  "FruitHandling.Describe": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHandling.InHand": [
+    "4_FruitLab"
+  ],
+  "FruitHandling.NeedsTarget": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHandling.PlaceAndArm": [
+    "1_BombsAway"
+  ],
+  "FruitHandling.PlaceAndDetonate": [
+    "1_BombsAway"
+  ],
+  "FruitHandsResult.Dropped": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHandsResult.Failed": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHandsResult.Given": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHandsResult.Lost": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHandsResult.PickedUp": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHandsResult.Stopped": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHandsResult.Taken": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHandsResult.Thrown": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHandsResult.TooHeavy": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHandsResult.Unreachable": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHandsResult.Used": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHeldKind.Weapon": [
+    "12_NeuroFrukt"
+  ],
+  "FruitHostMap.Flatland": [
+    "11_FruitCity"
+  ],
+  "FruitHud.Register": [
+    "1_BombsAway",
+    "12_NeuroFrukt",
+    "7_Singularity"
+  ],
+  "FruitHud.Visible": [
+    "8_NoHUD_HIATUS"
+  ],
+  "FruitIcons.Load": [
+    "1_BombsAway",
+    "4_FruitLab"
+  ],
+  "FruitIcons.Solid": [
+    "1_BombsAway",
+    "2_GunsGunsGunsRefractored",
+    "4_FruitLab",
+    "7_Singularity"
+  ],
+  "FruitInventory.AddCategory": [
+    "1_BombsAway",
+    "4_FruitLab"
+  ],
+  "FruitInventory.AddItem": [
+    "1_BombsAway",
+    "2_GunsGunsGunsRefractored",
+    "4_FruitLab",
+    "7_Singularity"
+  ],
+  "FruitInventory.HeldDangerous": [
+    "12_NeuroFrukt"
+  ],
+  "FruitInventory.HeldKind": [
+    "12_NeuroFrukt"
+  ],
+  "FruitInventory.HeldName": [
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitInventory.Items": [
+    "4_FruitLab"
+  ],
+  "FruitItemCategory.Tool": [
+    "7_Singularity"
+  ],
+  "FruitItemCategory.Weapon": [
+    "2_GunsGunsGunsRefractored"
+  ],
+  "FruitItems.FailMark": [
+    "12_NeuroFrukt"
+  ],
+  "FruitItems.Mark": [
+    "12_NeuroFrukt"
+  ],
+  "FruitItems.Near": [
+    "12_NeuroFrukt"
+  ],
+  "FruitItems.Of": [
+    "1_BombsAway",
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitItems.Require": [
+    "12_NeuroFrukt"
+  ],
+  "FruitItems.Unmark": [
+    "1_BombsAway"
+  ],
+  "FruitItems.Veto": [
+    "12_NeuroFrukt"
+  ],
+  "FruitLog.Info": [
+    "11_FruitCity",
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitMaps.Current": [
+    "11_FruitCity"
+  ],
+  "FruitMaps.Register": [
+    "11_FruitCity"
+  ],
+  "FruitMenu.BlocksGameplayInput": [
+    "1_BombsAway",
+    "2_GunsGunsGunsRefractored",
+    "4_FruitLab",
+    "7_Singularity"
+  ],
+  "FruitMenu.CaptureDefaults": [
+    "1_BombsAway",
+    "11_FruitCity",
+    "12_NeuroFrukt",
+    "2_GunsGunsGunsRefractored",
+    "4_FruitLab",
+    "7_Singularity"
+  ],
+  "FruitMenu.IsGamePaused": [
+    "12_NeuroFrukt"
+  ],
+  "FruitMenu.IsInputSuppressed": [
+    "1_BombsAway",
+    "12_NeuroFrukt",
+    "3_FruitTweaks_HIATUS"
+  ],
+  "FruitMenu.IsOpen": [
+    "12_NeuroFrukt",
+    "3_FruitTweaks_HIATUS"
+  ],
+  "FruitMenu.OnConfigChanged": [
+    "2_GunsGunsGunsRefractored",
+    "3_FruitTweaks_HIATUS"
+  ],
+  "FruitMenu.Register": [
+    "1_BombsAway",
+    "11_FruitCity",
+    "12_NeuroFrukt",
+    "2_GunsGunsGunsRefractored",
+    "3_FruitTweaks_HIATUS",
+    "4_FruitLab",
+    "6_BloodColor_commission_HIATUS",
+    "7_Singularity"
+  ],
+  "FruitMoveResult.Arrived": [
+    "12_NeuroFrukt"
+  ],
+  "FruitMoveResult.Blocked": [
+    "12_NeuroFrukt"
+  ],
+  "FruitMoveResult.Lost": [
+    "12_NeuroFrukt"
+  ],
+  "FruitMoveResult.NoRoute": [
+    "12_NeuroFrukt"
+  ],
+  "FruitMoveResult.Stopped": [
+    "12_NeuroFrukt"
+  ],
+  "FruitMoveResult.TimedOut": [
+    "12_NeuroFrukt"
+  ],
+  "FruitNav.FindCover": [
+    "12_NeuroFrukt"
+  ],
+  "FruitNav.FindPath": [
+    "12_NeuroFrukt"
+  ],
+  "FruitNav.Flat": [
+    "12_NeuroFrukt"
+  ],
+  "FruitNav.Ready": [
+    "12_NeuroFrukt"
+  ],
+  "FruitNav.Require": [
+    "12_NeuroFrukt"
+  ],
+  "FruitNav.Room": [
+    "12_NeuroFrukt"
+  ],
+  "FruitNav.Sample": [
+    "12_NeuroFrukt"
+  ],
+  "FruitNav.StraightClear": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPaths.Config": [
+    "1_BombsAway",
+    "11_FruitCity",
+    "12_NeuroFrukt",
+    "2_GunsGunsGunsRefractored",
+    "4_FruitLab",
+    "7_Singularity"
+  ],
+  "FruitPaths.UserData": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPaths.WriteAllTextAtomic": [
+    "1_BombsAway",
+    "11_FruitCity",
+    "12_NeuroFrukt",
+    "2_GunsGunsGunsRefractored",
+    "4_FruitLab",
+    "7_Singularity"
+  ],
+  "FruitPathStatus.Complete": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPerfMon.For": [
+    "1_BombsAway",
+    "11_FruitCity",
+    "12_NeuroFrukt",
+    "7_Singularity"
+  ],
+  "FruitPerfMon.LongFps": [
+    "3_FruitTweaks_HIATUS"
+  ],
+  "FruitPerfMon.PressureLevel": [
+    "3_FruitTweaks_HIATUS"
+  ],
+  "FruitPerfMon.RegisterCounter": [
+    "3_FruitTweaks_HIATUS"
+  ],
+  "FruitPlaceKind.Area": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaceKind.Building": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaceKind.Room": [
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitPlaceKind.Spot": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaces.Aliases": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaces.All": [
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitPlaces.BuildingAt": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaces.Clear": [
+    "11_FruitCity"
+  ],
+  "FruitPlaces.DoorLabels": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaces.Doors": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaces.DoorsOf": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaces.Find": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaces.FindDoor": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaces.FlatGap": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaces.Near": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaces.ScanMarkers": [
+    "11_FruitCity"
+  ],
+  "FruitPlaces.SpotAt": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaces.SpotsIn": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPlaces.Where": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPng.FromRgba": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPosture.Airborne": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPosture.FaceDown": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPosture.OnBack": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPosture.OnSide": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPosture.Upright": [
+    "12_NeuroFrukt"
+  ],
+  "FruitPropMenu.Extend": [
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitProps.Delete": [
+    "4_FruitLab"
+  ],
+  "FruitProps.Spawn": [
+    "4_FruitLab"
+  ],
+  "FruitPropUse.Attach": [
+    "12_NeuroFrukt",
+    "4_FruitLab"
+  ],
+  "FruitPropUse.Detach": [
+    "1_BombsAway"
+  ],
+  "FruitScene.First": [
+    "1_BombsAway",
+    "2_GunsGunsGunsRefractored",
+    "4_FruitLab",
+    "7_Singularity"
+  ],
+  "FruitSfx.Impact": [
+    "2_GunsGunsGunsRefractored"
+  ],
+  "FruitSfx.Weapon": [
+    "2_GunsGunsGunsRefractored"
+  ],
+  "FruitSight.CanSee": [
+    "12_NeuroFrukt"
+  ],
+  "FruitSight.Clear": [
+    "12_NeuroFrukt"
+  ],
+  "FruitSight.CloseRange": [
+    "12_NeuroFrukt"
+  ],
+  "FruitSight.Eye": [
+    "12_NeuroFrukt"
+  ],
+  "FruitSight.Look": [
+    "12_NeuroFrukt"
+  ],
+  "FruitSight.Side": [
+    "12_NeuroFrukt"
+  ],
+  "FruitSightZone.Corner": [
+    "12_NeuroFrukt"
+  ],
+  "FruitStrike.Punch": [
+    "12_NeuroFrukt"
+  ],
+  "FruitStrike.Shove": [
+    "12_NeuroFrukt"
+  ],
+  "FruitSurfaces.Explain": [
+    "1_BombsAway"
+  ],
+  "FruitTextInput.Active": [
+    "12_NeuroFrukt"
+  ],
+  "FruitTextInput.Close": [
+    "12_NeuroFrukt"
+  ],
+  "FruitTextInput.HoldsGame": [
+    "12_NeuroFrukt"
+  ],
+  "FruitTextInput.Open": [
+    "12_NeuroFrukt"
+  ],
+  "FruitTextInput.Owner": [
+    "12_NeuroFrukt"
+  ],
+  "FruitTextInput.SetPrompt": [
+    "12_NeuroFrukt"
+  ],
+  "FruitTextInput.Text": [
+    "12_NeuroFrukt"
+  ],
+  "FruitTrace.Mark": [
+    "2_GunsGunsGunsRefractored"
+  ],
+  "FruitUpdateCheck.Register": [
+    "1_BombsAway",
+    "2_GunsGunsGunsRefractored",
+    "3_FruitTweaks_HIATUS",
+    "4_FruitLab",
+    "7_Singularity"
+  ],
+  "FruitVersion.AtLeast": [
+    "1_BombsAway"
+  ],
+  "FruitWorldMenu.AddButton": [
+    "1_BombsAway"
+  ],
+  "FruitWorldMenu.MapReset": [
+    "1_BombsAway",
+    "11_FruitCity"
+  ],
+  "HudPanel.Bad": [
+    "1_BombsAway",
+    "12_NeuroFrukt"
+  ],
+  "HudPanel.Dim": [
+    "1_BombsAway",
+    "12_NeuroFrukt",
+    "7_Singularity"
+  ],
+  "HudPanel.Good": [
+    "12_NeuroFrukt"
+  ],
+  "HudPanel.Normal": [
+    "12_NeuroFrukt"
+  ],
+  "HudPanel.Warn": [
+    "1_BombsAway",
+    "12_NeuroFrukt"
+  ],
+  "Projectile.Tag": [
+    "1_BombsAway"
+  ],
+  "ProjectileSpec.Cartridge": [
+    "1_BombsAway"
+  ]
+}

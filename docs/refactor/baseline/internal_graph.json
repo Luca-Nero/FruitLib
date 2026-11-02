@@ -1,0 +1,596 @@
+{
+  "Ballistics/BallisticsSpecs.cs": [],
+  "Ballistics/FruitBallistics.cs": [
+    "FruitBlastInjury",
+    "FruitEjecta",
+    "FruitExplosions",
+    "FruitProjectiles",
+    "FruitSurfaces",
+    "FruitWounds"
+  ],
+  "Ballistics/FruitBlast.cs": [],
+  "Ballistics/FruitBlastInjury.cs": [
+    "FruitBallisticsProbe"
+  ],
+  "Ballistics/FruitEjecta.cs": [
+    "FruitLibConfig",
+    "FruitPerfMon",
+    "FruitWounds"
+  ],
+  "Ballistics/FruitExplosions.cs": [
+    "FruitBallistics",
+    "FruitBlast",
+    "FruitBlastInjury",
+    "FruitLibConfig",
+    "FruitPerfMon",
+    "FruitProjectiles",
+    "FruitSurfaces",
+    "FruitWounds"
+  ],
+  "Ballistics/FruitProjectiles.cs": [
+    "FruitBallistics",
+    "FruitForces",
+    "FruitLibConfig",
+    "FruitSurfaces",
+    "FruitWounds"
+  ],
+  "Ballistics/FruitSurfaces.cs": [],
+  "Ballistics/FruitWounds.cs": [
+    "FruitEjecta",
+    "FruitLog",
+    "FruitPerfMon"
+  ],
+  "Content/AssetBundleNative.cs": [],
+  "Content/FruitBundles.cs": [
+    "FruitLog"
+  ],
+  "Content/FruitDecals.cs": [
+    "FruitLog"
+  ],
+  "Content/FruitMeshLoader.cs": [
+    "FruitLog"
+  ],
+  "Content/FruitSfx.cs": [],
+  "Core/FruitInterop.cs": [],
+  "Core/FruitLibConfig.cs": [
+    "FruitPaths",
+    "FruitSetting"
+  ],
+  "Core/FruitLibMod.cs": [
+    "FruitBallistics",
+    "FruitBallisticsProbe",
+    "FruitBodies",
+    "FruitBodyControl",
+    "FruitBundleProbe",
+    "FruitBundleTests",
+    "FruitEventLog",
+    "FruitEvents",
+    "FruitGaitProbe",
+    "FruitGameMenus",
+    "FruitHandsProbe",
+    "FruitHud",
+    "FruitInventory",
+    "FruitItems",
+    "FruitMaps",
+    "FruitMenu",
+    "FruitMenuNative",
+    "FruitMenuProbe",
+    "FruitMenuScreen",
+    "FruitNav",
+    "FruitNavDraw",
+    "FruitNavProbe",
+    "FruitPerfMon",
+    "FruitPose",
+    "FruitPreferencesBridge",
+    "FruitPropMenu",
+    "FruitScene",
+    "FruitSight",
+    "FruitSightProbe",
+    "FruitTextInput",
+    "FruitUpdateCheck",
+    "FruitVersion",
+    "FruitWorldEvents",
+    "FruitWorldMenu"
+  ],
+  "Core/FruitVersion.cs": [],
+  "Debug/FruitBallisticsProbe.cs": [
+    "FruitBallistics",
+    "FruitEjecta",
+    "FruitLibConfig",
+    "FruitProjectiles",
+    "FruitSurfaces",
+    "FruitWounds"
+  ],
+  "Debug/FruitBundleProbe.cs": [
+    "FruitBundle",
+    "FruitBundleTests",
+    "FruitLibConfig",
+    "FruitPaths"
+  ],
+  "Debug/FruitBundleTests.cs": [
+    "FruitBundle",
+    "FruitDecals",
+    "FruitNative",
+    "FruitPaths",
+    "FruitScene"
+  ],
+  "Debug/FruitGaitProbe.cs": [
+    "FruitBehaviour",
+    "FruitBodies",
+    "FruitBody",
+    "FruitBodyControl",
+    "FruitLibConfig",
+    "FruitMenu",
+    "FruitNav",
+    "FruitPaths",
+    "FruitVersion"
+  ],
+  "Debug/FruitHandsProbe.cs": [
+    "FruitAffords",
+    "FruitBehaviour",
+    "FruitBodies",
+    "FruitBody",
+    "FruitBodyControl",
+    "FruitHandsResult",
+    "FruitItems",
+    "FruitLibConfig",
+    "FruitLimb",
+    "FruitMenu",
+    "FruitMenuEntry",
+    "FruitPaths",
+    "FruitPose",
+    "FruitPoseShape",
+    "FruitPropMenu",
+    "FruitProps",
+    "FruitVersion",
+    "FruitWorldEvents",
+    "FruitWorldItem"
+  ],
+  "Debug/FruitInventoryAudit.cs": [
+    "FruitDiagnostics",
+    "FruitInventoryNative",
+    "FruitTrace"
+  ],
+  "Debug/FruitMenuProbe.cs": [
+    "FruitDiagnostics",
+    "FruitLibConfig",
+    "FruitScene"
+  ],
+  "Debug/FruitNavProbe.cs": [
+    "FruitBehaviour",
+    "FruitBodies",
+    "FruitBody",
+    "FruitBodyControl",
+    "FruitLibConfig",
+    "FruitMenu",
+    "FruitMoveResult",
+    "FruitNav",
+    "FruitPath",
+    "FruitPaths",
+    "FruitVersion",
+    "FruitWalkSample",
+    "FruitWalkSummary"
+  ],
+  "Debug/FruitSightProbe.cs": [
+    "FruitBehaviour",
+    "FruitBodies",
+    "FruitBody",
+    "FruitLibConfig",
+    "FruitMenu",
+    "FruitPaths",
+    "FruitPng",
+    "FruitPosture",
+    "FruitVersion"
+  ],
+  "Hud/FruitHud.cs": [
+    "FruitHudNative",
+    "FruitLibConfig",
+    "FruitLog",
+    "FruitMenu"
+  ],
+  "Hud/FruitHudNative.cs": [
+    "FruitHud",
+    "FruitLibConfig",
+    "FruitLog",
+    "FruitScene"
+  ],
+  "Hud/FruitPerfMon.cs": [
+    "FruitEjecta",
+    "FruitHud",
+    "FruitLibConfig",
+    "FruitMenu",
+    "FruitProjectiles"
+  ],
+  "Hud/FruitTextInput.cs": [
+    "FruitLog",
+    "FruitMenu"
+  ],
+  "Inventory/FruitIcons.cs": [
+    "FruitNative"
+  ],
+  "Inventory/FruitInventory.cs": [
+    "FruitAffords",
+    "FruitBody",
+    "FruitInteractionSpec",
+    "FruitInventoryGc",
+    "FruitInventoryNative",
+    "FruitLog",
+    "FruitMenuEntry",
+    "FruitSfx",
+    "FruitSpawnMode",
+    "FruitTrace",
+    "FruitUseStep",
+    "FruitWorldItem"
+  ],
+  "Inventory/FruitInventoryGc.cs": [
+    "FruitHeldItem",
+    "FruitLog",
+    "FruitTrace"
+  ],
+  "Inventory/FruitInventoryNative.cs": [
+    "FruitCategory",
+    "FruitDiagnostics",
+    "FruitIcons",
+    "FruitInventory",
+    "FruitInventoryAudit",
+    "FruitInventoryGc",
+    "FruitItem",
+    "FruitItemCategory",
+    "FruitLog",
+    "FruitMenuClone",
+    "FruitScene",
+    "FruitSfx",
+    "FruitSpawnMode",
+    "FruitTrace"
+  ],
+  "Inventory/FruitSpawnMode.cs": [
+    "FruitBodies",
+    "FruitHeldItem",
+    "FruitInterop",
+    "FruitInventoryGc",
+    "FruitInventoryNative",
+    "FruitItem",
+    "FruitLog",
+    "FruitProps",
+    "FruitPropUse"
+  ],
+  "Maps/FruitMaps.cs": [
+    "FruitLog",
+    "FruitMenuClone",
+    "FruitScene"
+  ],
+  "Menu/FruitGameMenus.cs": [],
+  "Menu/FruitMenu.cs": [
+    "FruitGameMenus",
+    "FruitLog",
+    "FruitMenuClone",
+    "FruitMenuNative",
+    "FruitPaths",
+    "FruitPreferencesBridge",
+    "FruitSetting",
+    "FruitTextInput"
+  ],
+  "Menu/FruitMenuClone.cs": [],
+  "Menu/FruitMenuNative.cs": [
+    "FruitLog",
+    "FruitMenu",
+    "FruitMenuClone",
+    "FruitMenuScreen",
+    "FruitSfx"
+  ],
+  "Menu/FruitMenuPage.cs": [
+    "FruitLog",
+    "FruitMenuClone",
+    "FruitSfx"
+  ],
+  "Menu/FruitMenuScreen.cs": [
+    "FruitField",
+    "FruitFieldKind",
+    "FruitLog",
+    "FruitMenu",
+    "FruitMenuClone",
+    "FruitMenuPage",
+    "FruitSfx"
+  ],
+  "Menu/FruitSetting.cs": [
+    "FruitLog",
+    "FruitMenu"
+  ],
+  "Menu/FruitWorldMenu.cs": [
+    "FruitLog",
+    "FruitMenuClone",
+    "FruitScene",
+    "FruitSfx"
+  ],
+  "Utilities/FruitDiagnostics.cs": [
+    "FruitLibConfig"
+  ],
+  "Utilities/FruitForces.cs": [
+    "FruitLog"
+  ],
+  "Utilities/FruitLog.cs": [
+    "FruitLibConfig"
+  ],
+  "Utilities/FruitNative.cs": [],
+  "Utilities/FruitPaths.cs": [],
+  "Utilities/FruitPng.cs": [],
+  "Utilities/FruitScene.cs": [],
+  "Utilities/FruitTrace.cs": [
+    "FruitDiagnostics",
+    "FruitPaths",
+    "FruitVersion"
+  ],
+  "Utilities/FruitUpdateCheck.cs": [
+    "FruitHud",
+    "FruitLibConfig",
+    "FruitVersion"
+  ],
+  "World/FruitBodies.cs": [
+    "FruitEvents",
+    "FruitLibConfig",
+    "FruitLog"
+  ],
+  "World/FruitBodies.Sample.cs": [
+    "FruitBehaviour",
+    "FruitBody",
+    "FruitEvents",
+    "FruitPosture",
+    "FruitWorldEvents"
+  ],
+  "World/FruitBodyControl.Courtesy.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitLog",
+    "FruitNav",
+    "FruitPose"
+  ],
+  "World/FruitBodyControl.Crowds.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitNav"
+  ],
+  "World/FruitBodyControl.cs": [
+    "FruitBehaviour",
+    "FruitBodies",
+    "FruitBody",
+    "FruitInteractionStage",
+    "FruitInteractionTrace",
+    "FruitLibConfig",
+    "FruitLog",
+    "FruitMoveResult",
+    "FruitNav",
+    "FruitPath",
+    "FruitPlace",
+    "FruitPose"
+  ],
+  "World/FruitBodyControl.Footing.cs": [
+    "FruitBodies",
+    "FruitLog",
+    "FruitNav"
+  ],
+  "World/FruitBodyControl.Gait.cs": [
+    "FruitBodies",
+    "FruitBody"
+  ],
+  "World/FruitBodyControl.Hands.cs": [
+    "FruitAffords",
+    "FruitBodies",
+    "FruitBody",
+    "FruitEvents",
+    "FruitHandling",
+    "FruitInteractionPostures",
+    "FruitInteractionSpec",
+    "FruitInteractionStage",
+    "FruitInteractionTrace",
+    "FruitItems",
+    "FruitLibConfig",
+    "FruitLog",
+    "FruitNav",
+    "FruitPathStatus",
+    "FruitPose",
+    "FruitPoseShape",
+    "FruitStrike",
+    "FruitUseStep",
+    "FruitWorldItem"
+  ],
+  "World/FruitBodyControl.Interactions.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitHandsResult",
+    "FruitInteraction",
+    "FruitInteractionPolicy",
+    "FruitInteractionPostures",
+    "FruitInteractionSpec",
+    "FruitInteractionStage",
+    "FruitInteractionTrace",
+    "FruitNav",
+    "FruitPathStatus",
+    "FruitPose",
+    "FruitPoseShape",
+    "FruitWorldItem"
+  ],
+  "World/FruitBodyControl.LocalSteps.cs": [
+    "FruitBody",
+    "FruitLog",
+    "FruitNav"
+  ],
+  "World/FruitBodyControl.Look.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitPose",
+    "FruitSight"
+  ],
+  "World/FruitBodyControl.Paths.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitLibConfig",
+    "FruitLog",
+    "FruitNav",
+    "FruitPath",
+    "FruitPathStatus"
+  ],
+  "World/FruitBodyControl.Spots.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitLog",
+    "FruitMoveResult",
+    "FruitNav",
+    "FruitPath",
+    "FruitPathStatus",
+    "FruitPlace",
+    "FruitPlaceKind",
+    "FruitPlaces"
+  ],
+  "World/FruitBodyControl.Stability.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitLibConfig",
+    "FruitPose"
+  ],
+  "World/FruitBodyControl.Steps.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitLibConfig",
+    "FruitNav"
+  ],
+  "World/FruitBodyControl.Strikes.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitEvents",
+    "FruitInteraction",
+    "FruitInteractionPolicy",
+    "FruitInteractionSpec",
+    "FruitInteractionTrace",
+    "FruitLimb",
+    "FruitStrike",
+    "FruitWounds"
+  ],
+  "World/FruitBodyControl.Telemetry.cs": [
+    "FruitBehaviour",
+    "FruitBodies",
+    "FruitBody",
+    "FruitInteractionTrace",
+    "FruitLibConfig",
+    "FruitMoveResult",
+    "FruitNav"
+  ],
+  "World/FruitBodyControl.Traffic.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitNav"
+  ],
+  "World/FruitBodyControl.Turn.cs": [
+    "FruitBody",
+    "FruitLibConfig",
+    "FruitLog",
+    "FruitNav"
+  ],
+  "World/FruitEventLog.cs": [
+    "FruitBodies",
+    "FruitEvent",
+    "FruitEvents",
+    "FruitHud",
+    "FruitLibConfig",
+    "FruitPaths",
+    "FruitVersion"
+  ],
+  "World/FruitEvents.cs": [
+    "FruitBodies",
+    "FruitEventLog"
+  ],
+  "World/FruitEyeCamera.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitSight"
+  ],
+  "World/FruitInteraction.cs": [
+    "FruitBody",
+    "FruitBodyControl",
+    "FruitPoseShape",
+    "FruitWorldItem"
+  ],
+  "World/FruitInteractionTrace.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitBodyControl",
+    "FruitLibConfig",
+    "FruitLog",
+    "FruitNav",
+    "FruitPose"
+  ],
+  "World/FruitItems.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitBodyControl",
+    "FruitInteractionSpec",
+    "FruitInventory",
+    "FruitLibConfig",
+    "FruitSight",
+    "FruitWorldEvents"
+  ],
+  "World/FruitNav.cs": [
+    "FruitBodies",
+    "FruitBodyControl",
+    "FruitEvent",
+    "FruitEvents",
+    "FruitLibConfig",
+    "FruitLog",
+    "FruitNavNative"
+  ],
+  "World/FruitNavDraw.cs": [
+    "FruitBodies",
+    "FruitBodyControl",
+    "FruitLibConfig",
+    "FruitNav",
+    "FruitNavNative",
+    "FruitPathStatus"
+  ],
+  "World/FruitNavNative.cs": [],
+  "World/FruitPlaces.cs": [
+    "FruitLog",
+    "FruitNav"
+  ],
+  "World/FruitPose.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitBodyControl",
+    "FruitLog"
+  ],
+  "World/FruitPose.Native.cs": [
+    "FruitBodies",
+    "FruitPose"
+  ],
+  "World/FruitPropMenu.cs": [
+    "FruitAffords",
+    "FruitBodies",
+    "FruitBodyControl",
+    "FruitInterop",
+    "FruitItems",
+    "FruitLog",
+    "FruitPropUse",
+    "FruitWorldItem"
+  ],
+  "World/FruitPropUse.cs": [
+    "FruitAffords",
+    "FruitBodies",
+    "FruitItems",
+    "FruitWorldItem"
+  ],
+  "World/FruitSight.cs": [
+    "FruitBodies",
+    "FruitBody",
+    "FruitItems",
+    "FruitLog",
+    "FruitMaps",
+    "FruitPosture",
+    "FruitWorldItem"
+  ],
+  "World/FruitWorldEvents.cs": [
+    "FruitBallistics",
+    "FruitBodies",
+    "FruitBody",
+    "FruitEvents",
+    "FruitInventory",
+    "FruitItems"
+  ]
+}

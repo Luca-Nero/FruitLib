@@ -160,6 +160,14 @@ namespace FruitLib
         /// something. Set <see cref="FruitAffords.Use"/> with it. When the player uses it with the
         /// interaction key (<see cref="FruitPropUse"/>), the user and target are both null.</summary>
         public Func<FruitBody, FruitWorldItem, FruitBody, Vector3?, bool> OnUse;
+        /// <summary>NPC interaction contract: working point, posture, contact and explicit completion.
+        /// Takes precedence over OnUse for bodies. OnUse remains the player/legacy synchronous callback.</summary>
+        public Func<FruitBody, FruitWorldItem, FruitBody, Vector3?, FruitInteractionSpec> Interaction;
+        /// <summary>Distance a held tool's working tip extends beyond its hand, metres. Zero for bare hands.</summary>
+        public float ToolReach;
+        /// <summary>Optional live working tip (blade, probe, tool end). When supplied, actual tip
+        /// contact is required; declared reach alone cannot manufacture contact.</summary>
+        public Func<Vector3?> WorkingPoint;
         /// <summary>Every frame while the player holds the interaction key on it, with the seconds
         /// since the press: an automatic gun's trigger. Since 5.29.0.</summary>
         public Action<FruitWorldItem, float> OnUseHeld;

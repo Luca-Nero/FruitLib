@@ -23,7 +23,7 @@ namespace FruitLib
         /// holds a walk request at a small forward move direction (<see cref="StepTurnPace"/>)
         /// while the yaw sweeps, so the body walks a tight arc on its own steps; at less than
         /// <see cref="StepTurnStop"/> degrees to go it lets go and the last of the turn is
-        /// dragged. Applies to Face, LookAround and the pivots of a walk. On by default since the
+        /// dragged. Applies to Face and the pivots of a walk. On by default since the
         /// gait probe's turn runs (2026-10-11): at a pace of 0.6 a 120-degree turn takes 1.2 s
         /// with three real steps (feet up 9 cm) and 19 cm of drift, against 3.4-4.5 s of
         /// dragging with the feet up 1-5 cm. Since 5.32.0.
@@ -41,6 +41,7 @@ namespace FruitLib
             var rt = o.Runtime;
             float err = Mathf.Abs(Mathf.DeltaAngle(rt.CreatureYRotation, desired));
             bool step = err > (o.StepTurning ? StepTurnStop : StepTurnFrom);
+            step = step && TurnStepClear(o);
             o.StepTurning = step;
             rt.UpdateTargetYRot(SteerYaw(o, desired, rate, dt));
             if (step)
@@ -56,6 +57,25 @@ namespace FruitLib
             else if (o.Requested) Release(o);
         }
 
+        private static bool TurnStepClear(Order o)
+        {
+            Vector3 centre = LiveCentre(o.Body), forward = o.Body.Facing;
+            forward.y = 0f; forward.Normalize();
+            if (!TrafficClear(o.Body, o.Target, centre, forward, 1.5f)) return false;
+            return GeometryClear(centre, forward, 0.65f);
+        }
+
+        private static bool GeometryClear(Vector3 centre, Vector3 forward, float distance)
+        {
+            forward.y = 0f; forward.Normalize();
+            Vector3 side = Vector3.Cross(Vector3.up, forward) * 0.3f;
+            // The arc moves along the current heading, never sideways toward the eventual heading.
+            // Check both shoulders against map geometry; this also works before a navmesh is ready.
+            for (int i = -1; i <= 1; i++)
+                if (Physics.Raycast(centre + side * i, forward, distance, FruitNav.Layers, QueryTriggerInteraction.Ignore)) return false;
+            return true;
+        }
+
         /// <summary>Turns a body on the spot to face a world direction (y ignored). Done when it
         /// faces it, or after <paramref name="seconds"/>. Since 5.18.0.</summary>
         public static bool Face(FruitBody body, Vector3 worldDirection, float seconds = 3f)
@@ -69,18 +89,12 @@ namespace FruitLib
             return Bind(o);
         }
 
-        /// <summary>Turns a body all the way round on the spot over <paramref name="seconds"/>, to
-        /// see what is behind it. Since 5.18.0.</summary>
+        /// <summary>Looks left, then right, sampling each pause with the feet planted.
+        /// Returns the head to centre; does not request walking or body rotation.</summary>
         public static bool LookAround(FruitBody body, float seconds = 4f)
-        {
-            if (body == null || !body.Alive) return false;
-            var o = OrderFor(body, seconds + 0.4f, false);
-            o.Dir = body.Facing;
-            StartTurn(o, body, UnityEngine.Random.value < 0.5f ? 360f : -360f, seconds);
-            return Bind(o);
-        }
+            => StartLookScan(body, seconds);
 
-        /// <summary>Whether a body is turning on the spot (Face or LookAround). Since 5.18.0.</summary>
+        /// <summary>Whether a body is turning on the spot (Face). Since 5.18.0.</summary>
         public static bool IsTurning(FruitBody body) => body != null && _orders.TryGetValue(body.Id, out var o) && o.Turn;
 
         private static void StartTurn(Order o, FruitBody body, float sweep, float seconds)
@@ -110,7 +124,13 @@ namespace FruitLib
             else
             {
                 desired = Mathf.Atan2(o.Dir.x, o.Dir.z) * Mathf.Rad2Deg;
-                if (Mathf.Abs(Mathf.DeltaAngle(facing, desired)) < 12f) return false;
+                if (Mathf.Abs(Mathf.DeltaAngle(facing, desired)) < 12f)
+                {
+                    // Settle the command at the measured heading so a following raw walk cannot
+                    // inherit the last few degrees of an unfinished standing turn.
+                    rt.UpdateTargetYRot(facing);
+                    return false;
+                }
             }
 
             // The headway check: a second in, has the body turned at all?
@@ -128,7 +148,7 @@ namespace FruitLib
                 o.TurnCheckYaw = 9999f;   // checked
             }
 
-            if (StepTurns && !o.TurnStepping && o.Walk != null)
+            if ((StepTurns || o.TurnStepping) && o.Walk != null)
             {
                 StepTurnTick(o, desired, TurnRate * 1.5f, dt, now);
                 return true;
@@ -138,19 +158,6 @@ namespace FruitLib
             float yaw = SteerYaw(o, desired, TurnRate * 1.5f, dt);
             rt.UpdateTargetYRot(yaw);
 
-            if (o.TurnStepping)
-            {
-                if (!o.Requested)
-                {
-                    if (!o.Walk.HoldsWalkRequest(Holder)) o.Walk.AddWalkRequest(Holder);
-                    o.Requested = true;
-                }
-                // Small steps round: move along the heading it is turning to.
-                Vector3 to = Quaternion.Euler(0f, desired, 0f) * Vector3.forward;
-                Vector3 local = Quaternion.Inverse(Quaternion.Euler(0f, facing, 0f)) * to;
-                local.y = 0f;
-                if (local.sqrMagnitude > 1e-4f) rt.SetTargetMoveDirection(local.normalized * 0.5f);
-            }
             return true;
         }
     }

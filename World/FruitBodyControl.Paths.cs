@@ -25,7 +25,7 @@ namespace FruitLib
         // ── Going to a point, and following paths ──
         //
         // Goto orders (GoTo, WalkTo, Approach, Follow, Attack, WalkAway) walk a FruitNav path once
-        // a navmesh is loaded, and a straight line before that or when the body is off the mesh.
+        // a navmesh is loaded. Failed queries wait briefly for a rebuild, then report NoRoute.
         //
         // Steering is pure pursuit: the body heads for a point a little way further along the path
         // than where it is, so it cuts no corners into walls and drifts back onto the line. Where
@@ -126,7 +126,7 @@ namespace FruitLib
             return Bind(o);
         }
 
-        /// <summary>The path a body is walking, or null (none, or walking a straight line). Since 5.19.0.</summary>
+        /// <summary>The path a body is walking, or null (none, or waiting for a route). Since 5.19.0.</summary>
         public static FruitPath PathOf(FruitBody body)
             => body != null && _orders.TryGetValue(body.Id, out var o) && o.Path != null && o.Path.Found ? o.Path : null;
 
@@ -136,6 +136,7 @@ namespace FruitLib
         {
             goal = default;
             if (body == null || !_orders.TryGetValue(body.Id, out var o)) return false;
+            if (o.Courtesy) { o = o.Suspended; if (o == null) return false; }
             if (o.Target != null) { goal = o.Slotted ? o.Slot : LiveCentre(o.Target); return true; }
             if (o.HasDest) { goal = o.Dest; return true; }
             return false;
@@ -264,28 +265,33 @@ namespace FruitLib
             Vector3 me = smooth ? SteerCentre(o) : LiveCentre(b);
             o.Tight = false;
 
-            if (now < o.RecoverUntil) { o.TrafficBlocked = false; o.Dir = o.RecoverDir; o.Pivot = false; return true; }
+            if (!smooth && now < o.RecoverUntil)
+            { o.TrafficBlocked = false; o.Dir = o.RecoverDir; o.Pivot = false; return true; }
 
-            if (!FruitNav.Ready) return Straight(o, goal, me);   // until there is a navmesh
+            if (!FruitNav.Ready) return WaitForRoute(o, now);
 
             o.Path ??= new FruitPath();
             var p = o.Path;
             bool stale = p.Version != FruitNav.Version && p.Found;
             bool moved = FruitNav.Flat(goal - o.PathGoal) > (o.Target != null ? 1f : 0.5f) && now - o.PathAt > 0.5f;
             bool due = now - o.PathAt > (p.Found ? 6f : 1.5f);
-            if (!p.Found && now - o.PathAt < 1.5f) return Straight(o, goal, me);   // no route just now: ask again soon
+            if (!p.Found && now - o.PathAt < 1.5f) return WaitForRoute(o, now);
             // A path that is only out of date waits its turn: shaping costs a few ms.
             bool urgent = !p.Found || moved;
-            if (urgent || ((stale || due) && _replans < ReplansPerFrame))
+            if ((urgent || stale || due) && _replans < ReplansPerFrame)
             {
-                if (smooth) _replans++;
+                _replans++;
                 FruitNav.FindPath(LiveCentre(b), goal, p, o.Target != null ? 2f : 3f, true, smooth);
                 o.PathAt = now;
                 o.PathGoal = goal;
                 o.Seg = 1;
+                o.ProgressLeft = float.MaxValue;
+                o.ProgressAt = now + ProgressWindow;
                 if (o.Stats != null && p.Shaped) o.Stats.ShapeMs = Math.Max(o.Stats.ShapeMs, FruitNav.LastShapeMs);
-                if (!p.Found) return Straight(o, goal, me);
+                if (!p.Found) return WaitForRoute(o, now);
             }
+            if (!p.Found) return WaitForRoute(o, now);
+            o.NavWaitAt = -1f;
 
             var c = p.Corners;
             int last = c.Count - 1;
@@ -318,6 +324,9 @@ namespace FruitLib
             Vector3 dir = aim - me; dir.y = 0f;
             dir = dir.sqrMagnitude < 1e-4f ? tangent : dir.normalized;
             if (wide) dir = BackOntoMesh(me, dir);
+            // Courtesy clearance is relative to the route's lane, before a nearby body
+            // bends the avoidance heading. Otherwise the pocket search tilts into its walls.
+            o.RoomForward = dir;
             if (smooth)
             {
                 // In a door or a passage nobody can step round anyone: one of two meeting waits.
@@ -343,6 +352,9 @@ namespace FruitLib
                 }
             }
             else if (!o.Tight) dir = Separate(b, me, dir);
+            if (smooth && o.PassStage == 1 && now >= o.LocalRetryAt &&
+                Vector3.Angle(o.Body.Facing, dir) > MaxSideStep &&
+                BeginLocalStep(o, o.PassBeside, now)) return true;
             if (smooth)
             {
                 var skip = o.Target;
@@ -363,19 +375,29 @@ namespace FruitLib
             if (o.TrafficBlocked) o.Pivot = false;
 
             // Progress: the way left has to shrink. Down, pivoting or waiting bodies get time.
-            if (!upright || o.Paused || o.Pivot || now < o.YieldUntil ||
+            if (!upright || o.Paused || o.Pivot || (now < o.YieldUntil && !o.TrafficBlocked) ||
                 (o.TrafficBlocked && now - o.TrafficSince < 3f)) o.ProgressAt = now + ProgressWindow;
             else if (now >= o.ProgressAt)
             {
                 if (o.ProgressLeft - left < ProgressNeeded)
                 {
-                    if (CloseEnough(o, LiveCentre(b))) return Arrive(o);   // FruitBodyControl.Spots.cs
+                    if (CloseEnough(o, LiveCentre(b)) && ArrivalClear(LiveCentre(b), goal)) return Arrive(o);
                     if (++o.Retries > MaxRetries) { o.Result = FruitMoveResult.Blocked; return false; }
+                    // A person blocking the lane needs room or a bounded wait. Alternating
+                    // recovery turns here causes the visible endless spinning at a doorway.
+                    if (o.TrafficBlocked)
+                    {
+                        o.ProgressLeft = left;
+                        o.ProgressAt = now + ProgressWindow;
+                        return true;
+                    }
                     // Back off and to one side (alternating), then find the path again.
                     float side = (o.Retries & 1) == 1 ? 40f : -40f;
                     o.RecoverDir = Quaternion.AngleAxis(180f + side, Vector3.up) * dir;
-                    o.RecoverUntil = now + RecoverSeconds;
-                    o.TrafficBlocked = false;
+                    // A backoff is a real backward/diagonal clip, with the pelvis facing held.
+                    bool backing = !smooth || BeginLocalStep(o, LiveCentre(b) + o.RecoverDir * 0.5f, now);
+                    o.RecoverUntil = smooth ? 0f : now + RecoverSeconds;
+                    o.TrafficBlocked = !backing;
                     o.PathAt = -100f;
                     o.Pivot = false;
                     if (o.Stats != null) o.Stats.Retries++;
@@ -544,15 +566,32 @@ namespace FruitLib
             return beside ?? ", nothing in front";
         }
 
-        /// <summary>Heads straight for the goal (off the navmesh, or none yet).</summary>
-        private static bool Straight(Order o, Vector3 goal, Vector3 me)
+        // A failed query is not permission to walk through its obstacle. Allow a short rebuild
+        // window, then report a concrete failure to the caller instead of exhausting its timeout.
+        private static bool WaitForRoute(Order o, float now)
         {
-            Vector3 to = goal - me; to.y = 0f;
-            if (to.sqrMagnitude > 1e-4f) o.Dir = to.normalized;
-            if (Smooth(o)) o.Dir = Traffic(o, o.Target, me, o.Dir, Time.time);
-            else o.TrafficBlocked = false;
+            if (o.NavWaitAt < 0f) o.NavWaitAt = now;
+            o.TrafficBlocked = true;
             o.Pivot = false;
-            return true;
+            Release(o);
+            if (now - o.NavWaitAt < 6f) return true;
+            o.Result = FruitMoveResult.NoRoute;
+            return false;
+        }
+
+        private static bool DestinationReached(Order o)
+        {
+            Vector3 me = LiveCentre(o.Body), to = o.Dest - me;
+            float distance = FruitNav.Flat(to);
+            // Destinations may be floor points or pelvis points, hence the standing-height allowance.
+            // A different storey or a wall between two nearby points cannot count as arrival.
+            return distance <= o.StopDistance && ArrivalClear(me, o.Dest);
+        }
+
+        private static bool ArrivalClear(Vector3 from, Vector3 goal)
+        {
+            Vector3 to = goal - from;
+            return Math.Abs(to.y) <= 1.6f && GeometryClear(from, to, FruitNav.Flat(to));
         }
 
         /// <summary>Seconds a body waits to let another through a tight spot before looking again. Since 5.22.0.</summary>
@@ -645,6 +684,13 @@ namespace FruitLib
 
         private static void Ended(FruitBody b, FruitMoveResult result)
         {
+            var interaction = InteractionOf(b);
+            if (interaction != null)
+            {
+                interaction.Detail = "movement-result=" + result;
+                TraceInteraction(interaction);
+            }
+            if (_interactionCommand > 0 || interaction != null) return;
             if (MoveEnded == null) return;
             try { MoveEnded(b, result); }
             catch (Exception e) { FruitBodies.ReportOnce("MoveEnded handler", e); }
