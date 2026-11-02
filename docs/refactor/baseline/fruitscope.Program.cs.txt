@@ -1,0 +1,255 @@
+// Semantic reachability over FruitLib: which members each mod needs, directly and transitively.
+// Usage: fruitscope <itemsDir> <outDir>   (itemsDir holds <name>.json from msbuild -getItem:ReferencePath,Compile; FruitLib.json is the library)
+using System.Text.Json;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+
+var itemsDir = args[0]; var outDir = args[1];
+Directory.CreateDirectory(outDir);
+
+(List<string> refs, List<string> src) Items(string name)
+{
+    using var d = JsonDocument.Parse(File.ReadAllText(Path.Combine(itemsDir, name + ".json")));
+    var it = d.RootElement.GetProperty("Items");
+    List<string> L(string k) => it.TryGetProperty(k, out var a) ? a.EnumerateArray().Select(e => e.GetProperty("FullPath").GetString()).ToList() : new();
+    return (L("ReferencePath"), L("Compile").Where(f => f.EndsWith(".cs")).ToList());
+}
+CSharpCompilation Compile(string asm, List<string> src, IEnumerable<MetadataReference> refs)
+{
+    var po = new CSharpParseOptions(LanguageVersion.Latest);
+    var trees = src.Select(f => CSharpSyntaxTree.ParseText(File.ReadAllText(f), po, f));
+    return CSharpCompilation.Create(asm, trees, refs, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, nullableContextOptions: NullableContextOptions.Disable));
+}
+
+var (libRefs, libSrc) = Items("FruitLib");
+var lib = Compile("FruitLib", libSrc, libRefs.Select(r => (MetadataReference)MetadataReference.CreateFromFile(r)));
+var libErrs = lib.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
+Console.WriteLine($"FruitLib: {libSrc.Count} files, {libErrs.Count} errors");
+foreach (var d in libErrs.Take(5)) Console.WriteLine("  " + d);
+var libRef = lib.ToMetadataReference();
+
+string Id(ISymbol s) => s.OriginalDefinition.GetDocumentationCommentId() ?? s.OriginalDefinition.ToDisplayString();
+ISymbol Norm(ISymbol s)
+{
+    s = s.OriginalDefinition;
+    if (s is IMethodSymbol m)
+    {
+        if (m.MethodKind is MethodKind.PropertyGet or MethodKind.PropertySet && m.AssociatedSymbol != null) return m.AssociatedSymbol.OriginalDefinition;
+        if (m.MethodKind is MethodKind.EventAdd or MethodKind.EventRemove or MethodKind.EventRaise && m.AssociatedSymbol != null) return m.AssociatedSymbol.OriginalDefinition;
+        if (m.ReducedFrom != null) return m.ReducedFrom.OriginalDefinition;
+    }
+    return s;
+}
+bool InLib(ISymbol s) => s?.ContainingAssembly?.Name == "FruitLib" || (s is INamedTypeSymbol t && t.ContainingAssembly?.Name == "FruitLib");
+bool Interesting(ISymbol s) => s is IMethodSymbol or IPropertySymbol or IFieldSymbol or IEventSymbol or INamedTypeSymbol;
+
+IEnumerable<ISymbol> Referenced(SemanticModel sm, SyntaxNode node)
+{
+    foreach (var n in node.DescendantNodesAndSelf())
+    {
+        if (n is not (IdentifierNameSyntax or GenericNameSyntax or ObjectCreationExpressionSyntax or ImplicitObjectCreationExpressionSyntax or MemberBindingExpressionSyntax or ElementAccessExpressionSyntax or AssignmentExpressionSyntax)) continue;
+        var si = sm.GetSymbolInfo(n);
+        var s = si.Symbol ?? si.CandidateSymbols.FirstOrDefault();
+        if (s == null || !Interesting(s)) continue;
+        s = Norm(s);
+        if (!InLib(s)) continue;
+        yield return s;
+        if (s is IMethodSymbol ms && ms.MethodKind == MethodKind.Constructor) yield return ms.ContainingType;
+    }
+}
+
+// ── The library's member graph ──
+var nodes = new Dictionary<string, Node>();
+Node NodeFor(ISymbol s)
+{
+    var id = Id(s);
+    if (!nodes.TryGetValue(id, out var n)) nodes[id] = n = new Node { Id = id, Name = s.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat), Symbol = s };
+    return n;
+}
+var hookMembers = new HashSet<string>();
+foreach (var tree in lib.SyntaxTrees)
+{
+    var sm = lib.GetSemanticModel(tree);
+    var rel = tree.FilePath.Replace('\\', '/');
+    rel = rel.Substring(rel.IndexOf("5_FruitLib/") + 11);
+    void Add(ISymbol sym, SyntaxNode decl)
+    {
+        if (sym == null) return;
+        var n = NodeFor(Norm(sym));
+        var span = decl.GetLocation().GetLineSpan();
+        n.File = rel; n.Line = span.StartLinePosition.Line + 1;
+        n.Lines += span.EndLinePosition.Line - span.StartLinePosition.Line + 1;
+        foreach (var r in Referenced(sm, decl))
+        {
+            var t = NodeFor(r);
+            if (t != n) n.Out.Add(t.Id);
+        }
+        if (n.File != null && Norm(sym).ContainingType != null) n.Out.Add(NodeFor(Norm(sym).ContainingType).Id);
+        if (sym is IMethodSymbol mm && mm.IsOverride) n.IsOverride = true;
+        if (sym is IPropertySymbol pp && pp.IsOverride) n.IsOverride = true;
+    }
+    foreach (var d in tree.GetRoot().DescendantNodes())
+    {
+        switch (d)
+        {
+            case MethodDeclarationSyntax x: Add(sm.GetDeclaredSymbol(x), x); break;
+            case ConstructorDeclarationSyntax x: Add(sm.GetDeclaredSymbol(x), x); break;
+            case PropertyDeclarationSyntax x: Add(sm.GetDeclaredSymbol(x), x); break;
+            case IndexerDeclarationSyntax x: Add(sm.GetDeclaredSymbol(x), x); break;
+            case OperatorDeclarationSyntax x: Add(sm.GetDeclaredSymbol(x), x); break;
+            case ConversionOperatorDeclarationSyntax x: Add(sm.GetDeclaredSymbol(x), x); break;
+            case EventDeclarationSyntax x: Add(sm.GetDeclaredSymbol(x), x); break;
+            case EventFieldDeclarationSyntax x: foreach (var v in x.Declaration.Variables) Add(sm.GetDeclaredSymbol(v), x); break;
+            case FieldDeclarationSyntax x: foreach (var v in x.Declaration.Variables) Add(sm.GetDeclaredSymbol(v), x); break;
+            case EnumMemberDeclarationSyntax x: Add(sm.GetDeclaredSymbol(x), x); break;
+            case BaseTypeDeclarationSyntax x:
+                var ts = sm.GetDeclaredSymbol(x);
+                var tn = NodeFor(ts); tn.File ??= rel; tn.Line = tn.Line == 0 ? x.GetLocation().GetLineSpan().StartLinePosition.Line + 1 : tn.Line;
+                if (x.BaseList != null) foreach (var r in Referenced(sm, x.BaseList)) tn.Out.Add(NodeFor(r).Id);
+                if (x.AttributeLists.SelectMany(a => a.Attributes).Any(a => a.Name.ToString().StartsWith("HarmonyPatch"))) tn.IsPatch = true;
+                break;
+            case DelegateDeclarationSyntax x: { var s = sm.GetDeclaredSymbol(x); var n = NodeFor(s); n.File = rel; n.Line = x.GetLocation().GetLineSpan().StartLinePosition.Line + 1; break; }
+        }
+    }
+}
+// A used type brings its overrides (virtual dispatch from the game) and static constructor.
+var byType = nodes.Values.Where(n => n.Symbol.ContainingType != null).GroupBy(n => Id(n.Symbol.ContainingType)).ToDictionary(g => g.Key, g => g.ToList());
+
+// ── Lifecycle: what FruitLibMod and Harmony run on their own ──
+var lifecycleRoots = new HashSet<string>();
+foreach (var n in nodes.Values)
+{
+    var ct = n.Symbol.ContainingType;
+    if (ct == null) continue;
+    if (ct.Name == "FruitLibMod") lifecycleRoots.Add(n.Id);
+    for (var t = ct; t != null; t = t.ContainingType)
+        if (nodes.TryGetValue(Id(t), out var tn) && tn.IsPatch) lifecycleRoots.Add(n.Id);
+}
+bool IsTool(Node n) => n.File != null && (n.File.StartsWith("Debug/") || n.File.EndsWith("FruitNavDraw.cs") || n.File.EndsWith("FruitEventLog.cs"));
+HashSet<string> Closure(IEnumerable<string> roots, Dictionary<string, string> parent = null)
+{
+    var seen = new HashSet<string>(); var q = new Queue<string>();
+    foreach (var r in roots) if (nodes.ContainsKey(r) && seen.Add(r)) q.Enqueue(r);
+    while (q.Count > 0)
+    {
+        var c = q.Dequeue(); var n = nodes[c];
+        var next = new List<string>(n.Out);
+        if (n.Symbol is INamedTypeSymbol && byType.TryGetValue(c, out var ms))
+            next.AddRange(ms.Where(m => m.IsOverride || (m.Symbol is IMethodSymbol s && s.MethodKind == MethodKind.StaticConstructor)).Select(m => m.Id));
+        foreach (var t in next)
+            if (nodes.ContainsKey(t) && !IsTool(nodes[t]) && seen.Add(t)) { q.Enqueue(t); if (parent != null) parent.TryAdd(t, c); }
+    }
+    return seen;
+}
+var lifecycle = Closure(lifecycleRoots);
+
+// State-driven reach: a lifecycle method that touches a field the closure touches runs because of it.
+HashSet<string> WithState(HashSet<string> start, Dictionary<string, string> parent, List<string> why)
+{
+    var cur = new HashSet<string>(start);
+    while (true)
+    {
+        var fields = cur.Where(i => nodes[i].Symbol is IFieldSymbol f && !f.IsConst && f.IsStatic && f.DeclaredAccessibility != Accessibility.Public && f.ContainingType.IsStatic && !f.ContainingType.IsEnumType()).ToHashSet();
+        var added = new List<string>();
+        foreach (var i in lifecycle)
+        {
+            if (cur.Contains(i) || IsTool(nodes[i]) || nodes[i].Symbol is not IMethodSymbol m || m.ContainingType?.Name == "FruitLibMod") continue;
+            if (m.Name is "ResetForScene" or "Clear" || m.Name.Contains("Reset")) continue; // resets touch everything and start nothing
+            var via = nodes[i].Out.FirstOrDefault(fields.Contains);
+            if (via != null) { added.Add(i); parent.TryAdd(i, via); why.Add($"{nodes[i].Name} <= state {nodes[via].Name}"); }
+        }
+        if (added.Count == 0) return cur;
+        var more = Closure(added, parent);
+        cur.UnionWith(more);
+    }
+}
+
+// ── Mods ──
+var modNames = Directory.GetFiles(itemsDir, "*.json").Select(Path.GetFileNameWithoutExtension).Where(n => n != "FruitLib").OrderBy(n => n).ToList();
+var modUse = new Dictionary<string, HashSet<string>>();
+foreach (var mod in modNames)
+{
+    var (refs, src) = Items(mod);
+    src = src.Where(f => !f.Replace('\\', '/').Contains("/Tests/")).ToList();
+    var mr = refs.Where(r => !r.EndsWith("FruitLib.dll", StringComparison.OrdinalIgnoreCase)).Select(r => (MetadataReference)MetadataReference.CreateFromFile(r)).Append(libRef);
+    var c = Compile(mod, src, mr);
+    var errs = c.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
+    var used = new HashSet<string>();
+    foreach (var t in c.SyntaxTrees)
+    {
+        var sm = c.GetSemanticModel(t);
+        foreach (var s in Referenced(sm, t.GetRoot()))
+            if (nodes.ContainsKey(Id(s))) used.Add(Id(s));
+    }
+    modUse[mod] = used;
+    Console.WriteLine($"{mod}: {src.Count} files, {errs.Count} errors, {used.Count} FruitLib symbols");
+    foreach (var d in errs.Take(3)) Console.WriteLine("  " + d);
+}
+
+var neuro = "NeuroFrukt";
+var others = modNames.Where(m => m != neuro).ToList();
+var parent = new Dictionary<string, string>();
+var why = new List<string>();
+var directOthers = others.SelectMany(m => modUse[m]).ToHashSet();
+var callOnly = Closure(directOthers, parent);
+var withState = WithState(callOnly, parent, why);
+var labParent = new Dictionary<string, string>(); var labWhy = new List<string>();
+var labOnly = WithState(Closure(modUse.GetValueOrDefault("FruitLab", new()), labParent), labParent, labWhy);
+var neuroAll = Closure(modUse.GetValueOrDefault(neuro, new()));
+// What lifecycle needs with no mod at all: bare-install reach, keeping state-driven work out by design.
+string Cat(string id)
+{
+    if (withState.Contains(id)) return callOnly.Contains(id) ? "others-call" : "others-state";
+    if (neuroAll.Contains(id)) return lifecycle.Contains(id) ? "neuro+tick" : "neuro";
+    return lifecycle.Contains(id) ? "lifecycle" : "dead";
+}
+string Chain(string id, Dictionary<string, string> p)
+{
+    var path = new List<string>(); var c = id; var vis = new HashSet<string>();
+    for (int i = 0; i < 14 && c != null && vis.Add(c); i++) { path.Add(nodes[c].Name); p.TryGetValue(c, out var nx); c = nx; }
+    return string.Join(" <- ", path);
+}
+var rows = nodes.Values.Where(n => n.File != null).OrderBy(n => n.File).ThenBy(n => n.Line).Select(n => new
+{
+    id = n.Id, name = n.Name, file = n.File, line = n.Line, lines = n.Lines, cat = Cat(n.Id),
+    pub = n.Symbol.DeclaredAccessibility == Accessibility.Public,
+    mods = modNames.Where(m => modUse[m].Contains(n.Id)).ToList(),
+}).ToList();
+File.WriteAllText(Path.Combine(outDir, "members.json"), JsonSerializer.Serialize(rows, new JsonSerializerOptions { WriteIndented = false }));
+File.WriteAllText(Path.Combine(outDir, "state_links.txt"), string.Join("\n", why));
+File.WriteAllText(Path.Combine(outDir, "lab_state_links.txt"), string.Join("\n", labWhy));
+
+Console.WriteLine("\n== by file: lines per category ==");
+var cats = new[] { "others-call", "others-state", "neuro", "neuro+tick", "lifecycle", "dead" };
+Console.WriteLine("file\t" + string.Join("\t", cats));
+foreach (var g in rows.Where(r => r.lines > 0).GroupBy(r => r.file).OrderBy(g => g.Key))
+    Console.WriteLine(g.Key + "\t" + string.Join("\t", cats.Select(c => g.Where(r => r.cat == c).Sum(r => r.lines))));
+
+var callParent = new Dictionary<string, string>(); var labCall = Closure(modUse["FruitLab"], callParent);
+Console.WriteLine("== FruitLab, plain calls only ==");
+foreach (var f in new[] { "GoTo", "StepTo", "Face", "PickUp", "Drop", "Hold", "FindPath", "Require", "Interact", "TryInteractionStance", "PlaceHand", "SurfacePoint", "Strike", "Stop" })
+    foreach (var r in rows.Where(r => r.name.Split('(')[0].Split('.').Last() == f && r.file.StartsWith("World")))
+        Console.WriteLine($"{r.name}: {(labCall.Contains(r.id) ? Chain(r.id, callParent) : "not reached")}");
+Console.WriteLine("== Others, plain calls: World lines ==");
+var restCall = Closure(modNames.Where(m => m != neuro && m != "FruitLab").SelectMany(m => modUse[m]));
+foreach (var g in rows.Where(r => r.lines > 0 && r.file.StartsWith("World")).GroupBy(r => r.file).OrderBy(g => g.Key))
+    Console.WriteLine($"{g.Key}	rest {g.Where(r => restCall.Contains(r.id)).Sum(r => r.lines)}	lab+state {g.Where(r => labOnly.Contains(r.id)).Sum(r => r.lines)}	labcall {g.Where(r => labCall.Contains(r.id)).Sum(r => r.lines)}	total {g.Sum(r => r.lines)}");
+var probes = new[] { "GoTo", "Walk", "WalkTo", "Face", "StepTo", "PickUp", "Interact", "Hold", "FindPath", "Look", "CanSee", "Capture", "Open", "LateTick", "TickHands", "TickInteractions", "TickWalkSupport", "FixedTick", "OwnBalance", "Lift" };
+Console.WriteLine("\n== why key members stay ==");
+foreach (var r in rows.Where(r => probes.Contains(r.name.Split('(')[0].Split('.').Last()) && (r.file.StartsWith("World") || r.file.StartsWith("Hud"))))
+    Console.WriteLine($"{r.name} [{r.cat}] {r.file}:{r.line}\n    {(withState.Contains(r.id) ? Chain(r.id, parent) : "-")}");
+
+Console.WriteLine("\n== FruitLab alone ==");
+foreach (var f in new[] { "GoTo", "PickUp", "Hold", "FindPath", "Look", "Lift", "OwnBalance", "TickWalkSupport", "Interact" })
+    foreach (var r in rows.Where(r => r.name.Split('(')[0].Split('.').Last() == f && r.file.StartsWith("World")))
+        Console.WriteLine($"{r.name}: {(labOnly.Contains(r.id) ? "reached: " + Chain(r.id, labParent) : "not reached")}");
+
+Console.WriteLine("\n== direct symbols by mod, per FruitLib class ==");
+foreach (var m in modNames)
+{
+    var g = modUse[m].Select(i => nodes[i]).Where(n => n.Symbol is not INamedTypeSymbol).GroupBy(n => n.Symbol.ContainingType?.Name ?? "?").OrderBy(x => x.Key).Select(x => $"{x.Key}:{x.Count()}");
+    Console.WriteLine($"{m}: {string.Join(" ", g)}");
+}
+class Node { public string Id, Name, File; public int Line, Lines; public ISymbol Symbol; public HashSet<string> Out = new(); public bool IsOverride, IsPatch; }
+static class X { public static bool IsEnumType(this INamedTypeSymbol t) => t.TypeKind == TypeKind.Enum; }

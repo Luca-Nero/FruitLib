@@ -1,0 +1,255 @@
+FruitLib: 86 files, 0 errors
+BombsAway: 70 files, 0 errors, 268 FruitLib symbols
+FruitCity: 13 files, 0 errors, 79 FruitLib symbols
+FruitLab: 47 files, 0 errors, 159 FruitLib symbols
+GunsGunsGuns: 15 files, 0 errors, 98 FruitLib symbols
+NeuroFrukt: 31 files, 0 errors, 326 FruitLib symbols
+Singularity: 6 files, 0 errors, 49 FruitLib symbols
+
+== by file: lines per category ==
+file	others-call	others-state	neuro	neuro+tick	lifecycle	dead
+Ballistics/BallisticsSpecs.cs	143	33	0	0	0	40
+Ballistics/FruitBallistics.cs	234	57	0	0	42	12
+Ballistics/FruitBlast.cs	33	0	0	0	0	0
+Ballistics/FruitBlastInjury.cs	157	67	0	0	10	1
+Ballistics/FruitEjecta.cs	339	23	0	0	9	0
+Ballistics/FruitExplosions.cs	1122	0	0	0	0	0
+Ballistics/FruitProjectiles.cs	45	325	0	0	4	0
+Ballistics/FruitSurfaces.cs	165	0	0	0	1	17
+Ballistics/FruitWounds.cs	309	14	0	0	6	0
+Content/AssetBundleNative.cs	41	0	0	0	0	43
+Content/FruitBundles.cs	93	0	0	0	0	82
+Content/FruitDecals.cs	0	0	0	0	0	96
+Content/FruitMeshLoader.cs	276	0	0	0	0	25
+Content/FruitSfx.cs	77	0	0	0	5	12
+Core/FruitInterop.cs	22	0	0	0	0	0
+Core/FruitLibConfig.cs	214	53	0	0	0	18
+Core/FruitLibMod.cs	0	0	0	0	153	0
+Core/FruitVersion.cs	29	0	0	0	0	14
+Debug/FruitBallisticsProbe.cs	0	0	0	0	0	605
+Debug/FruitGaitProbe.cs	0	0	0	0	0	489
+Debug/FruitHandsProbe.cs	0	0	0	0	0	545
+Debug/FruitInventoryAudit.cs	0	0	0	0	39	90
+Debug/FruitNavProbe.cs	0	0	0	0	0	674
+Debug/FruitSightProbe.cs	0	0	0	0	0	539
+Hud/FruitHud.cs	52	203	1	0	5	26
+Hud/FruitHudNative.cs	8	223	0	0	0	0
+Hud/FruitPerfMon.cs	73	163	0	0	0	20
+Hud/FruitTextInput.cs	3	191	20	0	42	0
+Inventory/FruitIcons.cs	142	0	0	0	0	0
+Inventory/FruitInventory.cs	215	50	0	3	63	48
+Inventory/FruitInventoryGc.cs	47	61	0	0	0	0
+Inventory/FruitInventoryNative.cs	381	180	0	0	118	18
+Inventory/FruitSpawnMode.cs	32	327	0	0	17	85
+Maps/FruitMaps.cs	52	264	0	0	6	1
+Menu/FruitGameMenus.cs	4	6	0	0	16	0
+Menu/FruitMenu.cs	61	904	0	0	2	8
+Menu/FruitMenuClone.cs	81	14	0	0	0	0
+Menu/FruitMenuNative.cs	0	108	0	0	58	0
+Menu/FruitMenuPage.cs	0	393	0	0	0	1
+Menu/FruitMenuScreen.cs	0	361	0	0	11	0
+Menu/FruitSetting.cs	52	127	0	0	0	0
+Menu/FruitWorldMenu.cs	248	0	0	0	65	13
+Utilities/FruitDiagnostics.cs	11	0	0	0	0	0
+Utilities/FruitForces.cs	26	59	0	0	0	11
+Utilities/FruitLog.cs	5	0	0	0	0	0
+Utilities/FruitNative.cs	24	0	0	0	0	15
+Utilities/FruitPaths.cs	78	0	0	0	0	0
+Utilities/FruitPng.cs	0	0	59	0	0	0
+Utilities/FruitScene.cs	13	0	0	0	0	9
+Utilities/FruitTrace.cs	25	0	0	0	0	0
+Utilities/FruitUpdateCheck.cs	47	10	0	0	2	0
+World/FruitBodies.cs	120	198	27	0	11	72
+World/FruitBodies.Sample.cs	14	419	0	0	6	0
+World/FruitBodyControl.Courtesy.cs	8	140	0	0	1	0
+World/FruitBodyControl.Crowds.cs	0	114	0	0	0	0
+World/FruitBodyControl.cs	86	411	30	0	12	15
+World/FruitBodyControl.Footing.cs	22	62	0	0	0	0
+World/FruitBodyControl.Gait.cs	0	42	0	0	0	2
+World/FruitBodyControl.Hands.cs	122	915	127	0	11	4
+World/FruitBodyControl.Interactions.cs	128	232	6	0	6	0
+World/FruitBodyControl.LocalSteps.cs	0	106	0	0	0	0
+World/FruitBodyControl.Look.cs	15	58	20	0	6	0
+World/FruitBodyControl.Paths.cs	15	518	0	0	0	2
+World/FruitBodyControl.Spots.cs	0	322	0	0	0	5
+World/FruitBodyControl.Stability.cs	42	121	0	0	6	0
+World/FruitBodyControl.Steps.cs	0	139	0	0	0	0
+World/FruitBodyControl.Strikes.cs	46	337	30	0	5	11
+World/FruitBodyControl.Telemetry.cs	65	117	0	0	0	0
+World/FruitBodyControl.Traffic.cs	0	78	0	0	0	0
+World/FruitBodyControl.Turn.cs	0	115	2	0	0	0
+World/FruitEventLog.cs	0	0	0	0	0	105
+World/FruitEvents.cs	59	61	11	0	4	18
+World/FruitEyeCamera.cs	0	0	109	0	0	0
+World/FruitInteraction.cs	61	11	0	0	0	0
+World/FruitInteractionTrace.cs	21	0	0	0	0	0
+World/FruitItems.cs	182	80	53	0	9	39
+World/FruitNav.cs	2	492	69	0	14	2
+World/FruitNavDraw.cs	0	0	0	0	0	178
+World/FruitNavNative.cs	0	166	0	0	14	55
+World/FruitPlaces.cs	164	1	176	0	0	1
+World/FruitPose.cs	108	397	0	0	10	36
+World/FruitPose.Native.cs	0	0	0	0	51	0
+World/FruitPropMenu.cs	337	0	0	0	8	16
+World/FruitPropUse.cs	96	0	0	0	0	5
+World/FruitSight.cs	113	21	363	5	9	0
+World/FruitWorldEvents.cs	39	0	0	0	140	0
+== FruitLab, plain calls only ==
+FruitBodyControl.GoTo(FruitBody, FruitBody, float, float, bool, bool): not reached
+FruitBodyControl.GoTo(FruitBody, Vector3, float, float, bool): not reached
+FruitBodyControl.GoTo(FruitBody, Vector3, float, float, bool, bool, bool, Vector3?): not reached
+FruitBodyControl.StepTo(FruitBody, Vector3, float): not reached
+FruitBodyControl.Face(FruitBody, Vector3, float): not reached
+FruitBodyControl.PickUp(FruitBody, FruitWorldItem, bool, string, float): not reached
+FruitBodyControl.Drop(FruitBody, string): FruitBodyControl.Drop(FruitBody, string)
+FruitNavDraw.Drop(Vector3): not reached
+FruitPose.Drop(FruitPose.Held, string): not reached
+FruitBodyControl.HandStage.Hold: FruitBodyControl.HandStage.Hold <- FruitBodyControl.Holding(FruitBody)
+FruitBodyControl.Hold(FruitBodyControl.Order): not reached
+FruitBodyControl.Stage.Hold: not reached
+FruitPose.Hold(FruitBody, FruitPoseShape, float, float, float, string): not reached
+FruitNav.FindPath(Vector3, Vector3, FruitPath, float): not reached
+FruitNav.FindPath(Vector3, Vector3, FruitPath, float, bool): not reached
+FruitNav.FindPath(Vector3, Vector3, FruitPath, float, bool, bool): not reached
+FruitBodies.Require(string): FruitBodies.Require(string)
+FruitItems.Require(string): FruitItems.Require(string) <- FruitProps.Adopt(GameObject, string, float, FruitAffords, string, string, IEnumerable<FruitMenuEntry>, Func<FruitWorldItem, IEnumerable<FruitMenuEntry>>) <- FruitProps.Spawn(GameObject, Vector3, Quaternion, string, float, FruitAffords, string, string, Func<FruitWorldItem, IEnumerable<FruitMenuEntry>>)
+FruitNav.Require(string): not reached
+FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>): FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>)
+FruitBodyControl.TryInteractionStance(FruitBody, FruitInteractionSpec, out Vector3, out FruitPoseShape): not reached
+FruitBodyControl.PlaceHand(FruitBody, bool, Vector3, float): not reached
+FruitBodyControl.SurfacePoint(FruitBody, int, Vector3): FruitBodyControl.SurfacePoint(FruitBody, int, Vector3)
+FruitBodyControl.Strike(FruitBody, FruitBody, FruitStrike, string, float): not reached
+FruitBodyControl.Stop(FruitBody): FruitBodyControl.Stop(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>)
+== Others, plain calls: World lines ==
+World/FruitBodies.cs	rest 77	lab+state 318	labcall 73	total 428
+World/FruitBodies.Sample.cs	rest 1	lab+state 433	labcall 14	total 439
+World/FruitBodyControl.Courtesy.cs	rest 8	lab+state 148	labcall 8	total 149
+World/FruitBodyControl.Crowds.cs	rest 0	lab+state 114	labcall 0	total 114
+World/FruitBodyControl.cs	rest 85	lab+state 497	labcall 86	total 554
+World/FruitBodyControl.Footing.cs	rest 22	lab+state 84	labcall 22	total 84
+World/FruitBodyControl.Gait.cs	rest 0	lab+state 42	labcall 0	total 44
+World/FruitBodyControl.Hands.cs	rest 89	lab+state 1037	labcall 122	total 1179
+World/FruitBodyControl.Interactions.cs	rest 45	lab+state 360	labcall 128	total 372
+World/FruitBodyControl.LocalSteps.cs	rest 0	lab+state 106	labcall 0	total 106
+World/FruitBodyControl.Look.cs	rest 15	lab+state 73	labcall 15	total 99
+World/FruitBodyControl.Paths.cs	rest 15	lab+state 533	labcall 15	total 535
+World/FruitBodyControl.Spots.cs	rest 0	lab+state 322	labcall 0	total 327
+World/FruitBodyControl.Stability.cs	rest 42	lab+state 163	labcall 42	total 169
+World/FruitBodyControl.Steps.cs	rest 0	lab+state 139	labcall 0	total 139
+World/FruitBodyControl.Strikes.cs	rest 12	lab+state 383	labcall 46	total 429
+World/FruitBodyControl.Telemetry.cs	rest 65	lab+state 182	labcall 65	total 182
+World/FruitBodyControl.Traffic.cs	rest 0	lab+state 78	labcall 0	total 78
+World/FruitBodyControl.Turn.cs	rest 0	lab+state 115	labcall 0	total 117
+World/FruitEventLog.cs	rest 0	lab+state 0	labcall 0	total 105
+World/FruitEvents.cs	rest 59	lab+state 120	labcall 59	total 153
+World/FruitEyeCamera.cs	rest 0	lab+state 0	labcall 0	total 109
+World/FruitInteraction.cs	rest 23	lab+state 72	labcall 61	total 72
+World/FruitInteractionTrace.cs	rest 19	lab+state 21	labcall 21	total 21
+World/FruitItems.cs	rest 64	lab+state 258	labcall 171	total 363
+World/FruitNav.cs	rest 2	lab+state 494	labcall 2	total 579
+World/FruitNavDraw.cs	rest 0	lab+state 0	labcall 0	total 178
+World/FruitNavNative.cs	rest 0	lab+state 166	labcall 0	total 235
+World/FruitPlaces.cs	rest 163	lab+state 66	labcall 45	total 342
+World/FruitPose.cs	rest 106	lab+state 505	labcall 108	total 551
+World/FruitPose.Native.cs	rest 0	lab+state 0	labcall 0	total 51
+World/FruitPropMenu.cs	rest 0	lab+state 337	labcall 337	total 361
+World/FruitPropUse.cs	rest 8	lab+state 96	labcall 96	total 101
+World/FruitSight.cs	rest 0	lab+state 134	labcall 113	total 511
+World/FruitWorldEvents.cs	rest 0	lab+state 39	labcall 39	total 179
+
+== why key members stay ==
+FruitTextInput.Open(string, string, Action<string, bool>, Action, int) [neuro] Hud/FruitTextInput.cs:65
+    -
+FruitBodyControl.Order.Walk [others-call] World/FruitBodyControl.cs:54
+    FruitBodyControl.Order.Walk <- FruitBodyControl.Release(FruitBodyControl.Order) <- FruitBodyControl.Stop(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.Walk(FruitBody, Vector3, float) [dead] World/FruitBodyControl.cs:190
+    -
+FruitBodyControl.Walk(FruitBody, Vector3, float, bool) [others-state] World/FruitBodyControl.cs:194
+    FruitBodyControl.Walk(FruitBody, Vector3, float, bool) <- FruitBodyControl.Flee(FruitBody, Vector3, float, bool) <- FruitBodyControl.WalkAway(FruitBody, Vector3, float, bool) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.WalkTo(FruitBody, Vector3, float) [dead] World/FruitBodyControl.cs:216
+    -
+FruitBodyControl.WalkTo(FruitBody, Vector3, float, bool) [neuro] World/FruitBodyControl.cs:220
+    -
+FruitBodyControl.GoTo(FruitBody, FruitBody, float, float, bool, bool) [neuro] World/FruitBodyControl.cs:374
+    -
+FruitBodyControl.LateTick() [others-state] World/FruitBodyControl.cs:489
+    FruitBodyControl.LateTick() <- FruitBodyControl._swings <- FruitBodyControl.Swinging(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.HandStage.Walk [others-call] World/FruitBodyControl.Hands.cs:113
+    FruitBodyControl.HandStage.Walk <- FruitBodyControl.Drop(FruitBody, string)
+FruitBodyControl.HandStage.Hold [others-call] World/FruitBodyControl.Hands.cs:113
+    FruitBodyControl.HandStage.Hold <- FruitBodyControl.Holding(FruitBody) <- FruitBodyControl.TickInteraction(FruitInteraction, float) <- FruitBodyControl.TickInteractions() <- FruitBodyControl._interactions <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.PickUp(FruitBody, FruitWorldItem, bool, string, float) [neuro] World/FruitBodyControl.Hands.cs:216
+    -
+FruitBodyControl.TickHands() [others-state] World/FruitBodyControl.Hands.cs:350
+    FruitBodyControl.TickHands() <- FruitBodyControl._unignore <- FruitBodyControl.Detach(FruitBodyControl.Hands, FruitHandsResult, bool, string, bool) <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) [others-call] World/FruitBodyControl.Interactions.cs:79
+    FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.TickInteractions() [others-state] World/FruitBodyControl.Interactions.cs:148
+    FruitBodyControl.TickInteractions() <- FruitBodyControl._interactions <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.StepTo(FruitBody, Vector3, float) [others-state] World/FruitBodyControl.LocalSteps.cs:12
+    FruitBodyControl.StepTo(FruitBody, Vector3, float) <- FruitBodyControl.PositionInteraction(FruitInteraction) <- FruitBodyControl.TickInteraction(FruitInteraction, float) <- FruitBodyControl.TickInteractions() <- FruitBodyControl._interactions <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.GoTo(FruitBody, Vector3, float, float, bool) [others-state] World/FruitBodyControl.Paths.cs:93
+    FruitBodyControl.GoTo(FruitBody, Vector3, float, float, bool) <- FruitBodyControl.Flee(FruitBody, Vector3, float, bool) <- FruitBodyControl.WalkAway(FruitBody, Vector3, float, bool) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.GoTo(FruitBody, Vector3, float, float, bool, bool, bool, Vector3?) [others-state] World/FruitBodyControl.Paths.cs:98
+    FruitBodyControl.GoTo(FruitBody, Vector3, float, float, bool, bool, bool, Vector3?) <- FruitBodyControl.PositionInteraction(FruitInteraction) <- FruitBodyControl.TickInteraction(FruitInteraction, float) <- FruitBodyControl.TickInteractions() <- FruitBodyControl._interactions <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.Hold(FruitBodyControl.Order) [others-state] World/FruitBodyControl.Spots.cs:409
+    FruitBodyControl.Hold(FruitBodyControl.Order) <- FruitBodyControl.FollowPath(FruitBodyControl.Order, Vector3, bool, float) <- FruitBodyControl.LateTick() <- FruitBodyControl._swings <- FruitBodyControl.Swinging(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.TickWalkSupport() [others-state] World/FruitBodyControl.Stability.cs:108
+    FruitBodyControl.TickWalkSupport() <- FruitBodyControl._walkSupports <- FruitBodyControl.ReleaseSupport(int) <- FruitBodyControl.Release(FruitBodyControl.Order) <- FruitBodyControl.Stop(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.FixedTick() [others-state] World/FruitBodyControl.Steps.cs:39
+    FruitBodyControl.FixedTick() <- FruitBodyControl._orders <- FruitBodyControl.Stop(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.Lift(FruitBodyControl.Order, float) [others-state] World/FruitBodyControl.Steps.cs:129
+    FruitBodyControl.Lift(FruitBodyControl.Order, float) <- FruitBodyControl.FixedTick() <- FruitBodyControl._orders <- FruitBodyControl.Stop(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.Stage.Hold [others-state] World/FruitBodyControl.Strikes.cs:61
+    FruitBodyControl.Stage.Hold <- FruitBodyControl.Advance(FruitBodyControl.Swing, float) <- FruitBodyControl.TickSwings() <- FruitBodyControl._swings <- FruitBodyControl.Swinging(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.Face(FruitBody, Vector3, float) [others-state] World/FruitBodyControl.Turn.cs:81
+    FruitBodyControl.Face(FruitBody, Vector3, float) <- FruitBodyControl.FaceGroup(FruitBodyControl.Order) <- FruitBodyControl._orders <- FruitBodyControl.Stop(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitEyeCamera.Capture(FruitBody) [neuro] World/FruitEyeCamera.cs:51
+    -
+FruitNav.FindPath(Vector3, Vector3, FruitPath, float) [others-state] World/FruitNav.cs:177
+    FruitNav.FindPath(Vector3, Vector3, FruitPath, float) <- FruitNav.FindAway(Vector3, Vector3, float, FruitPath) <- FruitBodyControl.Flee(FruitBody, Vector3, float, bool) <- FruitBodyControl.WalkAway(FruitBody, Vector3, float, bool) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitNav.FindPath(Vector3, Vector3, FruitPath, float, bool) [others-state] World/FruitNav.cs:182
+    FruitNav.FindPath(Vector3, Vector3, FruitPath, float, bool) <- FruitNav.FindPath(Vector3, Vector3, FruitPath, float) <- FruitNav.FindAway(Vector3, Vector3, float, FruitPath) <- FruitBodyControl.Flee(FruitBody, Vector3, float, bool) <- FruitBodyControl.WalkAway(FruitBody, Vector3, float, bool) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitNav.FindPath(Vector3, Vector3, FruitPath, float, bool, bool) [others-state] World/FruitNav.cs:188
+    FruitNav.FindPath(Vector3, Vector3, FruitPath, float, bool, bool) <- FruitBodyControl.FollowPath(FruitBodyControl.Order, Vector3, bool, float) <- FruitBodyControl.LateTick() <- FruitBodyControl._swings <- FruitBodyControl.Swinging(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitNavDraw.Lift [dead] World/FruitNavDraw.cs:21
+    -
+FruitPose.Hold(FruitBody, FruitPoseShape, float, float, float, string) [others-state] World/FruitPose.cs:287
+    FruitPose.Hold(FruitBody, FruitPoseShape, float, float, float, string) <- FruitPose._held <- FruitPose.IsHolding(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitPose.FixedTick() [others-state] World/FruitPose.cs:480
+    FruitPose.FixedTick() <- FruitPose._held <- FruitPose.IsHolding(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitPose.OwnBalance(IntPtr) [others-state] World/FruitPose.cs:666
+    FruitPose.OwnBalance(IntPtr) <- FruitPose._byRuntime <- FruitPose.Finish(FruitPose.Held, string) <- FruitPose._held <- FruitPose.IsHolding(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitView.Open [neuro] World/FruitSight.cs:99
+    -
+FruitSight.CanSee(FruitBody, Vector3, FruitBody) [neuro] World/FruitSight.cs:212
+    -
+FruitSight.Look(FruitBody, bool) [neuro] World/FruitSight.cs:473
+    -
+
+== FruitLab alone ==
+FruitBodyControl.GoTo(FruitBody, FruitBody, float, float, bool, bool): not reached
+FruitBodyControl.GoTo(FruitBody, Vector3, float, float, bool): reached: FruitBodyControl.GoTo(FruitBody, Vector3, float, float, bool) <- FruitBodyControl.Flee(FruitBody, Vector3, float, bool) <- FruitBodyControl.WalkAway(FruitBody, Vector3, float, bool) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.GoTo(FruitBody, Vector3, float, float, bool, bool, bool, Vector3?): reached: FruitBodyControl.GoTo(FruitBody, Vector3, float, float, bool, bool, bool, Vector3?) <- FruitBodyControl.PositionInteraction(FruitInteraction) <- FruitBodyControl.TickInteraction(FruitInteraction, float) <- FruitBodyControl.TickInteractions() <- FruitBodyControl._interactions <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.PickUp(FruitBody, FruitWorldItem, bool, string, float): not reached
+FruitBodyControl.HandStage.Hold: reached: FruitBodyControl.HandStage.Hold <- FruitBodyControl.Holding(FruitBody) <- FruitBodyControl.TickInteraction(FruitInteraction, float) <- FruitBodyControl.TickInteractions() <- FruitBodyControl._interactions <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.Hold(FruitBodyControl.Order): reached: FruitBodyControl.Hold(FruitBodyControl.Order) <- FruitBodyControl.FollowPath(FruitBodyControl.Order, Vector3, bool, float) <- FruitBodyControl.LateTick() <- FruitBodyControl._swings <- FruitBodyControl.Swinging(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.Stage.Hold: reached: FruitBodyControl.Stage.Hold <- FruitBodyControl.Advance(FruitBodyControl.Swing, float) <- FruitBodyControl.TickSwings() <- FruitBodyControl._swings <- FruitBodyControl.Swinging(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitPose.Hold(FruitBody, FruitPoseShape, float, float, float, string): reached: FruitPose.Hold(FruitBody, FruitPoseShape, float, float, float, string) <- FruitPose._held <- FruitPose.IsHolding(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitNav.FindPath(Vector3, Vector3, FruitPath, float): reached: FruitNav.FindPath(Vector3, Vector3, FruitPath, float) <- FruitNav.FindAway(Vector3, Vector3, float, FruitPath) <- FruitBodyControl.Flee(FruitBody, Vector3, float, bool) <- FruitBodyControl.WalkAway(FruitBody, Vector3, float, bool) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitNav.FindPath(Vector3, Vector3, FruitPath, float, bool): reached: FruitNav.FindPath(Vector3, Vector3, FruitPath, float, bool) <- FruitNav.FindPath(Vector3, Vector3, FruitPath, float) <- FruitNav.FindAway(Vector3, Vector3, float, FruitPath) <- FruitBodyControl.Flee(FruitBody, Vector3, float, bool) <- FruitBodyControl.WalkAway(FruitBody, Vector3, float, bool) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitNav.FindPath(Vector3, Vector3, FruitPath, float, bool, bool): reached: FruitNav.FindPath(Vector3, Vector3, FruitPath, float, bool, bool) <- FruitBodyControl.FollowPath(FruitBodyControl.Order, Vector3, bool, float) <- FruitBodyControl.LateTick() <- FruitBodyControl._swings <- FruitBodyControl.Swinging(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitSight.Look(FruitBody, bool): not reached
+FruitBodyControl.Lift(FruitBodyControl.Order, float): reached: FruitBodyControl.Lift(FruitBodyControl.Order, float) <- FruitBodyControl.FixedTick() <- FruitBodyControl._orders <- FruitBodyControl.Stop(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitNavDraw.Lift: not reached
+FruitPose.OwnBalance(IntPtr): reached: FruitPose.OwnBalance(IntPtr) <- FruitPose._byRuntime <- FruitPose.Finish(FruitPose.Held, string) <- FruitPose._held <- FruitPose.IsHolding(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.TickWalkSupport(): reached: FruitBodyControl.TickWalkSupport() <- FruitBodyControl._walkSupports <- FruitBodyControl.ReleaseSupport(int) <- FruitBodyControl.Release(FruitBodyControl.Order) <- FruitBodyControl.Stop(FruitBody) <- FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>): reached: FruitBodyControl.Interact(FruitBody, FruitInteractionSpec, Action<FruitInteraction>) <- FruitBodyControl.StartItemInteraction(FruitBody, FruitWorldItem, FruitBody, Vector3?, Action<FruitInteraction>) <- FruitBodyControl.Next(FruitBodyControl.Recipe) <- FruitBodyControl._hands <- FruitBodyControl.ConsumeInteractionItem(FruitInteraction)
+
+== direct symbols by mod, per FruitLib class ==
+BombsAway: BlastTrace:6 ExplosionFeatures:2 ExplosionInfo:6 ExplosionSpec:41 ExplosionStats:14 FragmentEnd:8 FragmentTrace:11 FruitAffords:4 FruitBallistics:12 FruitBlast:1 FruitBodies:2 FruitBody:5 FruitBundle:3 FruitEvents:2 FruitHandling:4 FruitHud:1 FruitIcons:2 FruitInventory:2 FruitItem:16 FruitItemProp:9 FruitItems:2 FruitLimb:1 FruitMenu:4 FruitPaths:2 FruitPerfMon:1 FruitPropUse:1 FruitScene:1 FruitSurfaces:1 FruitUpdateCheck:1 FruitVersion:1 FruitWorldItem:10 FruitWorldMenu:2 HudPanel:5 MenuCategoryAttribute:2 ModPerf:1 Projectile:9 ProjectileSpec:13 SurfaceHitInfo:4 SurfaceMaterial:1 WoundInfo:3 WoundProfile:11
+FruitCity: ExplosionInfo:2 ExplosionSpec:4 FragmentTrace:6 FruitBallistics:3 FruitBundle:3 FruitHostMap:1 FruitLog:1 FruitMapContext:6 FruitMapDef:10 FruitMaps:2 FruitMenu:2 FruitPaths:2 FruitPerfMon:1 FruitPlaces:2 FruitWorldMenu:1 MenuCategoryAttribute:2 MenuLabelAttribute:1 MenuRangeAttribute:1 ModPerf:1 Projectile:1 ProjectileSpec:1 SurfaceHitInfo:6
+FruitLab: FruitAffords:4 FruitBodies:8 FruitBody:10 FruitBodyControl:7 FruitBundle:2 FruitEvents:2 FruitHandling:1 FruitIcons:2 FruitInteraction:5 FruitInteractionSpec:10 FruitInventory:3 FruitItem:16 FruitItemProp:8 FruitItems:2 FruitLimb:3 FruitLog:1 FruitMaterialGroup:2 FruitMenu:3 FruitMenuEntry:6 FruitMeshLibrary:4 FruitPaths:2 FruitPlace:4 FruitPlaceKind:1 FruitPlaces:1 FruitPropMenu:1 FruitProps:3 FruitPropUse:1 FruitScene:1 FruitUpdateCheck:1 FruitWorldItem:12 MenuCategoryAttribute:2
+GunsGunsGuns: FruitBallistics:7 FruitIcons:1 FruitInventory:1 FruitItem:11 FruitItemCategory:1 FruitMenu:4 FruitMeshLibrary:3 FruitPaths:2 FruitScene:1 FruitSfx:2 FruitTrace:1 FruitUpdateCheck:1 MenuCategoryAttribute:1 MenuLabelAttribute:1 MenuRangeAttribute:1 Projectile:4 ProjectileSpec:17 SurfaceHitInfo:7 WoundInfo:2 WoundProfile:10
+NeuroFrukt: FruitAffords:2 FruitBehaviour:6 FruitBodies:9 FruitBody:22 FruitBodyControl:32 FruitDoor:7 FruitEvent:17 FruitEvents:5 FruitEyeCamera:7 FruitHandling:2 FruitHandsResult:11 FruitHeldKind:1 FruitHud:1 FruitInventory:3 FruitItems:6 FruitLimb:6 FruitLog:1 FruitMenu:5 FruitMenuEntry:6 FruitMoveResult:6 FruitNav:8 FruitPath:4 FruitPaths:3 FruitPathStatus:1 FruitPerfMon:1 FruitPlace:14 FruitPlaceKind:4 FruitPlaces:11 FruitPng:1 FruitPosture:5 FruitPropMenu:1 FruitPropUse:1 FruitSeen:14 FruitSight:6 FruitSightZone:1 FruitStrike:2 FruitTextInput:7 FruitView:11 FruitWorldItem:19 HudHandle:1 HudPanel:7 MenuCategoryAttribute:2 MenuLabelAttribute:1 MenuRangeAttribute:1 ModPerf:1
+Singularity: FruitForces:2 FruitHud:1 FruitIcons:1 FruitInventory:1 FruitItem:10 FruitItemCategory:1 FruitMenu:3 FruitPaths:2 FruitPerfMon:1 FruitScene:1 FruitUpdateCheck:1 HudPanel:4 MenuCategoryAttribute:2 MenuLabelAttribute:1 MenuRangeAttribute:1 ModPerf:1
